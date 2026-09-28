@@ -14,4 +14,4 @@ simulations and monthly reviews. It has a GUI and a CLI.
 | 2 | AI-assisted implementation (Python) | Not started |
 | 3 | Testing (pytest and KUMA agent testing) | Not started |
 
-**Student:** _your name, student ID_
+**Student:** Rishit Shah 
