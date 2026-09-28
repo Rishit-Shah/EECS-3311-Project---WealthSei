@@ -2,7 +2,7 @@
 ### An AI Personal Finance Agent
 
 **Course:** EECS3311 Software Design, Fall 2026 · **Stage:** 1 (Design)
-**Student:** Rishit Shah, 219773050 · **Repository:** [github.com/Rishit-Shah/EECS-3311-Project---WealthSei](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei)
+**Student:** Rishit Shah, _[student ID]_ · **Repository:** [github.com/Rishit-Shah/EECS-3311-Project---WealthSei](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei)
 
 **About the name:** *WealthSei* combines *wealth* with *sensei* (Japanese for teacher or mentor): the agent acts as a personal mentor for everyday money decisions.
 
@@ -64,28 +64,39 @@ Individuals who manage a personal budget without financial expertise: university
 | Lightweight tasks: categorization fallback, explanations | Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) | `LLMCategorizationStrategy`, `ExplanationService` |
 | Offline development and automated tests | `MockLLMProvider` (scripted replies) | Unit and integration tests |
 
-All models sit behind one interface, `LLMProvider`, and are reached through the official `anthropic` Python SDK (wrapped by `ClaudeProvider`, see the Adapter pattern in Section 4). Model names are read from `config.properties`, so any other provider can be substituted without changing agent code.
+All models sit behind one interface, `LLMProvider`, and are reached through **LangChain4j** (its `langchain4j-anthropic` module), wrapped by `ClaudeProvider` (see the Adapter pattern in Section 4 and the LangChain4j table in Section 1.6). Model names are read from `config.properties`, so any other provider can be substituted without changing agent code.
 
 ### 1.6 How the AI interacts with the rest of the software
 
-1. **The LLM never touches the database or the UI.** `Planner` asks it for one structured step at a time (JSON): either `ToolCallStep` or `FinalAnswerStep`.
+1. **The LLM never touches the database or the UI.** `Planner` asks it for one step at a time: either a native tool-call request (becomes a `ToolCallStep`) or a final answer (a `FinalAnswerStep`).
 2. **Tools are a whitelist.** `ToolManager` validates arguments against each `ToolSpec` before running a `Tool`; invalid calls are never executed.
 3. **Numbers come from tools only.** `GroundingChecker` compares figures in the final answer with tool results and triggers a correction if any are unsupported.
 4. **Changes go through proposals.** Agent suggestions become `Proposal` objects that the user approves; approval runs an undoable `Command`.
 5. **Memory is explicit.** `MemoryManager` supplies bounded recent messages and stored preferences (e.g., protected categories such as Groceries).
 6. **Graceful degradation.** If the LLM is unavailable, deterministic fallbacks are used (template explanations, "Uncategorized" flag, metrics-only review).
 
+**How LangChain4j is used.** LangChain4j offers a low-level tool API (`ChatModel` plus `ToolSpecification`) and a high-level one (AI Services with `@Tool` methods). WealthSei deliberately uses the low-level API and keeps the agent loop in its own classes.
+
+| LangChain4j piece | Used? | Where and why |
+|---|---|---|
+| `ChatModel` (concretely `AnthropicChatModel`) | Yes | The *adaptee* inside `ClaudeProvider` (Adapter pattern) |
+| `ChatRequest`, `ChatResponse` and the message types (`SystemMessage`, `UserMessage`, `AiMessage`, `ToolExecutionResultMessage`) | Yes | Translated to and from our `LLMRequest` / `LLMResponse` inside `ClaudeProvider` |
+| `ToolSpecification`, `ToolExecutionRequest` | Yes | Our `ToolSpec` is translated into a `ToolSpecification`; the model's tool requests come back as our `ToolCall`s |
+| `ChatMemory` (`MessageWindowChatMemory`) | Yes | Inside `ConversationMemory`, to keep a bounded window of recent messages |
+| AI Services (`AiServices`, `@Tool` methods) | **No** | They would run the tool loop for us. We keep the loop in `AgentController`, `Planner` and `ToolManager` so argument validation, grounding checks, tracing and failure recovery are visible in the design and testable in Stage 3 |
+| RAG, embeddings | No | Not needed: data comes from deterministic tools |
+
 ### 1.7 Overall architecture
 
-**Planned stack:** Python 3.11+; **Tkinter/ttk** for the GUI (standard library, optional `matplotlib` for charts); **`argparse`** sub-commands for the CLI; **`sqlite3`** for persistence; the official **`anthropic`** Python SDK for LLM access; `decimal.Decimal` for money; `dataclasses` for value objects; `abc.ABC` for interfaces (UML «interface»); **`pytest`** for tests.
+**Planned stack:** Java 17; **Maven**; **JavaFX** for the GUI; **picocli** for the CLI; **SQLite** via JDBC; **LangChain4j** (`langchain4j-anthropic`) for LLM access; **Apache Commons CSV** for CSV parsing; **Jackson** for JSON; `java.math.BigDecimal` for money; Java `record`s for value objects; **JUnit 5** for tests.
 
 **Fig 1 — Layered architecture**
 
 ```mermaid
 flowchart TB
     subgraph P["Presentation layer"]
-        GUI["Tkinter GUI: MainWindow + 6 views"]
-        CLI["CliApp (argparse)"]
+        GUI["JavaFX GUI: MainWindow + 6 views"]
+        CLI["CliApp (picocli)"]
     end
     FAC["WealthSeiFacade (single entry point)"]
     subgraph S["Deterministic core - unit-testable"]
@@ -104,7 +115,7 @@ flowchart TB
         TM["ToolManager + 6 Tools"]
         GC["GroundingChecker, AgentTrace"]
     end
-    LLM["LLMProvider chain: Logging - Retry - Claude API"]
+    LLM["LLMProvider chain: Logging - Retry - ClaudeProvider wrapping LangChain4j"]
     DB[("SQLite via Repository interfaces")]
 
     GUI --> FAC
@@ -124,22 +135,22 @@ flowchart TB
     AN -. "explanations" .-> LLM
 ```
 
-**Planned Python package layout** (each UML class maps to one module, which is what Stage 2 will trace to):
+**Planned Maven/Java package layout** (each UML class maps to one Java class; Stage 2 will trace to these):
 
-| Package | Contents |
+| Package (`src/main/java/wealthsei/…`) | Contents |
 |---|---|
-| `wealthsei/presentation/` | `main_window.py` and the six Tkinter views; `cli_app.py` |
-| `wealthsei/facade.py` | `WealthSeiFacade` |
-| `wealthsei/services/` | `transaction_service.py`, `budget_service.py`, `analytics_service.py`, `goal_service.py`, `proposal_service.py`, `review_service.py`, `report_service.py`, `explanation_service.py` |
-| `wealthsei/analytics/` | `recurring_detector.py`, `forecast_engine.py`, `safe_to_spend.py`, `habit_analyzer.py`, `health_score.py`, `goal_planner.py`, `scenario_simulator.py` |
-| `wealthsei/importing/` | `csv_importer.py`, `bank_adapters.py`, `categorizer.py`, `strategies.py` |
-| `wealthsei/agent/` | `agent_controller.py`, `planner.py`, `prompt_builder.py`, `response_parser.py`, `tool_manager.py`, `tools/`, `memory.py`, `grounding.py`, `trace.py` |
-| `wealthsei/llm/` | `provider.py` (`LLMProvider`), `claude_provider.py`, `mock_provider.py`, `decorators.py` |
-| `wealthsei/commands/` | `command.py`, `command_history.py`, `command_factory.py`, concrete commands; `proposal.py` and `proposal_states.py` |
-| `wealthsei/reports/` | `report_exporter.py`, `markdown_exporter.py`, `csv_exporter.py`, `text_exporter.py` |
-| `wealthsei/domain/` | `money.py`, `year_month.py`, dataclasses for `Transaction`, `Budget`, `SavingsGoal`, etc. |
-| `wealthsei/repositories/` | repository interfaces and `sqlite_*` implementations |
-| `tests/` | `pytest` tests (Stage 3) |
+| `presentation` | `MainWindow`, the six JavaFX views, `CliApp` |
+| `facade` | `WealthSeiFacade` |
+| `service` | `TransactionService`, `BudgetService`, `AnalyticsService`, `GoalService`, `ProposalService`, `ReviewService`, `ReportService`, `ExplanationService` |
+| `analytics` | `RecurringDetector`, `ForecastEngine`, `ForecastInputs`, `SafeToSpendCalculator`, `HabitAnalyzer`, `HealthScoreCalculator`, `GoalPlanner`, `ScenarioSimulator`, `ScenarioChange` and its four implementations |
+| `importing` | `CsvImporter`, `BankCsvAdapter` and implementations, `Categorizer`, `CategorizationStrategy` and implementations |
+| `agent` | `AgentController`, `Planner`, `PromptBuilder`, `ResponseParser`, `ToolManager`, `Tool` and the six tools, `MemoryManager`, `GroundingChecker`, `AgentTrace` |
+| `llm` | `LLMProvider`, `ClaudeProvider`, `MockLLMProvider`, the decorators |
+| `command` | `Command`, `CommandHistory`, `CommandFactory`, the four concrete commands, `Proposal` and the proposal states |
+| `report` | `ReportExporter` and the three exporters |
+| `domain` | `Money` (wraps `BigDecimal`) and records such as `Transaction`, `Budget`, `SavingsGoal`; the standard `java.time.YearMonth`, `LocalDate` and `Instant` are used directly |
+| `repository` | repository interfaces and their `Sqlite…` implementations |
+| `src/test/java` | JUnit 5 tests (Stage 3) |
 
 ### 1.8 What makes WealthSei distinctive (beyond the sample "Personal Finance Assistant")
 
@@ -157,7 +168,7 @@ flowchart TB
 
 | Requirement | How WealthSei satisfies it |
 |---|---|
-| GUI | Tkinter `MainWindow` with 6 views covering all major features (Section 3, Fig 3.1) |
+| GUI | JavaFX `MainWindow` with 6 views covering all major features (Section 3, Fig 3.1) |
 | CLI | `CliApp` exposes the same `WealthSeiFacade` operations (Appendix B) |
 | ≥ 10 meaningful features | 14 features (F01–F14); none are login/logout/about-type features |
 | ≥ 5 design patterns | 9: Facade, Strategy, Adapter, Observer, Command, State, Decorator, Template Method, Factory (Section 4) |
@@ -191,12 +202,12 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 
 | Field | Details |
 |---|---|
-| **Description** | Loads a bank or credit-card CSV export, auto-detects one of two supported layouts (single signed-amount column, or separate debit/credit columns) using a matching adapter that wraps Python's `csv.DictReader`, normalizes rows into `Transaction` objects, skips duplicates, and auto-categorizes new rows (F02). |
+| **Description** | Loads a bank or credit-card CSV export, auto-detects one of two supported layouts (single signed-amount column, or separate debit/credit columns) using a matching adapter that wraps an Apache Commons CSV `CSVParser`, normalizes rows into `Transaction` objects, skips duplicates, and auto-categorizes new rows (F02). |
 | **User interaction** | `TransactionsView` → **Import CSV** → file chooser → summary dialog. CLI: `wealthsei import <file>`. |
 | **Input** | Path to a CSV file. |
 | **Output** | `ImportResult` (imported count, duplicates skipped, rejected rows with reasons); transactions appear in the table. |
 | **AI involvement** | Deterministic parsing and de-duplication. Categorization of the new rows is F02 (hybrid). |
-| **Expected workflow** | 1) User picks file. 2) `CsvImporter` reads the header and picks a matching `BankCsvAdapter`. 3) The adapter's `read_transactions()` turns each row into a `Transaction`. 4) Duplicates (same date, amount, merchant) are removed. 5) `Categorizer` assigns categories. 6) Rows are saved. 7) Budget alerts and goal status are refreshed. 8) Summary is shown. |
+| **Expected workflow** | 1) User picks file. 2) `CsvImporter` reads the header and picks a matching `BankCsvAdapter`. 3) The adapter's `readTransactions()` turns each row into a `Transaction`. 4) Duplicates (same date, amount, merchant) are removed. 5) `Categorizer` assigns categories. 6) Rows are saved. 7) Budget alerts and goal status are refreshed. 8) Summary is shown. |
 | **Error / alternative cases** | Unreadable or non-CSV file → error, nothing saved. Unknown header → "unsupported format" listing supported layouts. Invalid row (bad date or amount) → skipped and listed. All rows duplicates → "0 new transactions". |
 
 ### F02 — Smart Categorization and Correction (with Undo) · Hybrid
@@ -204,12 +215,12 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | Field | Details |
 |---|---|
 | **Description** | Each transaction is categorized by a priority chain: learned user rules → keyword rules → LLM fallback (only for merchants nothing else recognizes). The user can correct a category; the correction is stored as a learned rule so the same merchant is categorized correctly next time. Corrections can be undone and redone. |
-| **User interaction** | `TransactionsView`: category drop-down per row; **Undo / Redo** buttons. CLI: `wealthsei categorize <tx_id> <category>`, `wealthsei undo`, `wealthsei redo`. |
-| **Input** | New transactions (automatic), or `(tx_id, new_category)` (manual). |
+| **User interaction** | `TransactionsView`: category drop-down per row; **Undo / Redo** buttons. CLI: `wealthsei categorize <txId> <category>`, `wealthsei undo`, `wealthsei redo`. |
+| **Input** | New transactions (automatic), or `(txId, newCategory)` (manual). |
 | **Output** | Categorized transactions; updated row; new learned rule. |
 | **AI involvement** | **Hybrid.** Rules are deterministic. The LLM is called only as the last strategy, and must answer with one category from the allowed list. |
 | **Expected workflow** | Auto: `Categorizer` tries each `CategorizationStrategy` in order until one returns a category. Manual: Facade wraps the change in a `RecategorizeCommand`; `CommandHistory` executes it (update transaction + learn rule); Undo restores the old category and forgets the rule. |
-| **Error / alternative cases** | LLM unavailable or times out → `UNCATEGORIZED`, flagged for manual review. LLM returns a category not in the list → rejected, `UNCATEGORIZED`. Unknown `tx_id` → error. Undo with empty history → "nothing to undo". |
+| **Error / alternative cases** | LLM unavailable or times out → `UNCATEGORIZED`, flagged for manual review. LLM returns a category not in the list → rejected, `UNCATEGORIZED`. Unknown `txId` → error. Undo with empty history → "nothing to undo". |
 
 ### F03 — Budget Setup, Tracking and Alerts · Deterministic
 
@@ -232,7 +243,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Input** | Transaction history (≥ 3 occurrences per pattern). |
 | **Output** | List of `RecurringPayment` (merchant, amount, frequency, next due, confidence), total monthly cost, plain-language summary. |
 | **AI involvement** | **Hybrid.** Detection is deterministic (interval regularity + amount tolerance). The LLM only phrases the summary from the computed facts. |
-| **Expected workflow** | 1) `AnalyticsService.detect_recurring()` loads history. 2) `RecurringDetector.detect()` groups by merchant and tests regularity. 3) `ExplanationService.explain()` writes the summary. 4) Panel is displayed. |
+| **Expected workflow** | 1) `AnalyticsService.detectRecurring()` loads history. 2) `RecurringDetector.detect()` groups by merchant and tests regularity. 3) `ExplanationService.explain()` writes the summary. 4) Panel is displayed. |
 | **Error / alternative cases** | Fewer than 3 occurrences → "not enough history". Irregular amounts → shown as "possible" with lower confidence. LLM failure → template summary. |
 
 ### F05 — Safe-to-Spend Coach ★ · Hybrid
@@ -244,7 +255,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Input** | Date (default today); opening balance and transactions; recurring payments; goals; buffer setting (default $200). |
 | **Output** | `SafeToSpendResult` (daily allowance, remaining this month, upcoming bills, goal reserve), `Forecast`, explanation, optional `LOW_BALANCE` alert. |
 | **AI involvement** | **Hybrid.** All figures deterministic; the LLM only explains and gives tips from those figures. |
-| **Expected workflow** | 1) `AnalyticsService.safe_to_spend()` detects recurring payments. 2) `ForecastEngine.project()` builds the 30-day forecast. 3) `SafeToSpendCalculator.calculate()` computes the allowance. 4) If the lowest projected balance < buffer → `AlertMonitor.publish()`. 5) `ExplanationService.explain()` adds text. |
+| **Expected workflow** | 1) `AnalyticsService.safeToSpend()` detects recurring payments. 2) `ForecastEngine.project()` builds the 30-day forecast. 3) `SafeToSpendCalculator.calculate()` computes the allowance. 4) If the lowest projected balance < buffer → `AlertMonitor.publish()`. 5) `ExplanationService.explain()` adds text. |
 | **Error / alternative cases** | No transactions → prompt to import. Result would be negative → show $0 and "over-committed by $X" with alert. LLM unavailable → template text. |
 
 ### F06 — Spending Habit Detective ★ · Hybrid
@@ -268,7 +279,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Input** | Month; `BudgetStatus`; forecast; goals. |
 | **Output** | `HealthScore` (total, `ScoreComponent` list, explanation). |
 | **AI involvement** | **Hybrid.** Score is a deterministic formula; the LLM explains it. |
-| **Expected workflow** | 1) `AnalyticsService.health_score()` gets `BudgetStatus` from `BudgetService`. 2) `HealthScoreCalculator.calculate()` scores each component. 3) `ExplanationService.explain()` adds text. |
+| **Expected workflow** | 1) `AnalyticsService.healthScore()` gets `BudgetStatus` from `BudgetService`. 2) `HealthScoreCalculator.calculate()` scores each component. 3) `ExplanationService.explain()` adds text. |
 | **Error / alternative cases** | No budget or no goals → that component is excluded and weights re-normalized (noted in the UI). No data → "N/A". |
 
 ### F08 — Purchase Affordability Check · AI (agent)
@@ -280,7 +291,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Input** | Item description, price, optional target date. |
 | **Output** | `AgentResult` (verdict, reasoning with tool figures, optional `ProposalDraft`s, trace id). |
 | **AI involvement** | **AI agent** (multi-step tool use). Numbers only from tools. |
-| **Expected workflow** | 1) Input validated. 2) `AgentController.handle()` builds context. 3) Loop: `Planner.next_step()` → tool calls (`BudgetStatusTool`, `ForecastTool`, `GoalTool`, `TransactionQueryTool`) → observations. 4) Final answer → `GroundingChecker.verify()`. 5) Trace saved; result shown. |
+| **Expected workflow** | 1) Input validated. 2) `AgentController.handle()` builds context. 3) Loop: `Planner.nextStep()` → tool calls (`BudgetStatusTool`, `ForecastTool`, `GoalTool`, `TransactionQueryTool`) → observations. 4) Final answer → `GroundingChecker.verify()`. 5) Trace saved; result shown. |
 | **Error / alternative cases** | Missing or non-positive price → validation error, agent not called. Tool failure → agent states which data was unavailable and qualifies its answer (no guessing). Malformed LLM output → one repair retry, then error message. Step limit reached → partial answer flagged. Ungrounded figures → answer revised or blocked. |
 
 ### F09 — Savings Goal Planner with Auto-Replan ★ · AI (agent)
@@ -292,7 +303,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Input** | Name, target amount (> 0), deadline (in the future), amount saved so far. |
 | **Output** | `SavingsGoal`, plan explanation, `Proposal`s (contribution change, budget trims). |
 | **AI involvement** | **AI agent** over deterministic goal tools. |
-| **Expected workflow** | 1) `GoalService.create_goal()` validates and saves. 2) `AgentController.handle()` runs the loop; `GoalTool` → `GoalService.feasibility()` → `GoalPlanner`. 3) Drafts pass guardrails (protected categories) and become pending proposals. 4) Plan and proposals shown. |
+| **Expected workflow** | 1) `GoalService.createGoal()` validates and saves. 2) `AgentController.handle()` runs the loop; `GoalTool` → `GoalService.feasibility()` → `GoalPlanner`. 3) Drafts pass guardrails (protected categories) and become pending proposals. 4) Plan and proposals shown. |
 | **Error / alternative cases** | Deadline in the past or target ≤ 0 → validation error. Infeasible even if all discretionary spending is cut → agent says so and proposes only a deadline extension. Little history → uses budget totals with a "lower confidence" note. |
 
 ### F10 — What-If Scenario Simulator ★ · AI (agent)
@@ -316,7 +327,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Input** | Month with transactions. |
 | **Output** | `MonthlyReview` (saved) and pending `Proposal`s. |
 | **AI involvement** | **AI agent** plus deterministic metrics. |
-| **Expected workflow** | 1) `ReviewService.generate()` gathers score, habits, budget status, goal status. 2) `AgentController.handle()` writes narrative and drafts using tools. 3) `ProposalService.create_from_drafts()` filters and stores proposals. 4) Review saved and shown. |
+| **Expected workflow** | 1) `ReviewService.generate()` gathers score, habits, budget status, goal status. 2) `AgentController.handle()` writes narrative and drafts using tools. 3) `ProposalService.createFromDrafts()` filters and stores proposals. 4) Review saved and shown. |
 | **Error / alternative cases** | No transactions in month → refused with message. Review exists → offer to regenerate. Agent fails → metrics-only review saved (no narrative). Proposals touching protected categories are filtered out. |
 
 ### F12 — Natural-Language Finance Chat with Agent Trace ★ · AI (agent)
@@ -328,7 +339,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Input** | Question text. |
 | **Output** | Answer, trace id, grounding status. |
 | **AI involvement** | **AI agent.** |
-| **Expected workflow** | 1) `MemoryManager.build_context()` adds recent messages and preferences. 2) Loop of `Planner.next_step()` → tool calls. 3) `GroundingChecker.verify()`. 4) Trace saved; `MemoryManager.remember()` stores the turn. 5) Answer displayed; trace available on demand. |
+| **Expected workflow** | 1) `MemoryManager.buildContext()` adds recent messages and preferences. 2) Loop of `Planner.nextStep()` → tool calls. 3) `GroundingChecker.verify()`. 4) Trace saved; `MemoryManager.remember()` stores the turn. 5) Answer displayed; trace available on demand. |
 | **Error / alternative cases** | Off-topic question → polite redirect, no tools. No data → says none available. Vague time ("recently") → assumes last 30 days and states it, or asks. LLM unavailable → offline message suggesting dashboard/CLI commands. History over the window → oldest messages dropped. |
 
 ### F13 — Proposal Approval Queue ★ · Hybrid
@@ -341,7 +352,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Output** | Updated `Proposal`; the applied change is visible in budget or goal views. |
 | **AI involvement** | **Hybrid:** AI-generated content inside a deterministic workflow. |
 | **Expected workflow** | 1) `ProposalService.decide()` loads the `Proposal`. 2) `Proposal.approve()` delegates to its current `ProposalState`. 3) `PendingState` executes the `Command` through `CommandHistory` and switches to `AppliedState`. 4) Proposal saved; UI refreshed. |
-| **Error / alternative cases** | Approving a non-pending proposal → `IllegalStateTransitionError`, message shown. Command fails (e.g., category deleted) → proposal stays Pending with error. Proposals from a past month auto-expire. |
+| **Error / alternative cases** | Approving a non-pending proposal → `IllegalStateTransitionException`, message shown. Command fails (e.g., category deleted) → proposal stays Pending with error. Proposals from a past month auto-expire. |
 
 ### F14 — Report Export · Deterministic
 
@@ -352,8 +363,8 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Input** | Month, format, output path. |
 | **Output** | A file at the given path. |
 | **AI involvement** | None (deterministic). |
-| **Expected workflow** | 1) `ReportService.build_report_data()` collects data. 2) `exporter_for(format)` picks the exporter. 3) `ReportExporter.export()` runs header → summary → category table → review → footer. 4) File written. |
-| **Error / alternative cases** | No data for month → error. Path not writable → `ExportError`. Review not generated → metrics-only report with a note. File exists → confirm overwrite. |
+| **Expected workflow** | 1) `ReportService.buildReportData()` collects data. 2) `exporterFor(format)` picks the exporter. 3) `ReportExporter.export()` runs header → summary → category table → review → footer. 4) File written. |
+| **Error / alternative cases** | No data for month → error. Path not writable → `ExportException`. Review not generated → metrics-only report with a note. File exists → confirm overwrite. |
 
 ---
 
@@ -363,12 +374,13 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 
 | Lecture notation | How it appears in the diagrams |
 |---|---|
-| Attribute `visibility name: type` | `-amount: Decimal` |
-| Method `visibility name(param: type): return_type` | `+add(other: Money) Money` (the tool draws the `:` before the return type; the return type is omitted when the method returns `None`) |
-| Visibility `+` public, `-` private, `#` protected | `-` is a leading-underscore attribute in Python; `#` is a protected hook meant for subclasses |
-| Derived attribute `/name` (computed, not stored) | `/ratio: float` |
-| Static member (underlined) | `$` suffix, e.g. `+can_handle(header: list[str])$ bool` |
-| Interface: `«interface»` above the name | `<<interface>>` (implemented as `abc.ABC`); other stereotypes such as `<<facade>>` and `<<subject>>` are used the same way |
+| Attribute `visibility name: type` | `-amount: BigDecimal` |
+| Method `visibility name(param: type): returnType` | `+add(other: Money) Money` (the tool draws the `:` before the return type; `void` return types are omitted) |
+| Visibility `+` public, `-` private, `#` protected, `~` package | Same meaning as in Java; `#` marks hook methods meant for subclasses |
+| Derived attribute `/name` (computed, not stored) | `/ratio: double` |
+| Static member (underlined) | `$` suffix (no static members are needed in this design) |
+| Generic types | written `List~T~` and `Map~K, V~`; the tool draws them as `List<T>` and `Map<K, V>` |
+| Interface: `«interface»` above the name | `<<interface>>` (a Java `interface`); other stereotypes such as `<<facade>>` and `<<subject>>` are used the same way |
 | Abstract class `«abstract»`; abstract methods in italics | `<<abstract>>`; abstract methods are marked with `*` |
 | Association (solid, arrow = direction) | `-->` |
 | Dependency (dashed open arrow, «use») | `..>` |
@@ -378,7 +390,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | Realization (dashed line, hollow triangle) | `<|..` |
 | Multiplicity `1`, `0..1`, `0..*`, `1..*`, `2..7` | quoted at each end of a relationship |
 
-**Perspective (lecture slide "Class diagram perspective"):** Figures 3.1–3.6 are at the *implementation* level, a blueprint for the Python modules listed in Section 1.7. Fig 3.7 is the *conceptual* domain model. As the lecture says, class diagrams show structure, not how objects interact or algorithmic detail; those are shown by the sequence diagrams in Section 7.
+**Perspective (lecture slide "Class diagram perspective"):** Figures 3.1–3.6 are at the *implementation* level, a blueprint for the Java packages listed in Section 1.7. Fig 3.7 is the *conceptual* domain model. As the lecture says, class diagrams show structure, not how objects interact or algorithmic detail; those are shown by the sequence diagrams in Section 7.
 
 The model is split into seven figures so each stays readable. Classes that appear in several figures are the same class. Simple value objects and enums are listed in a table after Fig 3.7. SQLite implementations of repository interfaces (e.g., `SqliteTransactionRepository`) are omitted.
 
@@ -391,40 +403,40 @@ classDiagram
         +show()
     }
     class TransactionsView {
-        +on_import_clicked()
-        +on_category_changed(tx_id: str, category: Category)
-        +on_undo_clicked()
+        +onImportClicked()
+        +onCategoryChanged(txId: String, category: Category)
+        +onUndoClicked()
     }
     class DashboardView {
         +refresh()
-        +on_budget_saved()
-        +on_alert(alert: Alert)
+        +onBudgetSaved()
+        +onAlert(alert: Alert)
     }
     class GoalsView {
-        +on_create_goal()
-        +on_replan(goal_id: str)
+        +onCreateGoal()
+        +onReplan(goalId: String)
     }
     class AssistantView {
-        +on_afford_check(item: str, price: Money)
-        +on_what_if(text: str)
-        +on_ask_submitted(question: str)
-        +on_show_trace(trace_id: str)
+        +onAffordCheck(item: String, price: Money)
+        +onWhatIf(text: String)
+        +onAskSubmitted(question: String)
+        +onShowTrace(traceId: String)
     }
     class ReportView {
-        +on_generate_review(month: YearMonth)
-        +on_export(fmt: ExportFormat)
+        +onGenerateReview(month: YearMonth)
+        +onExport(fmt: ExportFormat)
     }
     class ProposalView {
-        +on_approve(proposal_id: str)
-        +on_reject(proposal_id: str)
+        +onApprove(proposalId: String)
+        +onReject(proposalId: String)
     }
     class CliApp {
-        +run(argv: list[str]) int
-        +on_alert(alert: Alert)
+        +run(args: List~String~) int
+        +onAlert(alert: Alert)
     }
     class AlertListener {
         <<interface>>
-        +on_alert(alert: Alert)*
+        +onAlert(alert: Alert)*
     }
     class WealthSeiFacade {
         <<facade>>
@@ -439,29 +451,29 @@ classDiagram
         -agent: AgentController
         -history: CommandHistory
         -traces: TraceRepository
-        +import_transactions(path: Path) ImportResult
-        +correct_category(tx_id: str, category: Category) Transaction
+        +importTransactions(path: Path) ImportResult
+        +correctCategory(txId: String, category: Category) Transaction
         +undo()
         +redo()
-        +set_budget(month: YearMonth, limits: BudgetLimits) BudgetStatus
-        +get_budget_status(month: YearMonth) BudgetStatus
-        +get_recurring_payments() list[RecurringPayment]
-        +get_safe_to_spend(today: date) SafeToSpendResult
-        +get_habit_insights(month: YearMonth) list[Insight]
-        +get_health_score(month: YearMonth) HealthScore
-        +check_affordability(item: str, price: Money) AgentResult
-        +plan_goal(request: GoalRequest) AgentResult
-        +replan_goal(goal_id: str) AgentResult
-        +run_what_if(description: str) AgentResult
-        +generate_monthly_review(month: YearMonth) MonthlyReview
-        +ask(question: str) AgentResult
-        +get_trace(trace_id: str) AgentTrace
-        +create_proposals(drafts: list[ProposalDraft], trace_id: str) list[Proposal]
-        +list_pending_proposals() list[Proposal]
-        +decide_proposal(proposal_id: str, approve: bool) Proposal
-        +export_report(month: YearMonth, fmt: ExportFormat, out: Path) Path
-        +set_protected_category(category: Category, protected: bool)
-        +add_alert_listener(listener: AlertListener)
+        +setBudget(month: YearMonth, limits: BudgetLimits) BudgetStatus
+        +getBudgetStatus(month: YearMonth) BudgetStatus
+        +getRecurringPayments() List~RecurringPayment~
+        +getSafeToSpend(today: LocalDate) SafeToSpendResult
+        +getHabitInsights(month: YearMonth) List~Insight~
+        +getHealthScore(month: YearMonth) HealthScore
+        +checkAffordability(item: String, price: Money) AgentResult
+        +planGoal(request: GoalRequest) AgentResult
+        +replanGoal(goalId: String) AgentResult
+        +runWhatIf(description: String) AgentResult
+        +generateMonthlyReview(month: YearMonth) MonthlyReview
+        +ask(question: String) AgentResult
+        +getTrace(traceId: String) AgentTrace
+        +createProposals(drafts: List~ProposalDraft~, traceId: String) List~Proposal~
+        +listPendingProposals() List~Proposal~
+        +decideProposal(proposalId: String, approve: boolean) Proposal
+        +exportReport(month: YearMonth, fmt: ExportFormat, out: Path) Path
+        +setProtectedCategory(category: Category, protected: boolean)
+        +addAlertListener(listener: AlertListener)
     }
 
     MainWindow "1" *-- "1" TransactionsView
@@ -502,69 +514,69 @@ classDiagram
         -repo: TransactionRepository
         -importer: CsvImporter
         -categorizer: Categorizer
-        +import_file(path: Path) ImportResult
-        +query(filter: TxFilter) list[Transaction]
-        +update_category(tx_id: str, category: Category) Transaction
-        -remove_duplicates(txs: list[Transaction]) list[Transaction]
+        +importFile(path: Path) ImportResult
+        +query(filter: TxFilter) List~Transaction~
+        +updateCategory(txId: String, category: Category) Transaction
+        -removeDuplicates(txs: List~Transaction~) List~Transaction~
     }
     class CsvImporter {
-        -adapter_types: list[type]
+        -adapterTypes: List~Class~
         +parse(path: Path) ParseResult
-        +detect_adapter(header: list[str], reader: DictReader) BankCsvAdapter
+        +detectAdapter(header: List~String~, parser: CSVParser) BankCsvAdapter
     }
     class BankCsvAdapter {
         <<interface>>
-        #reader: DictReader
-        +can_handle(header: list[str])$ bool
-        +read_transactions() ParseResult
-        #to_transaction(row: dict) Transaction
+        #parser: CSVParser
+        +canHandle(header: List~String~) boolean
+        +readTransactions() ParseResult
+        #toTransaction(row: CSVRecord) Transaction
     }
     class SignedAmountCsvAdapter
     class DebitCreditCsvAdapter
     class Categorizer {
-        -strategies: list[CategorizationStrategy]
+        -strategies: List~CategorizationStrategy~
         +categorize(tx: Transaction) Category
     }
     class CategorizationStrategy {
         <<interface>>
-        +categorize(tx: Transaction) Optional[Category]*
+        +categorize(tx: Transaction) Optional~Category~*
     }
     class LearnedRuleStrategy {
         -rules: RuleRepository
-        +categorize(tx: Transaction) Optional[Category]
-        +learn(merchant: str, category: Category)
-        +forget(merchant: str)
+        +categorize(tx: Transaction) Optional~Category~
+        +learn(merchant: String, category: Category)
+        +forget(merchant: String)
     }
     class KeywordRuleStrategy {
-        -keywords: dict[str, Category]
-        +categorize(tx: Transaction) Optional[Category]
+        -keywords: Map~String, Category~
+        +categorize(tx: Transaction) Optional~Category~
     }
     class LLMCategorizationStrategy {
         -llm: LLMProvider
-        -allowed: list[Category]
-        +categorize(tx: Transaction) Optional[Category]
+        -allowed: List~Category~
+        +categorize(tx: Transaction) Optional~Category~
     }
     class TransactionRepository {
         <<interface>>
-        +save_all(txs: list[Transaction])
-        +query(filter: TxFilter) list[Transaction]
-        +update_category(tx_id: str, category: Category)
-        +find_by_id(tx_id: str) Transaction
+        +saveAll(txs: List~Transaction~)
+        +query(filter: TxFilter) List~Transaction~
+        +updateCategory(txId: String, category: Category)
+        +findById(txId: String) Transaction
     }
     class RuleRepository {
         <<interface>>
-        +save(merchant: str, category: Category)
-        +delete(merchant: str)
-        +find_all() list[LearnedRule]
+        +save(merchant: String, category: Category)
+        +delete(merchant: String)
+        +findAll() List~LearnedRule~
     }
     class BudgetService {
         -repo: BudgetRepository
-        -tx_repo: TransactionRepository
+        -txRepo: TransactionRepository
         -monitor: AlertMonitor
-        +set_budget(month: YearMonth, limits: BudgetLimits) BudgetStatus
-        +set_limit(month: YearMonth, category: Category, limit: Money) BudgetStatus
-        +get_status(month: YearMonth) BudgetStatus
-        +refresh_alerts(months: set[YearMonth])
+        +setBudget(month: YearMonth, limits: BudgetLimits) BudgetStatus
+        +setLimit(month: YearMonth, category: Category, limit: Money) BudgetStatus
+        +getStatus(month: YearMonth) BudgetStatus
+        +refreshAlerts(months: Set~YearMonth~)
         -validate(limits: BudgetLimits)
     }
     class BudgetRepository {
@@ -574,19 +586,19 @@ classDiagram
     }
     class AlertMonitor {
         <<subject>>
-        -listeners: list[AlertListener]
+        -listeners: List~AlertListener~
         +attach(listener: AlertListener)
         +detach(listener: AlertListener)
         +evaluate(status: BudgetStatus)
         +publish(alert: Alert)
-        -notify_listeners(alert: Alert)
+        -notifyListeners(alert: Alert)
     }
     class AlertListener {
         <<interface>>
-        +on_alert(alert: Alert)*
+        +onAlert(alert: Alert)*
     }
-    class DictReader {
-        <<csv.DictReader - adaptee>>
+    class CSVParser {
+        <<Apache Commons CSV - adaptee>>
     }
 
     TransactionService "1" --> "1" CsvImporter
@@ -595,7 +607,7 @@ classDiagram
     CsvImporter "1" o-- "1..*" BankCsvAdapter : chooses one
     BankCsvAdapter <|.. SignedAmountCsvAdapter
     BankCsvAdapter <|.. DebitCreditCsvAdapter
-    BankCsvAdapter "1" --> "1" DictReader : wraps
+    BankCsvAdapter "1" --> "1" CSVParser : wraps
     Categorizer "1" o-- "1..*" CategorizationStrategy : ordered chain
     CategorizationStrategy <|.. LearnedRuleStrategy
     CategorizationStrategy <|.. KeywordRuleStrategy
@@ -614,97 +626,97 @@ classDiagram
 classDiagram
     direction TB
     class AnalyticsService {
-        -tx_repo: TransactionRepository
-        -goal_repo: GoalRepository
-        -recurring_repo: RecurringRepository
+        -txRepo: TransactionRepository
+        -goalRepo: GoalRepository
+        -recurringRepo: RecurringRepository
         -budgets: BudgetService
         -monitor: AlertMonitor
-        +detect_recurring() list[RecurringPayment]
-        +flag_recurring(merchant: str, flagged: bool)
+        +detectRecurring() List~RecurringPayment~
+        +flagRecurring(merchant: String, flagged: boolean)
         +forecast(days: int) Forecast
-        +safe_to_spend(today: date) SafeToSpendResult
-        +habits(month: YearMonth) list[Insight]
-        +health_score(month: YearMonth) HealthScore
+        +safeToSpend(today: LocalDate) SafeToSpendResult
+        +habits(month: YearMonth) List~Insight~
+        +healthScore(month: YearMonth) HealthScore
     }
     class RecurringDetector {
-        +detect(txs: list[Transaction]) list[RecurringPayment]
+        +detect(txs: List~Transaction~) List~RecurringPayment~
     }
     class ForecastEngine {
         +project(inputs: ForecastInputs, days: int) Forecast
-        +monthly_surplus(inputs: ForecastInputs) Money
+        +monthlySurplus(inputs: ForecastInputs) Money
     }
     class ForecastInputs {
-        -transactions: list[Transaction]
-        -recurring: list[RecurringPayment]
-        -opening_balance: Money
-        +clone() ForecastInputs
+        -transactions: List~Transaction~
+        -recurring: List~RecurringPayment~
+        -openingBalance: Money
+        +deepCopy() ForecastInputs
     }
     class SafeToSpendCalculator {
         -buffer: Money
-        +calculate(forecast: Forecast, goals: list[SavingsGoal], buffer: Money) SafeToSpendResult
+        +calculate(forecast: Forecast, goals: List~SavingsGoal~, buffer: Money) SafeToSpendResult
     }
     class HabitAnalyzer {
-        +analyze(txs: list[Transaction]) list[Insight]
+        +analyze(txs: List~Transaction~) List~Insight~
     }
     class HealthScoreCalculator {
-        +calculate(status: BudgetStatus, forecast: Forecast, goals: list[SavingsGoal]) HealthScore
+        +calculate(status: BudgetStatus, forecast: Forecast, goals: List~SavingsGoal~) HealthScore
     }
     class ExplanationService {
         -llm: LLMProvider
-        +explain(facts: AnalysisFacts) str
-        -fallback_text(facts: AnalysisFacts) str
+        +explain(facts: AnalysisFacts) String
+        -fallbackText(facts: AnalysisFacts) String
     }
     class GoalService {
         -repo: GoalRepository
-        -tx_repo: TransactionRepository
+        -txRepo: TransactionRepository
         -planner: GoalPlanner
-        -forecast_engine: ForecastEngine
+        -forecastEngine: ForecastEngine
         -monitor: AlertMonitor
-        +create_goal(request: GoalRequest) SavingsGoal
+        +createGoal(request: GoalRequest) SavingsGoal
         +evaluate(goal: SavingsGoal) GoalStatus
-        +evaluate_all() list[SavingsGoal]
+        +evaluateAll() List~SavingsGoal~
         +feasibility(goal: SavingsGoal) FeasibilityReport
-        +update_contribution(goal_id: str, amount: Money)
+        +updateContribution(goalId: String, amount: Money)
     }
     class GoalPlanner {
-        +required_monthly(goal: SavingsGoal, today: date) Money
-        +projected_completion(goal: SavingsGoal, monthly_surplus: Money) date
-        +build_options(goal: SavingsGoal, monthly_surplus: Money) list[GoalOption]
+        +requiredMonthly(goal: SavingsGoal, today: LocalDate) Money
+        +projectedCompletion(goal: SavingsGoal, monthlySurplus: Money) LocalDate
+        +buildOptions(goal: SavingsGoal, monthlySurplus: Money) List~GoalOption~
     }
     class ScenarioSimulator {
-        -forecast_engine: ForecastEngine
-        -tx_repo: TransactionRepository
+        -forecastEngine: ForecastEngine
+        -txRepo: TransactionRepository
         +simulate(scenario: Scenario) ScenarioResult
     }
     class ScenarioChange {
         <<interface>>
-        +apply_to(inputs: ForecastInputs) ForecastInputs*
-        +describe() str*
+        +applyTo(inputs: ForecastInputs) ForecastInputs*
+        +describe() String*
     }
     class CancelRecurringChange {
-        -merchant: str
+        -merchant: String
     }
     class CapCategoryChange {
         -category: Category
-        -monthly_cap: Money
+        -monthlyCap: Money
     }
     class IncomeChange {
-        -monthly_delta: Money
+        -monthlyDelta: Money
     }
     class OneTimeExpenseChange {
         -amount: Money
-        -on_date: date
+        -onDate: LocalDate
     }
     class GoalRepository {
         <<interface>>
         +save(goal: SavingsGoal)
-        +find_all() list[SavingsGoal]
-        +find_by_id(goal_id: str) SavingsGoal
+        +findAll() List~SavingsGoal~
+        +findById(goalId: String) SavingsGoal
     }
     class RecurringRepository {
         <<interface>>
-        +save_flag(merchant: str, flagged: bool)
-        +flagged_merchants() list[str]
+        +saveFlag(merchant: String, flagged: boolean)
+        +flaggedMerchants() List~String~
     }
 
     AnalyticsService *-- RecurringDetector
@@ -739,12 +751,12 @@ classDiagram
         -memory: MemoryManager
         -grounding: GroundingChecker
         -traces: TraceRepository
-        -max_steps: int
+        -maxSteps: int
         +handle(task: AgentTask) AgentResult
     }
     class AgentTask {
         -type: TaskType
-        -user_input: str
+        -userInput: String
         -params: TaskParams
     }
     class TaskType {
@@ -757,20 +769,20 @@ classDiagram
     }
     class AgentContext {
         -task: AgentTask
-        -history: list[Message]
-        -protected_categories: list[Category]
-        -last_review_summary: str
-        -tool_specs: list[ToolSpec]
-        -observations: list[ToolResult]
-        +add_observation(result: ToolResult)
-        +set_tool_specs(specs: list[ToolSpec])
+        -history: List~Message~
+        -protectedCategories: List~Category~
+        -lastReviewSummary: String
+        -toolSpecs: List~ToolSpec~
+        -observations: List~ToolResult~
+        +addObservation(result: ToolResult)
+        +setToolSpecs(specs: List~ToolSpec~)
     }
     class AgentResult {
-        -answer: str
-        -drafts: list[ProposalDraft]
+        -answer: String
+        -drafts: List~ProposalDraft~
         -status: AgentStatus
         -grounding: GroundingReport
-        -trace_id: str
+        -traceId: String
     }
     class AgentStatus {
         <<enumeration>>
@@ -781,15 +793,15 @@ classDiagram
         UNGROUNDED
     }
     class Planner {
-        -prompt_builder: PromptBuilder
+        -promptBuilder: PromptBuilder
         -parser: ResponseParser
         -llm: LLMProvider
-        +next_step(ctx: AgentContext) AgentStep
+        +nextStep(ctx: AgentContext) AgentStep
         +revise(ctx: AgentContext, report: GroundingReport) AgentStep
     }
     class PromptBuilder {
         +build(ctx: AgentContext) LLMRequest
-        +build_repair_prompt(raw_text: str) LLMRequest
+        +buildRepairPrompt(rawText: String) LLMRequest
     }
     class ResponseParser {
         +parse(response: LLMResponse) AgentStep
@@ -801,13 +813,13 @@ classDiagram
         -call: ToolCall
     }
     class FinalAnswerStep {
-        -answer: str
-        -drafts: list[ProposalDraft]
+        -answer: String
+        -drafts: List~ProposalDraft~
     }
     class ToolManager {
-        -tools: list[Tool]
+        -tools: List~Tool~
         +register(tool: Tool)
-        +list_specs() list[ToolSpec]
+        +listSpecs() List~ToolSpec~
         +execute(call: ToolCall) ToolResult
     }
     class Tool {
@@ -816,19 +828,19 @@ classDiagram
         +run(args: ToolArgs) ToolResult*
     }
     class ToolSpec {
-        -name: str
-        -description: str
-        -params: list[ParamSpec]
+        -name: String
+        -description: String
+        -params: List~ParamSpec~
         +validate(args: ToolArgs)
     }
     class ToolCall {
-        -tool_name: str
+        -toolName: String
         -args: ToolArgs
     }
     class ToolResult {
-        -success: bool
-        -data_json: str
-        -error: str
+        -success: boolean
+        -dataJson: String
+        -error: String
     }
     class TransactionQueryTool
     class BudgetStatusTool
@@ -837,53 +849,53 @@ classDiagram
     class GoalTool
     class ScenarioTool
     class MemoryManager {
-        -short_term: ConversationMemory
-        -long_term: UserProfileMemory
+        -shortTerm: ConversationMemory
+        -longTerm: UserProfileMemory
         -repo: MemoryRepository
-        +build_context(task: AgentTask) AgentContext
+        +buildContext(task: AgentTask) AgentContext
         +remember(task: AgentTask, result: AgentResult)
-        +set_protected_category(category: Category, protected: bool)
+        +setProtectedCategory(category: Category, protected: boolean)
     }
     class ConversationMemory {
-        -window_size: int
-        -messages: list[Message]
+        -windowSize: int
+        -chatMemory: ChatMemory
         +append(message: Message)
-        +recent() list[Message]
+        +recent() List~Message~
     }
     class UserProfileMemory {
-        -protected_categories: list[Category]
-        -past_review_summaries: list[str]
-        +get_protected_categories() list[Category]
+        -protectedCategories: List~Category~
+        -pastReviewSummaries: List~String~
+        +getProtectedCategories() List~Category~
     }
     class GroundingChecker {
-        +verify(answer: str, observations: list[ToolResult]) GroundingReport
+        +verify(answer: String, observations: List~ToolResult~) GroundingReport
     }
     class GroundingReport {
-        -grounded: bool
-        -ungrounded_figures: list[str]
+        -grounded: boolean
+        -ungroundedFigures: List~String~
     }
     class AgentTrace {
-        -id: str
-        -task_type: TaskType
-        -steps: list[TraceStep]
-        +add_step(step: TraceStep)
+        -id: String
+        -taskType: TaskType
+        -steps: List~TraceStep~
+        +addStep(step: TraceStep)
     }
     class TraceStep {
         -index: int
-        -kind: str
-        -tool_name: str
-        -args_json: str
-        -result_summary: str
+        -kind: String
+        -toolName: String
+        -argsJson: String
+        -resultSummary: String
     }
     class TraceRepository {
         <<interface>>
         +save(trace: AgentTrace)
-        +load(trace_id: str) AgentTrace
+        +load(traceId: String) AgentTrace
     }
     class MemoryRepository {
         <<interface>>
-        +save_preferences(profile: UserProfileMemory)
-        +load_preferences() UserProfileMemory
+        +savePreferences(profile: UserProfileMemory)
+        +loadPreferences() UserProfileMemory
     }
 
     AgentController --> Planner
@@ -935,15 +947,21 @@ classDiagram
         +complete(request: LLMRequest) LLMResponse*
     }
     class ClaudeProvider {
-        -client: anthropic.Anthropic
-        -model: str
+        -chatModel: ChatModel
+        -model: String
         +complete(request: LLMRequest) LLMResponse
+        -toChatRequest(request: LLMRequest) ChatRequest
+        -toLlmResponse(response: ChatResponse) LLMResponse
     }
-    class AnthropicClient {
-        <<anthropic SDK - adaptee>>
+    class ChatModel {
+        <<LangChain4j interface - adaptee>>
+        +chat(request: ChatRequest) ChatResponse
+    }
+    class AnthropicChatModel {
+        <<LangChain4j>>
     }
     class MockLLMProvider {
-        -scripted_replies: list[str]
+        -scriptedReplies: List~String~
         +complete(request: LLMRequest) LLMResponse
     }
     class LLMProviderDecorator {
@@ -952,22 +970,24 @@ classDiagram
         +complete(request: LLMRequest) LLMResponse
     }
     class RetryingLLMProvider {
-        -max_retries: int
-        -backoff_seconds: float
+        -maxRetries: int
+        -backoffSeconds: double
         +complete(request: LLMRequest) LLMResponse
     }
     class LoggingLLMProvider {
-        -logger: logging.Logger
+        -logger: Logger
         +complete(request: LLMRequest) LLMResponse
     }
     class LLMRequest {
-        -system_prompt: str
-        -messages: list[Message]
-        -model: str
+        -systemPrompt: String
+        -messages: List~Message~
+        -toolSpecs: List~ToolSpec~
+        -model: String
     }
     class LLMResponse {
-        -text: str
-        -tokens_used: int
+        -text: String
+        -toolCalls: List~ToolCall~
+        -tokensUsed: int
     }
 
     LLMProvider <|.. ClaudeProvider
@@ -976,7 +996,8 @@ classDiagram
     LLMProviderDecorator <|-- RetryingLLMProvider
     LLMProviderDecorator <|-- LoggingLLMProvider
     LLMProviderDecorator "1" o-- "1" LLMProvider : wraps
-    ClaudeProvider "1" --> "1" AnthropicClient : wraps
+    ClaudeProvider "1" --> "1" ChatModel : wraps
+    ChatModel <|.. AnthropicChatModel
     LLMProvider ..> LLMRequest
     LLMProvider ..> LLMResponse
     Planner ..> LLMProvider
@@ -984,7 +1005,7 @@ classDiagram
     ExplanationService ..> LLMProvider
 ```
 
-_Runtime composition (lecture style, `vc = new 3D(vc)`):_ `provider = LoggingLLMProvider(RetryingLLMProvider(ClaudeProvider(client, model)))`.
+_Runtime composition (lecture style, `vc = new 3D(vc)`):_ `LLMProvider provider = new LoggingLLMProvider(new RetryingLLMProvider(new ClaudeProvider(chatModel, model)))`.
 
 ### Fig 3.6 — Proposals, commands, reviews and reports
 
@@ -996,39 +1017,39 @@ classDiagram
         -factory: CommandFactory
         -history: CommandHistory
         -memory: MemoryManager
-        +create_from_drafts(drafts: list[ProposalDraft], trace_id: str) list[Proposal]
-        +list_pending() list[Proposal]
-        +decide(proposal_id: str, approve: bool) Proposal
-        +expire_old(month: YearMonth)
-        -passes_guardrails(draft: ProposalDraft) bool
+        +createFromDrafts(drafts: List~ProposalDraft~, traceId: String) List~Proposal~
+        +listPending() List~Proposal~
+        +decide(proposalId: String, approve: boolean) Proposal
+        +expireOld(month: YearMonth)
+        -passesGuardrails(draft: ProposalDraft) boolean
     }
     class ProposalDraft {
         -type: ProposalType
-        -title: str
-        -rationale: str
+        -title: String
+        -rationale: String
         -params: ParamSet
     }
     class Proposal {
-        -id: str
+        -id: String
         -type: ProposalType
-        -title: str
-        -rationale: str
+        -title: String
+        -rationale: String
         -command: Command
         -state: ProposalState
-        -trace_id: str
-        -created_at: datetime
+        -traceId: String
+        -createdAt: Instant
         +approve(history: CommandHistory)
         +reject()
         +expire()
-        +set_state(state: ProposalState)
-        +status_name() str
+        +setState(state: ProposalState)
+        +statusName() String
     }
     class ProposalState {
         <<interface>>
         +approve(proposal: Proposal, history: CommandHistory)*
         +reject(proposal: Proposal)*
         +expire(proposal: Proposal)*
-        +name() str*
+        +name() String*
     }
     class PendingState
     class AppliedState
@@ -1037,8 +1058,8 @@ classDiagram
     class ProposalRepository {
         <<interface>>
         +save(proposal: Proposal)
-        +find_by_id(proposal_id: str) Proposal
-        +find_pending() list[Proposal]
+        +findById(proposalId: String) Proposal
+        +findPending() List~Proposal~
     }
     class CommandFactory {
         <<factory>>
@@ -1051,34 +1072,34 @@ classDiagram
         <<interface>>
         +execute()*
         +undo()*
-        +describe() str*
+        +describe() String*
     }
     class CommandHistory {
-        -undo_stack: deque[Command]
-        -redo_stack: deque[Command]
+        -undoStack: Deque~Command~
+        -redoStack: Deque~Command~
         +execute(command: Command)
         +undo()
         +redo()
-        +can_undo() bool
+        +canUndo() boolean
     }
     class RecategorizeCommand {
-        -tx_id: str
-        -old_category: Category
-        -new_category: Category
+        -txId: String
+        -oldCategory: Category
+        -newCategory: Category
     }
     class SetBudgetLimitCommand {
         -month: YearMonth
         -category: Category
-        -old_limit: Money
-        -new_limit: Money
+        -oldLimit: Money
+        -newLimit: Money
     }
     class UpdateGoalContributionCommand {
-        -goal_id: str
-        -old_amount: Money
-        -new_amount: Money
+        -goalId: String
+        -oldAmount: Money
+        -newAmount: Money
     }
     class FlagSubscriptionCommand {
-        -merchant: str
+        -merchant: String
     }
     class ReviewService {
         -analytics: AnalyticsService
@@ -1092,29 +1113,29 @@ classDiagram
     class ReviewRepository {
         <<interface>>
         +save(review: MonthlyReview)
-        +find_by_month(month: YearMonth) MonthlyReview
+        +findByMonth(month: YearMonth) MonthlyReview
     }
     class ReportService {
         <<factory>>
         -reviews: ReviewRepository
         -budgets: BudgetService
-        +build_report_data(month: YearMonth) ReportData
+        +buildReportData(month: YearMonth) ReportData
         +export(month: YearMonth, fmt: ExportFormat, out: Path) Path
-        -exporter_for(fmt: ExportFormat) ReportExporter
+        -exporterFor(fmt: ExportFormat) ReportExporter
     }
     class ReportData {
         -month: YearMonth
         -status: BudgetStatus
-        -review: Optional[MonthlyReview]
+        -review: Optional~MonthlyReview~
     }
     class ReportExporter {
         <<abstract>>
         +export(data: ReportData, out: Path) Path
-        #write_header(data: ReportData)* str
-        #write_summary(data: ReportData)* str
-        #write_category_table(data: ReportData)* str
-        #write_review_section(data: ReportData)* str
-        #write_footer(data: ReportData)* str
+        #writeHeader(data: ReportData)* String
+        #writeSummary(data: ReportData)* String
+        #writeCategoryTable(data: ReportData)* String
+        #writeReviewSection(data: ReportData)* String
+        #writeFooter(data: ReportData)* String
     }
     class MarkdownExporter
     class CsvExporter
@@ -1161,33 +1182,29 @@ classDiagram
 classDiagram
     direction LR
     class Money {
-        -amount: Decimal
+        -amount: BigDecimal
         +add(other: Money) Money
         +subtract(other: Money) Money
-        +multiply(factor: Decimal) Money
-        +compare_to(other: Money) int
-    }
-    class YearMonth {
-        -year: int
-        -month: int
+        +multiply(factor: BigDecimal) Money
+        +compareTo(other: Money) int
     }
     class Category {
-        -id: str
-        -name: str
-        -essential: bool
+        -id: String
+        -name: String
+        -essential: boolean
     }
     class Account {
-        -id: str
-        -name: str
-        -opening_balance: Money
+        -id: String
+        -name: String
+        -openingBalance: Money
     }
     class Transaction {
-        -id: str
-        -date: date
+        -id: String
+        -date: LocalDate
         -amount: Money
-        -merchant: str
-        -description: str
-        -income: bool
+        -merchant: String
+        -description: String
+        -income: boolean
     }
     class Budget {
         -month: YearMonth
@@ -1197,35 +1214,35 @@ classDiagram
     }
     class BudgetStatus {
         -month: YearMonth
-        -total_spent: Money
+        -totalSpent: Money
     }
     class BudgetLineStatus {
         -spent: Money
         -limit: Money
-        /ratio: float
+        /ratio: double
         -level: AlertSeverity
     }
     class Alert {
         -type: AlertType
         -severity: AlertSeverity
-        -message: str
-        -created_at: datetime
+        -message: String
+        -createdAt: Instant
     }
     class RecurringPayment {
-        -merchant: str
+        -merchant: String
         -amount: Money
         -frequency: Frequency
-        -next_due: date
-        -confidence: float
-        -flagged_for_review: bool
+        -nextDue: LocalDate
+        -confidence: double
+        -flaggedForReview: boolean
     }
     class SavingsGoal {
-        -id: str
-        -name: str
+        -id: String
+        -name: String
         -target: Money
-        -deadline: date
+        -deadline: LocalDate
         -saved: Money
-        -monthly_contribution: Money
+        -monthlyContribution: Money
         -status: GoalStatus
     }
     class GoalStatus {
@@ -1236,52 +1253,52 @@ classDiagram
         ACHIEVED
     }
     class Forecast {
-        -days: list[DailyBalance]
-        /lowest_balance: Money
+        -days: List~DailyBalance~
+        /lowestBalance: Money
     }
     class DailyBalance {
-        -date: date
+        -date: LocalDate
         -balance: Money
     }
     class SafeToSpendResult {
-        -daily_allowance: Money
-        -remaining_this_month: Money
-        -upcoming_bills: Money
-        -goal_reserve: Money
-        -explanation: str
+        -dailyAllowance: Money
+        -remainingThisMonth: Money
+        -upcomingBills: Money
+        -goalReserve: Money
+        -explanation: String
     }
     class Insight {
         -type: InsightType
-        -title: str
-        -evidence: str
+        -title: String
+        -evidence: String
         -severity: AlertSeverity
-        -explanation: str
+        -explanation: String
     }
     class HealthScore {
         -total: int
-        -explanation: str
+        -explanation: String
     }
     class ScoreComponent {
-        -name: str
+        -name: String
         -points: int
-        -max_points: int
+        -maxPoints: int
     }
     class Scenario {
-        -id: str
-        -name: str
-        -changes: list[ScenarioChange]
+        -id: String
+        -name: String
+        -changes: List~ScenarioChange~
     }
     class ScenarioResult {
-        -baseline_end_balance: Money
-        -scenario_end_balance: Money
-        -monthly_savings_delta: Money
+        -baselineEndBalance: Money
+        -scenarioEndBalance: Money
+        -monthlySavingsDelta: Money
     }
     class MonthlyReview {
         -month: YearMonth
-        -narrative: str
-        -proposal_ids: list[str]
-        -trace_id: str
-        -generated_at: datetime
+        -narrative: String
+        -proposalIds: List~String~
+        -traceId: String
+        -generatedAt: Instant
     }
 
     Account "1" --> "0..*" Transaction : holds
@@ -1301,21 +1318,21 @@ classDiagram
     Insight ..> Transaction : evidence
 ```
 
-**Supporting value objects and enums** (Python `@dataclass(frozen=True)` or `Enum`; not drawn to keep the figures readable):
+**Supporting value objects and enums** (Java `record` or `enum`; not drawn to keep the figures readable). `YearMonth`, `LocalDate` and `Instant` are the standard `java.time` classes:
 
 | Name | Kind | Fields / values |
 |---|---|---|
-| `ImportResult` | dataclass | `imported: int`, `duplicates: int`, `rejected: list[str]` |
-| `ParseResult` | dataclass | `transactions: list[Transaction]`, `rejected_rows: list[str]` |
-| `TxFilter` | dataclass | `start: date`, `end: date`, `category: Optional[Category]`, `merchant: Optional[str]` |
-| `BudgetLimits` | type alias | `dict[Category, Money]` |
-| `LearnedRule` | dataclass | `merchant: str`, `category: Category` |
-| `GoalRequest` | dataclass | `name: str`, `target: Money`, `deadline: date`, `saved: Money` |
-| `FeasibilityReport` | dataclass | `required_monthly: Money`, `monthly_surplus: Money`, `feasible: bool`, `options: list[GoalOption]` |
-| `GoalOption` | dataclass | `kind: str`, `description: str`, `impact: Money` |
-| `AnalysisFacts` | dataclass | `kind: str`, `facts_json: str` |
-| `Message` | dataclass | `role: str`, `content: str`, `timestamp: datetime` |
-| `TaskParams`, `ToolArgs`, `ParamSet`, `ParamSpec` | dataclasses | key/value parameter holders and their declared types |
+| `ImportResult` | record | `imported: int`, `duplicates: int`, `rejected: List<String>` |
+| `ParseResult` | record | `transactions: List<Transaction>`, `rejectedRows: List<String>` |
+| `TxFilter` | record | `start: LocalDate`, `end: LocalDate`, `category: Optional<Category>`, `merchant: Optional<String>` |
+| `BudgetLimits` | record | `limits: Map<Category, Money>` |
+| `LearnedRule` | record | `merchant: String`, `category: Category` |
+| `GoalRequest` | record | `name: String`, `target: Money`, `deadline: LocalDate`, `saved: Money` |
+| `FeasibilityReport` | record | `requiredMonthly: Money`, `monthlySurplus: Money`, `feasible: boolean`, `options: List<GoalOption>` |
+| `GoalOption` | record | `kind: String`, `description: String`, `impact: Money` |
+| `AnalysisFacts` | record | `kind: String`, `factsJson: String` |
+| `Message` | record | `role: String`, `content: String`, `timestamp: Instant` |
+| `TaskParams`, `ToolArgs`, `ParamSet`, `ParamSpec` | records | key/value parameter holders and their declared types |
 | `ExportFormat` | Enum | `MARKDOWN`, `CSV`, `TEXT` |
 | `ProposalType` | Enum | `BUDGET_ADJUSTMENT`, `GOAL_ADJUSTMENT`, `FLAG_SUBSCRIPTION`, `RECATEGORIZE` |
 | `AlertType` / `AlertSeverity` | Enum | `BUDGET`, `LOW_BALANCE`, `GOAL_RISK` / `INFO`, `WARNING`, `OVER` |
@@ -1324,9 +1341,9 @@ classDiagram
 ### 3.8 Design principles applied
 
 - **Separation of concerns / layering:** UI → Facade → services → repositories. Services never reference UI classes; UI reaches alerts only through the `AlertListener` interface.
-- **Dependency inversion:** services depend on repository interfaces and on `LLMProvider` (abstract base classes), never on `sqlite3` or the `anthropic` SDK directly. Dependencies are injected from a single composition root, so there is no global state and tests can substitute fakes.
+- **Dependency inversion:** services depend on repository interfaces and on `LLMProvider` (Java interfaces), never on JDBC or LangChain4j directly. Dependencies are passed in through constructors from a single composition root (`Main`), so there is no global state and tests can substitute fakes.
 - **Deterministic core vs agent split:** money arithmetic lives in `Money` and the calculator classes; the agent subsystem only orchestrates tools. This makes the deterministic half unit-testable and the agent half behaviour-testable (Appendix A).
-- **Encapsulation and immutability:** `Money` wraps `decimal.Decimal` and is immutable; result objects (`BudgetStatus`, `Forecast`, `HealthScore`) are frozen dataclasses.
+- **Encapsulation and immutability:** `Money` wraps `BigDecimal` and is immutable; result objects (`BudgetStatus`, `Forecast`, `HealthScore`) are Java `record`s.
 - **Polymorphism and open/closed:** new tools, categorization strategies, CSV layouts, export formats, scenario changes, or proposal commands are added by implementing an interface, without editing existing classes.
 - **High cohesion, low coupling:** each calculator has one job; tools are thin wrappers that delegate to services.
 
@@ -1341,7 +1358,7 @@ Nine patterns are used. Each is described with the four elements from the lectur
 | Element | Description |
 |---|---|
 | **Problem** | GUI and CLI both need about 20 operations that each span several services and possibly the agent. |
-| **Solution (participants and roles)** | `WealthSeiFacade` (Facade); the six Tkinter views and `CliApp` (clients); `TransactionService`, `BudgetService`, `AnalyticsService`, `GoalService`, `ProposalService`, `ReviewService`, `ReportService`, `AgentController` (subsystem classes). |
+| **Solution (participants and roles)** | `WealthSeiFacade` (Facade); the six JavaFX views and `CliApp` (clients); `TransactionService`, `BudgetService`, `AnalyticsService`, `GoalService`, `ProposalService`, `ReviewService`, `ReportService`, `AgentController` (subsystem classes). |
 | **Why appropriate** | One higher-level interface guarantees GUI/CLI feature parity and keeps orchestration (e.g., "after import, refresh alerts and evaluate goals") in one place. This matches the lecture intent: *provide a unified interface to a set of subsystem interfaces*. |
 | **Harder without it** | Each UI would know every service and repeat orchestration; any service change would break both UIs. |
 | **Consequences** | + Decouples clients from the subsystem and layers the system. + Tests can drive the whole app through one API. − As the lecture notes, a facade does not have to hide low-level functionality completely: tests and advanced code may still call services directly. − Risk of a "god object", mitigated by making the facade only delegate (no business logic). |
@@ -1360,10 +1377,10 @@ Nine patterns are used. Each is described with the four elements from the lectur
 
 | Element | Description |
 |---|---|
-| **Problem** | (a) Banks export CSV files with different column layouts. (b) The vendor LLM SDK has an interface unlike the one our code wants. In both cases we need unrelated interfaces to work together. |
-| **Solution** | (a) `BankCsvAdapter` (Target) with `SignedAmountCsvAdapter` and `DebitCreditCsvAdapter` (Adapters) that each *hold a `csv.DictReader`* (Adaptee) and translate its bank-specific rows into `Transaction`; `CsvImporter` (Client). (b) `LLMProvider` (Target); `ClaudeProvider` (Adapter) holds an `anthropic.Anthropic` client (Adaptee) and translates `complete(request)` into the SDK call; `Planner` (Client). |
+| **Problem** | (a) Banks export CSV files with different column layouts. (b) LangChain4j's `ChatModel` API is a framework interface, not the small, easily faked interface our agent code wants. In both cases we need unrelated interfaces to work together. |
+| **Solution** | (a) `BankCsvAdapter` (Target) with `SignedAmountCsvAdapter` and `DebitCreditCsvAdapter` (Adapters) that each *hold an Apache Commons CSV `CSVParser`* (Adaptee) and translate its bank-specific records into `Transaction`; `CsvImporter` (Client). (b) `LLMProvider` (Target); `ClaudeProvider` (Adapter) *holds a LangChain4j `ChatModel`* (concretely an `AnthropicChatModel`, the Adaptee) and translates our `LLMRequest` and `LLMResponse`, including tool specifications and tool calls, to and from LangChain4j's `ChatRequest`, `ChatResponse`, `ToolSpecification` and `ToolExecutionRequest`; `Planner` (Client). |
 | **Why appropriate** | These are *object adapters* (composition, not multiple inheritance): the client and the adaptee are completely decoupled and only the adapter knows both. The rest of the system sees only `Transaction` and `LLMResponse`. |
-| **Harder without it** | Layout-specific parsing would leak into `TransactionService`; changing LLM vendor would touch the planner and every LLM-using class. |
+| **Harder without it** | Layout-specific parsing would leak into `TransactionService`; changing the LLM library or vendor would touch the planner and every LLM-using class. |
 | **Consequences** | + Client code is unchanged when a new bank layout or LLM vendor appears. − One extra class per source and one extra indirection per call. |
 
 ### P4 — Observer
@@ -1392,7 +1409,7 @@ Nine patterns are used. Each is described with the four elements from the lectur
 |---|---|
 | **Problem** | A proposal's allowed actions depend on its lifecycle: only *Pending* proposals can be approved, rejected, or expired. |
 | **Solution** | `Proposal` (Context); `ProposalState` (State); `PendingState`, `AppliedState`, `RejectedState`, `ExpiredState` (ConcreteStates). |
-| **Why appropriate** | Each state class defines what is legal; illegal transitions raise `IllegalStateTransitionError`. Approval logic lives in `PendingState`, not scattered through services. |
+| **Why appropriate** | Each state class defines what is legal; illegal transitions throw `IllegalStateTransitionException`. Approval logic lives in `PendingState`, not scattered through services. |
 | **Harder without it** | A status enum plus if-checks in `ProposalService`; easy to double-apply a proposal; transition rules harder to test in isolation. |
 | **Consequences** | + Transition rules are localized and independently testable. − More classes for a small state machine; state objects carry no data, so one shared instance of each is enough. |
 
@@ -1404,14 +1421,14 @@ Nine patterns are used. Each is described with the four elements from the lectur
 | **Solution** | `LLMProvider` (Component); `ClaudeProvider`, `MockLLMProvider` (ConcreteComponents); `LLMProviderDecorator` (Decorator, same interface and wraps an inner provider); `RetryingLLMProvider`, `LoggingLLMProvider` (ConcreteDecorators). |
 | **Why appropriate** | `Planner`, `LLMCategorizationStrategy`, and `ExplanationService` all get retry and logging for free, and the stack is assembled at run time. The lecture notes that Decorator suits *small* interfaces; `LLMProvider` has a single method. |
 | **Harder without it** | Retry code duplicated in every LLM caller; improving failure recovery later (Stage 3) would touch many classes. |
-| **Consequences** | + Behaviour can be added or removed without subclass explosion; decorators nest. − "Identity crisis": what the object finally does depends on the wrapping order (`Logging(Retrying(...))` logs one logical call, `Retrying(Logging(...))` logs every attempt). |
+| **Consequences** | + Behaviour can be added or removed without subclass explosion; decorators nest. − "Identity crisis": what the object finally does depends on the wrapping order (`Logging(Retrying(...))` logs one logical call, `Retrying(Logging(...))` logs every attempt). − If the LangChain4j model has a built-in retry setting, it is set to a single attempt so retries happen only in `RetryingLLMProvider`. |
 
 ### P8 — Template Method
 
 | Element | Description |
 |---|---|
 | **Problem** | Report export has one fixed structure (header → summary → category table → review → footer) but three output formats. |
-| **Solution** | `ReportExporter` (AbstractClass; `export()` is the template method, marked `@final`); `MarkdownExporter`, `CsvExporter`, `TextExporter` (ConcreteClasses implementing the abstract `write_…` steps). |
+| **Solution** | `ReportExporter` (AbstractClass; `export()` is the template method, declared `final`); `MarkdownExporter`, `CsvExporter`, `TextExporter` (ConcreteClasses implementing the abstract `write_…` steps). |
 | **Why appropriate** | The section order is defined once, so every format is consistent; a new format only supplies the formatting steps. |
 | **Harder without it** | Three copies of the same sequence that can drift apart; adding a format means copying a whole exporter. |
 | **Consequences** | + No duplicated skeleton. − Based on inheritance, so subclasses are tied to the base class and must implement every step. |
@@ -1421,14 +1438,14 @@ Nine patterns are used. Each is described with the four elements from the lectur
 | Element | Description |
 |---|---|
 | **Problem** | Clients should not need to know which concrete class to create: which exporter for a format, and which `Command` for a proposal type. |
-| **Solution** | (a) `ReportService.exporter_for(fmt)` returns a `MarkdownExporter`, `CsvExporter`, or `TextExporter` (all `ReportExporter`s). (b) `CommandFactory.create(draft)` returns a `SetBudgetLimitCommand`, `UpdateGoalContributionCommand`, or `FlagSubscriptionCommand` (all `Command`s) depending on `draft.type`. |
+| **Solution** | (a) `ReportService.exporterFor(fmt)` returns a `MarkdownExporter`, `CsvExporter`, or `TextExporter` (all `ReportExporter`s). (b) `CommandFactory.create(draft)` returns a `SetBudgetLimitCommand`, `UpdateGoalContributionCommand`, or `FlagSubscriptionCommand` (all `Command`s) depending on `draft.type`. |
 | **Why appropriate** | The knowledge of "which class gets created" is localized in one place (single responsibility), and callers depend only on the abstract product (`ReportExporter`, `Command`). |
 | **Harder without it** | `ProposalService` and `ReportService` would contain construction `if`/`elif` chains mixed with their real logic; adding a proposal type or export format would change them. |
-| **Consequences** | + Open/closed for new products; creation code in one place. − Extra classes; in Python the branching can be a small dictionary from type to class to keep the factory short. |
+| **Consequences** | + Open/closed for new products; creation code in one place. − Extra classes; in Java the branching can be a `switch` expression or a `Map` from type to constructor to keep the factory short. |
 
 ### Also considered
 
-- **Prototype (used in a lightweight way).** `ScenarioSimulator` must evaluate several what-if variants of the same baseline. Building `ForecastInputs` is comparatively expensive (database queries plus recurring-payment detection), so the simulator builds it once and calls `ForecastInputs.clone()`, a **deep copy** (`copy.deepcopy`), for each variant. The lecture's shallow-versus-deep warning applies directly: a shallow copy would let a scenario change mutate the baseline, which is exactly the kind of bug the Stage 3 unit tests will target.
+- **Prototype (used in a lightweight way).** `ScenarioSimulator` must evaluate several what-if variants of the same baseline. Building `ForecastInputs` is comparatively expensive (database queries plus recurring-payment detection), so the simulator builds it once and calls `ForecastInputs.deepCopy()`, a **deep copy** (a copy constructor that also copies the mutable lists), for each variant. The lecture's shallow-versus-deep warning applies directly: a shallow copy would let a scenario change mutate the baseline, which is exactly the kind of bug the Stage 3 unit tests will target.
 - **Singleton (deliberately not used).** `AlertMonitor` and the `LLMProvider` chain each exist once, but they are created once in a composition root and injected. A Singleton's global access point would make tests share state and would hide dependencies.
 
 ---
@@ -1740,32 +1757,32 @@ sequenceDiagram
     participant GS as GoalService
 
     User->>TV: choose CSV file, click Import
-    TV->>F: import_transactions(file)
-    F->>TS: import_file(file)
+    TV->>F: importTransactions(file)
+    F->>TS: importFile(file)
     TS->>CI: parse(file)
-    CI->>CI: detect_adapter(header)
+    CI->>CI: detectAdapter(header)
     alt no adapter recognises the header, or file unreadable
-        CI-->>TS: raise UnsupportedFormatError
-        TS-->>F: raise TransactionImportError
+        CI-->>TS: throw UnsupportedFormatException
+        TS-->>F: throw TransactionImportException
         F-->>TV: error message
         TV-->>User: show supported layouts, nothing saved
     else adapter found
-        CI->>AD: read_transactions()
-        loop each row read from the csv.DictReader (adaptee)
-            AD->>AD: to_transaction(row)
+        CI->>AD: readTransactions()
+        loop each record read from the CSVParser (adaptee)
+            AD->>AD: toTransaction(row)
         end
-        Note over AD: an InvalidRowError rejects only that row
+        Note over AD: an InvalidRowException rejects only that row
         AD-->>CI: ParseResult (transactions, rejected rows)
         CI-->>TS: ParseResult
-        TS->>TS: remove_duplicates(transactions)
+        TS->>TS: removeDuplicates(transactions)
         loop each new transaction
             TS->>CAT: categorize(tx)
             CAT-->>TS: Category (see SD02)
         end
-        TS->>TR: save_all(transactions)
+        TS->>TR: saveAll(transactions)
         TS-->>F: ImportResult (imported, duplicates, rejected)
-        F->>BS: refresh_alerts(affected months)
-        F->>GS: evaluate_all()
+        F->>BS: refreshAlerts(affected months)
+        F->>GS: evaluateAll()
         F-->>TV: ImportResult
         TV-->>User: import summary
     end
@@ -1811,11 +1828,11 @@ sequenceDiagram
 
     Note over User,CH: Part B - manual correction and undo
     User->>TV: change category of a transaction
-    TV->>F: correct_category(tx_id, new_category)
+    TV->>F: correctCategory(txId, newCategory)
     F->>CH: execute(RecategorizeCommand)
     CH->>RC: execute()
-    RC->>TS: update_category(tx_id, new_category)
-    RC->>LR: learn(merchant, new_category)
+    RC->>TS: updateCategory(txId, newCategory)
+    RC->>LR: learn(merchant, newCategory)
     CH-->>F: done
     F-->>TV: updated Transaction
     TV-->>User: row updated
@@ -1826,7 +1843,7 @@ sequenceDiagram
         CH-->>F: nothing to undo
     else a command is available
         CH->>RC: undo()
-        RC->>TS: update_category(tx_id, old_category)
+        RC->>TS: updateCategory(txId, oldCategory)
         RC->>LR: forget(merchant)
         CH-->>F: done
     end
@@ -1846,13 +1863,13 @@ sequenceDiagram
     participant AM as AlertMonitor
     participant L as AlertListener
 
-    Note over DV,L: DashboardView and CliApp registered earlier via add_alert_listener(), which calls AlertMonitor.attach()
+    Note over DV,L: DashboardView and CliApp registered earlier via addAlertListener(), which calls AlertMonitor.attach()
     User->>DV: edit category limits, click Save
-    DV->>F: set_budget(month, limits)
-    F->>BS: set_budget(month, limits)
+    DV->>F: setBudget(month, limits)
+    F->>BS: setBudget(month, limits)
     BS->>BS: validate(limits)
     alt a limit is negative or invalid
-        BS-->>F: raise InvalidBudgetError
+        BS-->>F: throw InvalidBudgetException
         F-->>DV: error message
         DV-->>User: show validation error
     else limits valid
@@ -1863,7 +1880,7 @@ sequenceDiagram
         BS->>AM: evaluate(status)
         loop each category at 80 percent or more of its limit
             AM->>AM: create Alert (WARNING or OVER)
-            AM->>L: on_alert(alert)
+            AM->>L: onAlert(alert)
             L-->>User: toast in GUI or line in CLI
         end
         BS-->>F: BudgetStatus
@@ -1893,17 +1910,17 @@ sequenceDiagram
 
     User->>DV: open Recurring, Safe-to-Spend, Habits or Score panel
     alt Recurring payments (F04)
-        DV->>F: get_recurring_payments()
-        F->>AS: detect_recurring()
+        DV->>F: getRecurringPayments()
+        F->>AS: detectRecurring()
         AS->>TR: query(all history)
         TR-->>AS: transactions
         AS->>RD: detect(transactions)
         RD-->>AS: List of RecurringPayment
         AS-->>F: recurring payments
     else Safe-to-spend (F05)
-        DV->>F: get_safe_to_spend(today)
-        F->>AS: safe_to_spend(today)
-        AS->>AS: detect_recurring()
+        DV->>F: getSafeToSpend(today)
+        F->>AS: safeToSpend(today)
+        AS->>AS: detectRecurring()
         AS->>FE: project(inputs, 30)
         FE-->>AS: Forecast
         AS->>SC: calculate(forecast, goals, buffer)
@@ -1913,7 +1930,7 @@ sequenceDiagram
         end
         AS-->>F: SafeToSpendResult
     else Habits (F06)
-        DV->>F: get_habit_insights(month)
+        DV->>F: getHabitInsights(month)
         F->>AS: habits(month)
         AS->>TR: query(month filter)
         TR-->>AS: transactions
@@ -1921,9 +1938,9 @@ sequenceDiagram
         HA-->>AS: List of Insight
         AS-->>F: insights
     else Health score (F07)
-        DV->>F: get_health_score(month)
-        F->>AS: health_score(month)
-        AS->>BS: get_status(month)
+        DV->>F: getHealthScore(month)
+        F->>AS: healthScore(month)
+        AS->>BS: getStatus(month)
         BS-->>AS: BudgetStatus
         AS->>HS: calculate(status, forecast, goals)
         HS-->>AS: HealthScore
@@ -1933,7 +1950,7 @@ sequenceDiagram
     EX->>LLM: complete(request containing computed facts only)
     alt LLM unavailable
         LLM-->>EX: error
-        EX-->>F: fallback_text (template)
+        EX-->>F: fallbackText (template)
     else response received
         LLM-->>EX: response
         EX-->>F: explanation text
@@ -1961,28 +1978,28 @@ sequenceDiagram
     participant TR as TraceRepository
 
     User->>AV: enter item and price, click Check
-    AV->>F: check_affordability(item, price)
+    AV->>F: checkAffordability(item, price)
     alt price missing or not positive
-        F-->>AV: ValidationError
+        F-->>AV: ValidationException
         AV-->>User: ask for a valid price
     else input valid
         F->>AC: handle(AgentTask AFFORDABILITY)
-        AC->>MM: build_context(task)
+        AC->>MM: buildContext(task)
         MM-->>AC: AgentContext (recent messages, preferences)
-        AC->>TM: list_specs()
+        AC->>TM: listSpecs()
         TM-->>AC: List of ToolSpec
         create participant TRC as AgentTrace
-        AC->>TRC: AgentTrace(task_type)
-        loop until FinalAnswerStep or max_steps reached
-            AC->>PL: next_step(ctx)
+        AC->>TRC: new AgentTrace(taskType)
+        loop until FinalAnswerStep or maxSteps reached
+            AC->>PL: nextStep(ctx)
             PL->>PB: build(ctx)
             PB-->>PL: LLMRequest
             PL->>LLM: complete(request)
-            LLM-->>PL: LLMResponse
+            LLM-->>PL: LLMResponse (text or tool calls)
             PL->>RP: parse(response)
             alt malformed response
-                RP-->>PL: raise MalformedResponseError
-                PL->>PB: build_repair_prompt(raw_text)
+                RP-->>PL: throw MalformedResponseException
+                PL->>PB: buildRepairPrompt(rawText)
                 PL->>LLM: complete(repair request)
                 Note over PL: still malformed leads to AgentStatus MODEL_UNAVAILABLE
             else parsed
@@ -1990,7 +2007,7 @@ sequenceDiagram
             end
             PL-->>AC: AgentStep
             opt step is a ToolCallStep
-                AC->>TM: execute(tool_call)
+                AC->>TM: execute(toolCall)
                 TM->>TM: spec.validate(args)
                 alt invalid arguments
                     TM-->>AC: ToolResult failure (tool not run)
@@ -1999,11 +2016,11 @@ sequenceDiagram
                     T-->>TM: ToolResult (data)
                     TM-->>AC: ToolResult
                 end
-                AC->>AC: ctx.add_observation(result)
-                AC->>TRC: add_step(step)
+                AC->>AC: ctx.addObservation(result)
+                AC->>TRC: addStep(step)
             end
         end
-        Note over AC: reaching max_steps gives AgentStatus STEP_LIMIT with a partial answer
+        Note over AC: reaching maxSteps gives AgentStatus STEP_LIMIT with a partial answer
         AC->>GC: verify(answer, observations)
         GC-->>AC: GroundingReport
         opt figures not grounded in tool results
@@ -2018,7 +2035,7 @@ sequenceDiagram
     end
 ```
 
-_Tools used in this scenario:_ `BudgetStatusTool`, `ForecastTool`, `GoalTool`, `TransactionQueryTool`. Saving a suggested plan calls `WealthSeiFacade.create_proposals(drafts, trace_id)`.
+_Tools used in this scenario:_ `BudgetStatusTool`, `ForecastTool`, `GoalTool`, `TransactionQueryTool`. Saving a suggested plan calls `WealthSeiFacade.createProposals(drafts, traceId)`.
 
 ### SD06 — Savings Goal Planning and Replanning (UC08, F09)
 
@@ -2038,42 +2055,42 @@ sequenceDiagram
     participant PR as ProposalRepository
     participant AM as AlertMonitor
 
-    Note over F,AM: After each import F calls GoalService.evaluate_all() and an AT_RISK or BEHIND goal makes GoalService call AlertMonitor.publish(alert)
+    Note over F,AM: After each import F calls GoalService.evaluateAll() and an AT_RISK or BEHIND goal makes GoalService call AlertMonitor.publish(alert)
     User->>GV: fill goal form, click Plan
-    GV->>F: plan_goal(request)
-    F->>GS: create_goal(request)
+    GV->>F: planGoal(request)
+    F->>GS: createGoal(request)
     alt deadline in the past or target not positive
-        GS-->>F: raise ValidationError
+        GS-->>F: throw ValidationException
         F-->>GV: error message
     else goal valid
         GS-->>F: SavingsGoal
         F->>AC: handle(AgentTask GOAL_PLAN)
         loop agent loop (see SD05)
-            AC->>TM: execute(tool_call GoalTool)
+            AC->>TM: execute(toolCall GoalTool)
             TM->>GT: run(args)
             GT->>GS: feasibility(goal)
-            GS->>GP: required_monthly(goal, today)
-            GS->>FE: monthly_surplus(inputs)
-            GS->>GP: build_options(goal, surplus)
+            GS->>GP: requiredMonthly(goal, today)
+            GS->>FE: monthlySurplus(inputs)
+            GS->>GP: buildOptions(goal, surplus)
             GS-->>GT: FeasibilityReport
             GT-->>TM: ToolResult
             TM-->>AC: ToolResult
         end
         AC-->>F: AgentResult (plan text, ProposalDrafts)
-        F->>PS: create_from_drafts(drafts, trace_id)
+        F->>PS: createFromDrafts(drafts, traceId)
         loop each draft
-            PS->>PS: passes_guardrails(draft)
+            PS->>PS: passesGuardrails(draft)
             PS->>CF: create(draft)
             CF-->>PS: Command
             create participant P as Proposal
-            PS->>P: Proposal(draft, command, PendingState)
+            PS->>P: new Proposal(draft, command, new PendingState())
             PS->>PR: save(proposal)
         end
         PS-->>F: List of Proposal
         F-->>GV: goal, plan, proposals
         GV-->>User: plan and pending proposals
     end
-    Note over User,GV: Replan: on_replan(goal_id) calls replan_goal(goal_id) which enters the flow at AgentController.handle()
+    Note over User,GV: Replan: onReplan(goalId) calls replanGoal(goalId) which enters the flow at AgentController.handle()
 ```
 
 ### SD07 — What-If Scenario (UC09, F10)
@@ -2093,28 +2110,28 @@ sequenceDiagram
     participant GC as GroundingChecker
 
     User->>AV: type what-if text
-    AV->>F: run_what_if(description)
+    AV->>F: runWhatIf(description)
     F->>AC: handle(AgentTask WHAT_IF)
     loop agent loop (see SD05)
-        AC->>PL: next_step(ctx)
+        AC->>PL: nextStep(ctx)
         PL-->>AC: ToolCallStep (ScenarioTool with structured changes)
-        AC->>TM: execute(tool_call)
+        AC->>TM: execute(toolCall)
         TM->>TM: spec.validate(args)
         alt invalid or unknown change (bad category, negative value, more than 5 changes)
             TM-->>AC: ToolResult failure
-            AC->>PL: next_step(ctx)
+            AC->>PL: nextStep(ctx)
             PL-->>AC: FinalAnswerStep (clarifying question)
         else valid
             TM->>ST: run(args)
             ST->>SS: simulate(scenario)
-            SS->>FE: project(baseline_inputs, 180)
+            SS->>FE: project(baselineInputs, 180)
             FE-->>SS: baseline Forecast
-            SS->>SS: baseline_inputs.clone() (deep copy)
+            SS->>SS: baselineInputs.deepCopy() (deep copy)
             loop each change
-                SS->>SCH: apply_to(inputs)
+                SS->>SCH: applyTo(inputs)
                 SCH-->>SS: modified inputs
             end
-            SS->>FE: project(modified_inputs, 180)
+            SS->>FE: project(modifiedInputs, 180)
             FE-->>SS: scenario Forecast
             SS-->>ST: ScenarioResult
             ST-->>TM: ToolResult
@@ -2127,7 +2144,7 @@ sequenceDiagram
     F-->>AV: AgentResult
     AV-->>User: comparison table, chart, or clarifying question
     opt user clicks Turn into proposals
-        AV->>F: create_proposals(drafts, trace_id)
+        AV->>F: createProposals(drafts, traceId)
         F-->>AV: List of Proposal
     end
 ```
@@ -2149,27 +2166,27 @@ sequenceDiagram
     participant RR as ReviewRepository
 
     User->>RV: choose month, click Generate Review
-    RV->>F: generate_monthly_review(month)
+    RV->>F: generateMonthlyReview(month)
     F->>RS: generate(month)
-    RS->>BS: get_status(month)
-    RS->>AS: health_score(month)
+    RS->>BS: getStatus(month)
+    RS->>AS: healthScore(month)
     RS->>AS: habits(month)
-    RS->>GS: evaluate_all()
+    RS->>GS: evaluateAll()
     alt no transactions in the month
-        RS-->>F: raise NoDataError
+        RS-->>F: throw NoDataException
         F-->>RV: error message
     else data available
         RS->>AC: handle(AgentTask MONTHLY_REVIEW)
-        AC->>MM: build_context(task)
-        MM-->>AC: AgentContext (includes last_review_summary)
+        AC->>MM: buildContext(task)
+        MM-->>AC: AgentContext (includes lastReviewSummary)
         loop agent loop (see SD05) using BudgetStatusTool, InsightTool, TransactionQueryTool
-            AC->>AC: Planner.next_step(ctx) and ToolManager.execute(call)
+            AC->>AC: Planner.nextStep(ctx) and ToolManager.execute(call)
         end
         AC-->>RS: AgentResult (narrative, up to 3 ProposalDrafts)
         opt agent failed or figures ungrounded
             RS->>RS: build metrics-only narrative
         end
-        RS->>PS: create_from_drafts(drafts, trace_id)
+        RS->>PS: createFromDrafts(drafts, traceId)
         PS-->>RS: List of Proposal (protected categories filtered out)
         RS->>RR: save(review)
         RS-->>F: MonthlyReview
@@ -2198,19 +2215,19 @@ sequenceDiagram
     User->>AV: type a question
     AV->>F: ask(question)
     F->>AC: handle(AgentTask CHAT)
-    AC->>MM: build_context(task)
+    AC->>MM: buildContext(task)
     MM->>CM: recent()
     CM-->>MM: recent messages
-    MM->>UM: get_protected_categories()
+    MM->>UM: getProtectedCategories()
     UM-->>MM: preferences
     MM-->>AC: AgentContext
-    loop until FinalAnswerStep or max_steps reached
-        AC->>PL: next_step(ctx)
+    loop until FinalAnswerStep or maxSteps reached
+        AC->>PL: nextStep(ctx)
         alt question is outside finance scope
             PL-->>AC: FinalAnswerStep (polite redirect, no tools)
         else tool needed
             PL-->>AC: ToolCallStep
-            AC->>TM: execute(tool_call)
+            AC->>TM: execute(toolCall)
             TM->>T: run(args)
             T-->>TM: ToolResult
             TM-->>AC: ToolResult
@@ -2229,8 +2246,8 @@ sequenceDiagram
     F-->>AV: AgentResult
     AV-->>User: answer
     User->>AV: click How did you get this?
-    AV->>F: get_trace(trace_id)
-    F->>TRP: load(trace_id)
+    AV->>F: getTrace(traceId)
+    F->>TRP: load(traceId)
     TRP-->>F: AgentTrace
     F-->>AV: AgentTrace
     AV-->>User: tool calls and data used
@@ -2252,28 +2269,28 @@ sequenceDiagram
     participant RCV as Receiver service
 
     User->>PV: select a proposal, click Approve
-    PV->>F: decide_proposal(id, true)
+    PV->>F: decideProposal(id, true)
     F->>PS: decide(id, true)
-    PS->>PR: find_by_id(id)
+    PS->>PR: findById(id)
     PR-->>PS: Proposal
     PS->>P: approve(history)
     P->>ST: approve(proposal, history)
     alt current state is PendingState
         ST->>CH: execute(command)
         CH->>CMD: execute()
-        CMD->>RCV: apply change (for example BudgetService.set_limit)
+        CMD->>RCV: apply change (for example BudgetService.setLimit)
         alt command succeeds
             RCV-->>CMD: ok
             CMD-->>CH: ok
             CH-->>ST: ok
-            ST->>P: set_state(AppliedState)
+            ST->>P: setState(AppliedState)
         else command fails
-            CMD-->>CH: raise CommandFailedError
+            CMD-->>CH: throw CommandFailedException
             CH-->>ST: exception
             ST-->>PS: exception (state stays Pending)
         end
     else state is Applied, Rejected or Expired
-        ST-->>PS: raise IllegalStateTransitionError
+        ST-->>PS: throw IllegalStateTransitionException
     end
     PS->>PR: save(proposal)
     PS-->>F: Proposal or error
@@ -2296,28 +2313,28 @@ sequenceDiagram
     participant FS as File System
 
     User->>RV: choose month, format, path, click Export
-    RV->>F: export_report(month, fmt, path)
+    RV->>F: exportReport(month, fmt, path)
     F->>RS: export(month, fmt, path)
-    RS->>RS: build_report_data(month)
-    RS->>BS: get_status(month)
+    RS->>RS: buildReportData(month)
+    RS->>BS: getStatus(month)
     BS-->>RS: BudgetStatus
-    RS->>RR: find_by_month(month)
+    RS->>RR: findByMonth(month)
     RR-->>RS: MonthlyReview or none
     alt no data for the month
-        RS-->>F: raise NoDataError
+        RS-->>F: throw NoDataException
         F-->>RV: error message
     else data available
-        RS->>RS: exporter_for(fmt)
-        RS->>EX: export(report_data, path)
-        EX->>EX: write_header(data)
-        EX->>EX: write_summary(data)
-        EX->>EX: write_category_table(data)
-        EX->>EX: write_review_section(data)
-        EX->>EX: write_footer(data)
+        RS->>RS: exporterFor(fmt)
+        RS->>EX: export(reportData, path)
+        EX->>EX: writeHeader(data)
+        EX->>EX: writeSummary(data)
+        EX->>EX: writeCategoryTable(data)
+        EX->>EX: writeReviewSection(data)
+        EX->>EX: writeFooter(data)
         EX->>FS: write file
         alt path not writable
-            FS-->>EX: IOError
-            EX-->>RS: raise ExportError
+            FS-->>EX: IOException
+            EX-->>RS: throw ExportException
             RS-->>F: error
             F-->>RV: error message
         else file written
@@ -2336,24 +2353,24 @@ sequenceDiagram
 
 | Feature | Description | Type | Related Use Case | Classes | Key Methods | Sequence Diagram | Design Pattern(s) |
 |---|---|---|---|---|---|---|---|
-| F01 | Import CSV, auto-detect layout, skip duplicates | Deterministic | UC01 | `TransactionsView`, `WealthSeiFacade`, `TransactionService`, `CsvImporter`, `BankCsvAdapter`, `SignedAmountCsvAdapter`, `DebitCreditCsvAdapter`, `TransactionRepository` | `on_import_clicked()`, `import_transactions()`, `import_file()`, `parse()`, `detect_adapter()`, `read_transactions()`, `to_transaction()`, `remove_duplicates()`, `save_all()` | SD01 | Adapter, Facade |
-| F02 | Categorize (rules → LLM) and correct with undo | Hybrid | UC02 | `TransactionsView`, `Categorizer`, `CategorizationStrategy`, `LearnedRuleStrategy`, `KeywordRuleStrategy`, `LLMCategorizationStrategy`, `LLMProvider`, `CommandHistory`, `RecategorizeCommand`, `TransactionService` | `categorize()`, `correct_category()`, `execute()`, `undo()`, `learn()`, `forget()`, `update_category()` | SD02 | Strategy, Command, Decorator |
-| F03 | Budget limits, tracking, alerts | Deterministic | UC03 | `DashboardView`, `BudgetService`, `BudgetRepository`, `AlertMonitor`, `AlertListener`, `CliApp` | `set_budget()`, `get_status()`, `refresh_alerts()`, `evaluate()`, `attach()`, `on_alert()` | SD03 | Observer, Facade |
-| F04 | Recurring payment and subscription detection | Hybrid | UC04 | `DashboardView`, `AnalyticsService`, `RecurringDetector`, `ExplanationService` | `get_recurring_payments()`, `detect_recurring()`, `detect()`, `explain()` | SD04 | Facade, Decorator |
-| F05 | Safe-to-Spend Coach and 30-day forecast | Hybrid | UC05 | `DashboardView`, `AnalyticsService`, `ForecastEngine`, `SafeToSpendCalculator`, `AlertMonitor`, `ExplanationService` | `get_safe_to_spend()`, `safe_to_spend()`, `project()`, `calculate()`, `publish()`, `explain()` | SD04 | Observer, Facade, Decorator |
-| F06 | Spending Habit Detective | Hybrid | UC06 | `DashboardView`, `AnalyticsService`, `HabitAnalyzer`, `ExplanationService` | `get_habit_insights()`, `habits()`, `analyze()`, `explain()` | SD04 | Facade, Decorator |
-| F07 | Financial Health Score | Hybrid | UC06 | `DashboardView`, `AnalyticsService`, `HealthScoreCalculator`, `BudgetService`, `ExplanationService` | `get_health_score()`, `health_score()`, `calculate()`, `get_status()`, `explain()` | SD04 | Facade, Decorator |
-| F08 | Purchase affordability verdict via tool-using agent | AI (agent) | UC07 | `AssistantView`, `WealthSeiFacade`, `AgentController`, `MemoryManager`, `Planner`, `PromptBuilder`, `ResponseParser`, `ToolManager`, `BudgetStatusTool`, `ForecastTool`, `GoalTool`, `TransactionQueryTool`, `GroundingChecker`, `AgentTrace` | `check_affordability()`, `handle()`, `build_context()`, `next_step()`, `execute()`, `run()`, `verify()`, `remember()` | SD05 | Facade, Decorator, Adapter |
-| F09 | Goal planning with auto-replan | AI (agent) | UC08 | `GoalsView`, `AgentController`, `GoalTool`, `GoalService`, `GoalPlanner`, `ForecastEngine`, `ProposalService`, `CommandFactory`, `AlertMonitor` | `plan_goal()`, `replan_goal()`, `create_goal()`, `evaluate_all()`, `feasibility()`, `required_monthly()`, `build_options()`, `create_from_drafts()` | SD06 | Observer, Command, State |
-| F10 | Natural-language what-if simulation | AI (agent) | UC09 | `AssistantView`, `AgentController`, `Planner`, `ScenarioTool`, `ScenarioSimulator`, `ScenarioChange`, `ForecastEngine`, `GroundingChecker` | `run_what_if()`, `handle()`, `simulate()`, `apply_to()`, `project()`, `create_proposals()` | SD07 | Facade, Decorator |
-| F11 | Monthly AI review with fix proposals | AI (agent) | UC10 | `ReportView`, `ReviewService`, `AnalyticsService`, `BudgetService`, `GoalService`, `AgentController`, `MemoryManager`, `ProposalService`, `ReviewRepository` | `generate_monthly_review()`, `generate()`, `handle()`, `build_context()`, `create_from_drafts()`, `save()` | SD08 | Facade, State, Command |
-| F12 | Chat with memory and agent trace | AI (agent) | UC11 | `AssistantView`, `AgentController`, `MemoryManager`, `ConversationMemory`, `UserProfileMemory`, `ToolManager`, `Tool` (all six), `GroundingChecker`, `TraceRepository` | `ask()`, `get_trace()`, `handle()`, `build_context()`, `remember()`, `append()`, `verify()`, `load()` | SD09 | Facade, Decorator, Adapter |
-| F13 | Proposal approval queue (human-in-the-loop) | Hybrid | UC12, UC14 | `ProposalView`, `ProposalService`, `Proposal`, `ProposalState`, `PendingState`, `AppliedState`, `RejectedState`, `ExpiredState`, `CommandHistory`, `Command`, `CommandFactory` | `decide_proposal()`, `decide()`, `approve()`, `reject()`, `execute()`, `create()` | SD10, SD06 | State, Command, Factory |
-| F14 | Report export (Markdown, CSV, text) | Deterministic | UC13 | `ReportView`, `ReportService`, `ReportExporter`, `MarkdownExporter`, `CsvExporter`, `TextExporter` | `export_report()`, `export()`, `build_report_data()`, `exporter_for()`, `write_header()`, `write_footer()` | SD11 | Template Method, Factory, Facade |
+| F01 | Import CSV, auto-detect layout, skip duplicates | Deterministic | UC01 | `TransactionsView`, `WealthSeiFacade`, `TransactionService`, `CsvImporter`, `BankCsvAdapter`, `SignedAmountCsvAdapter`, `DebitCreditCsvAdapter`, `TransactionRepository` | `onImportClicked()`, `importTransactions()`, `importFile()`, `parse()`, `detectAdapter()`, `readTransactions()`, `toTransaction()`, `removeDuplicates()`, `saveAll()` | SD01 | Adapter, Facade |
+| F02 | Categorize (rules → LLM) and correct with undo | Hybrid | UC02 | `TransactionsView`, `Categorizer`, `CategorizationStrategy`, `LearnedRuleStrategy`, `KeywordRuleStrategy`, `LLMCategorizationStrategy`, `LLMProvider`, `CommandHistory`, `RecategorizeCommand`, `TransactionService` | `categorize()`, `correctCategory()`, `execute()`, `undo()`, `learn()`, `forget()`, `updateCategory()` | SD02 | Strategy, Command, Decorator |
+| F03 | Budget limits, tracking, alerts | Deterministic | UC03 | `DashboardView`, `BudgetService`, `BudgetRepository`, `AlertMonitor`, `AlertListener`, `CliApp` | `setBudget()`, `getStatus()`, `refreshAlerts()`, `evaluate()`, `attach()`, `onAlert()` | SD03 | Observer, Facade |
+| F04 | Recurring payment and subscription detection | Hybrid | UC04 | `DashboardView`, `AnalyticsService`, `RecurringDetector`, `ExplanationService` | `getRecurringPayments()`, `detectRecurring()`, `detect()`, `explain()` | SD04 | Facade, Decorator |
+| F05 | Safe-to-Spend Coach and 30-day forecast | Hybrid | UC05 | `DashboardView`, `AnalyticsService`, `ForecastEngine`, `SafeToSpendCalculator`, `AlertMonitor`, `ExplanationService` | `getSafeToSpend()`, `safeToSpend()`, `project()`, `calculate()`, `publish()`, `explain()` | SD04 | Observer, Facade, Decorator |
+| F06 | Spending Habit Detective | Hybrid | UC06 | `DashboardView`, `AnalyticsService`, `HabitAnalyzer`, `ExplanationService` | `getHabitInsights()`, `habits()`, `analyze()`, `explain()` | SD04 | Facade, Decorator |
+| F07 | Financial Health Score | Hybrid | UC06 | `DashboardView`, `AnalyticsService`, `HealthScoreCalculator`, `BudgetService`, `ExplanationService` | `getHealthScore()`, `healthScore()`, `calculate()`, `getStatus()`, `explain()` | SD04 | Facade, Decorator |
+| F08 | Purchase affordability verdict via tool-using agent | AI (agent) | UC07 | `AssistantView`, `WealthSeiFacade`, `AgentController`, `MemoryManager`, `Planner`, `PromptBuilder`, `ResponseParser`, `ToolManager`, `BudgetStatusTool`, `ForecastTool`, `GoalTool`, `TransactionQueryTool`, `GroundingChecker`, `AgentTrace` | `checkAffordability()`, `handle()`, `buildContext()`, `nextStep()`, `execute()`, `run()`, `verify()`, `remember()` | SD05 | Facade, Decorator, Adapter |
+| F09 | Goal planning with auto-replan | AI (agent) | UC08 | `GoalsView`, `AgentController`, `GoalTool`, `GoalService`, `GoalPlanner`, `ForecastEngine`, `ProposalService`, `CommandFactory`, `AlertMonitor` | `planGoal()`, `replanGoal()`, `createGoal()`, `evaluateAll()`, `feasibility()`, `requiredMonthly()`, `buildOptions()`, `createFromDrafts()` | SD06 | Observer, Command, State |
+| F10 | Natural-language what-if simulation | AI (agent) | UC09 | `AssistantView`, `AgentController`, `Planner`, `ScenarioTool`, `ScenarioSimulator`, `ScenarioChange`, `ForecastEngine`, `GroundingChecker` | `runWhatIf()`, `handle()`, `simulate()`, `applyTo()`, `project()`, `createProposals()` | SD07 | Facade, Decorator |
+| F11 | Monthly AI review with fix proposals | AI (agent) | UC10 | `ReportView`, `ReviewService`, `AnalyticsService`, `BudgetService`, `GoalService`, `AgentController`, `MemoryManager`, `ProposalService`, `ReviewRepository` | `generateMonthlyReview()`, `generate()`, `handle()`, `buildContext()`, `createFromDrafts()`, `save()` | SD08 | Facade, State, Command |
+| F12 | Chat with memory and agent trace | AI (agent) | UC11 | `AssistantView`, `AgentController`, `MemoryManager`, `ConversationMemory`, `UserProfileMemory`, `ToolManager`, `Tool` (all six), `GroundingChecker`, `TraceRepository` | `ask()`, `getTrace()`, `handle()`, `buildContext()`, `remember()`, `append()`, `verify()`, `load()` | SD09 | Facade, Decorator, Adapter |
+| F13 | Proposal approval queue (human-in-the-loop) | Hybrid | UC12, UC14 | `ProposalView`, `ProposalService`, `Proposal`, `ProposalState`, `PendingState`, `AppliedState`, `RejectedState`, `ExpiredState`, `CommandHistory`, `Command`, `CommandFactory` | `decideProposal()`, `decide()`, `approve()`, `reject()`, `execute()`, `create()` | SD10, SD06 | State, Command, Factory |
+| F14 | Report export (Markdown, CSV, text) | Deterministic | UC13 | `ReportView`, `ReportService`, `ReportExporter`, `MarkdownExporter`, `CsvExporter`, `TextExporter` | `exportReport()`, `export()`, `buildReportData()`, `exporterFor()`, `writeHeader()`, `writeFooter()` | SD11 | Template Method, Factory, Facade |
 
-**Pattern coverage check:** Facade (F01–F14), Strategy (F02), Adapter (F01 CSV adapters; F02, F04–F12 via `ClaudeProvider`), Observer (F03, F05, F09), Command (F02, F09, F11, F13), State (F09, F11, F13), Decorator (F02, F04–F08, F10, F12), Template Method (F14), Factory (F13 `CommandFactory`, F14 `exporter_for`). Lightweight Prototype (deep-copied `ForecastInputs`) supports F10.
+**Pattern coverage check:** Facade (F01–F14), Strategy (F02), Adapter (F01 CSV adapters; F02, F04–F12 via `ClaudeProvider`), Observer (F03, F05, F09), Command (F02, F09, F11, F13), State (F09, F11, F13), Decorator (F02, F04–F08, F10, F12), Template Method (F14), Factory (F13 `CommandFactory`, F14 `exporterFor`). Lightweight Prototype (deep-copied `ForecastInputs`) supports F10.
 
-**Use-case relationships:** UC01 includes UC02; UC10 includes UC06; UC08 and UC10 include UC14; UC14 extends UC07 and UC09. UC14 (creating proposals) is realized by `ProposalService.create_from_drafts()` and is drawn in SD06, SD07 and SD08.
+**Use-case relationships:** UC01 includes UC02; UC10 includes UC06; UC08 and UC10 include UC14; UC14 extends UC07 and UC09. UC14 (creating proposals) is realized by `ProposalService.createFromDrafts()` and is drawn in SD06, SD07 and SD08.
 
 ---
 
@@ -2361,33 +2378,33 @@ sequenceDiagram
 
 ### F01 — Import Transactions
 **Use case:** UC01 · **Sequence diagram:** SD01
-**Classes:** `TransactionsView` (file chooser, shows summary); `WealthSeiFacade` (entry point, refreshes alerts and goals after import); `TransactionService` (orchestrates import, removes duplicates); `CsvImporter` (reads header, chooses adapter); `BankCsvAdapter` with `SignedAmountCsvAdapter` / `DebitCreditCsvAdapter` (object adapters: each wraps a `csv.DictReader` and converts its rows to `Transaction`); `Categorizer` (assigns categories); `TransactionRepository` (persists).
-**Important methods:** `TransactionsView.on_import_clicked()`, `WealthSeiFacade.import_transactions()`, `TransactionService.import_file()`, `CsvImporter.parse()`, `CsvImporter.detect_adapter()`, `BankCsvAdapter.read_transactions()`, `BankCsvAdapter.to_transaction()`.
-**Execution:** When the user clicks Import, the view calls the facade, which calls `import_file()`. `parse()` opens a `csv.DictReader`, asks each adapter class `can_handle(header)`, and wraps the reader in the first match; `read_transactions()` converts every row with `to_transaction()`, and bad rows are collected as rejected. `remove_duplicates()` drops rows that match an existing date+amount+merchant. Each remaining transaction is categorized (F02), all are saved with `save_all()`, and the facade then calls `BudgetService.refresh_alerts()` and `GoalService.evaluate_all()` before returning an `ImportResult` to the view.
+**Classes:** `TransactionsView` (file chooser, shows summary); `WealthSeiFacade` (entry point, refreshes alerts and goals after import); `TransactionService` (orchestrates import, removes duplicates); `CsvImporter` (reads header, chooses adapter); `BankCsvAdapter` with `SignedAmountCsvAdapter` / `DebitCreditCsvAdapter` (object adapters: each wraps a Commons CSV `CSVParser` and converts its records to `Transaction`); `Categorizer` (assigns categories); `TransactionRepository` (persists).
+**Important methods:** `TransactionsView.onImportClicked()`, `WealthSeiFacade.importTransactions()`, `TransactionService.importFile()`, `CsvImporter.parse()`, `CsvImporter.detectAdapter()`, `BankCsvAdapter.readTransactions()`, `BankCsvAdapter.toTransaction()`.
+**Execution:** When the user clicks Import, the view calls the facade, which calls `importFile()`. `parse()` opens a Commons CSV `CSVParser`, builds one candidate adapter per registered layout around it, asks each `canHandle(header)`, and keeps the first match; `readTransactions()` converts every row with `toTransaction()`, and bad rows are collected as rejected. `removeDuplicates()` drops rows that match an existing date+amount+merchant. Each remaining transaction is categorized (F02), all are saved with `saveAll()`, and the facade then calls `BudgetService.refreshAlerts()` and `GoalService.evaluateAll()` before returning an `ImportResult` to the view.
 
 ### F02 — Smart Categorization and Correction
 **Use case:** UC02 · **Sequence diagram:** SD02
 **Classes:** `Categorizer` (runs the chain); `CategorizationStrategy` implemented by `LearnedRuleStrategy` (user-taught rules), `KeywordRuleStrategy` (static keywords), `LLMCategorizationStrategy` (last resort, restricted to allowed categories); `LLMProvider` (model access); `CommandHistory` and `RecategorizeCommand` (undoable correction); `TransactionService` (updates the row).
-**Important methods:** `Categorizer.categorize()`, `CategorizationStrategy.categorize()`, `WealthSeiFacade.correct_category()`, `CommandHistory.execute()/undo()`, `RecategorizeCommand.execute()/undo()`, `LearnedRuleStrategy.learn()/forget()`.
+**Important methods:** `Categorizer.categorize()`, `CategorizationStrategy.categorize()`, `WealthSeiFacade.correctCategory()`, `CommandHistory.execute()/undo()`, `RecategorizeCommand.execute()/undo()`, `LearnedRuleStrategy.learn()/forget()`.
 **Execution:** `categorize()` calls each strategy in priority order until one returns a category. If the LLM strategy answers with an unknown category or fails, the result is `UNCATEGORIZED`. When the user corrects a row, the facade wraps the change in a `RecategorizeCommand`; `execute()` updates the transaction and calls `learn(merchant, category)`. `undo()` restores the old category and calls `forget(merchant)`.
 
 ### F03 — Budget Setup, Tracking and Alerts
 **Use case:** UC03 · **Sequence diagram:** SD03
 **Classes:** `DashboardView` (edit limits, show progress, receives alerts); `BudgetService` (validates, saves, computes `BudgetStatus`); `BudgetRepository` (persistence); `AlertMonitor` (Subject); `AlertListener` (Observer, implemented by `DashboardView` and `CliApp`).
-**Important methods:** `BudgetService.set_budget()`, `BudgetService.get_status()`, `BudgetService.refresh_alerts()`, `AlertMonitor.evaluate()`, `AlertMonitor.attach()`, `AlertListener.on_alert()`.
-**Execution:** `set_budget()` validates limits, saves the `Budget`, builds a `BudgetStatus` from transactions, and passes it to `AlertMonitor.evaluate()`. For each category at 80% or more the monitor creates an `Alert` and notifies every attached listener, so GUI and CLI both show it.
+**Important methods:** `BudgetService.setBudget()`, `BudgetService.getStatus()`, `BudgetService.refreshAlerts()`, `AlertMonitor.evaluate()`, `AlertMonitor.attach()`, `AlertListener.onAlert()`.
+**Execution:** `setBudget()` validates limits, saves the `Budget`, builds a `BudgetStatus` from transactions, and passes it to `AlertMonitor.evaluate()`. For each category at 80% or more the monitor creates an `Alert` and notifies every attached listener, so GUI and CLI both show it.
 
 ### F04 — Recurring Payment and Subscription Detector
 **Use case:** UC04 · **Sequence diagram:** SD04
 **Classes:** `DashboardView`; `AnalyticsService` (coordinates); `RecurringDetector` (interval and amount regularity); `RecurringRepository` (stores flags); `ExplanationService` (plain-language summary via `LLMProvider`).
-**Important methods:** `WealthSeiFacade.get_recurring_payments()`, `AnalyticsService.detect_recurring()`, `RecurringDetector.detect()`, `ExplanationService.explain()`.
-**Execution:** `detect_recurring()` loads history and passes it to `detect()`, which groups by merchant, checks that intervals are regular and amounts similar (at least 3 occurrences), and returns `RecurringPayment` objects with a confidence. The facade sends the computed facts to `explain()`; if the LLM fails, `fallback_text()` supplies a template.
+**Important methods:** `WealthSeiFacade.getRecurringPayments()`, `AnalyticsService.detectRecurring()`, `RecurringDetector.detect()`, `ExplanationService.explain()`.
+**Execution:** `detectRecurring()` loads history and passes it to `detect()`, which groups by merchant, checks that intervals are regular and amounts similar (at least 3 occurrences), and returns `RecurringPayment` objects with a confidence. The facade sends the computed facts to `explain()`; if the LLM fails, `fallbackText()` supplies a template.
 
 ### F05 — Safe-to-Spend Coach
 **Use case:** UC05 · **Sequence diagram:** SD04
 **Classes:** `DashboardView`; `AnalyticsService`; `ForecastEngine` (30-day projection); `SafeToSpendCalculator` (allowance formula); `AlertMonitor` (low-balance alert); `ExplanationService`.
-**Important methods:** `AnalyticsService.safe_to_spend()`, `ForecastEngine.project()`, `SafeToSpendCalculator.calculate()`, `AlertMonitor.publish()`.
-**Execution:** `safe_to_spend(date)` builds `ForecastInputs` (transactions, recurring payments), calls `project(inputs, 30)`, then `calculate()` applies *(balance + expected income − upcoming bills − goal reserve − buffer) ÷ days left*, floored at zero. If the lowest projected balance is below the buffer, the service publishes a `LOW_BALANCE` alert. The facade adds an explanation.
+**Important methods:** `AnalyticsService.safeToSpend()`, `ForecastEngine.project()`, `SafeToSpendCalculator.calculate()`, `AlertMonitor.publish()`.
+**Execution:** `safeToSpend(date)` builds `ForecastInputs` (transactions, recurring payments), calls `project(inputs, 30)`, then `calculate()` applies *(balance + expected income − upcoming bills − goal reserve − buffer) ÷ days left*, floored at zero. If the lowest projected balance is below the buffer, the service publishes a `LOW_BALANCE` alert. The facade adds an explanation.
 
 ### F06 — Spending Habit Detective
 **Use case:** UC06 · **Sequence diagram:** SD04
@@ -2398,50 +2415,50 @@ sequenceDiagram
 ### F07 — Financial Health Score
 **Use case:** UC06 · **Sequence diagram:** SD04
 **Classes:** `DashboardView`; `AnalyticsService`; `BudgetService` (supplies `BudgetStatus`); `HealthScoreCalculator`; `ExplanationService`.
-**Important methods:** `AnalyticsService.health_score()`, `BudgetService.get_status()`, `HealthScoreCalculator.calculate()`.
-**Execution:** `health_score(month)` obtains the budget status and forecast, then `calculate()` scores four components (budget adherence 30, savings rate 25, emergency buffer 25, goal progress 20). Components lacking data are excluded and weights re-normalized. The result is a `HealthScore` with `ScoreComponent` breakdown, explained by `ExplanationService`.
+**Important methods:** `AnalyticsService.healthScore()`, `BudgetService.getStatus()`, `HealthScoreCalculator.calculate()`.
+**Execution:** `healthScore(month)` obtains the budget status and forecast, then `calculate()` scores four components (budget adherence 30, savings rate 25, emergency buffer 25, goal progress 20). Components lacking data are excluded and weights re-normalized. The result is a `HealthScore` with `ScoreComponent` breakdown, explained by `ExplanationService`.
 
 ### F08 — Purchase Affordability Check
 **Use case:** UC07 · **Sequence diagram:** SD05
 **Classes:** `AssistantView` (form and result card); `WealthSeiFacade` (validates input, builds `AgentTask`); `AgentController` (runs the loop); `MemoryManager` (context); `Planner` with `PromptBuilder` and `ResponseParser` (ask the LLM for the next step and parse it); `LLMProvider` chain (retry and logging decorators around `ClaudeProvider`); `ToolManager` and `Tool`s (`BudgetStatusTool`, `ForecastTool`, `GoalTool`, `TransactionQueryTool`); `GroundingChecker`; `AgentTrace`.
-**Important methods:** `WealthSeiFacade.check_affordability()`, `AgentController.handle()`, `Planner.next_step()`, `ToolManager.execute()`, `Tool.run()`, `GroundingChecker.verify()`.
-**Execution:** The facade rejects invalid prices, then calls `handle()`. The controller builds context and asks `Planner.next_step()` repeatedly. Each `ToolCallStep` is validated and executed by `ToolManager`, and its result becomes an observation. When the planner returns a `FinalAnswerStep`, `GroundingChecker.verify()` confirms every figure appears in tool results (otherwise `Planner.revise()` runs once). The trace is saved and the `AgentResult` is returned.
+**Important methods:** `WealthSeiFacade.checkAffordability()`, `AgentController.handle()`, `Planner.nextStep()`, `ToolManager.execute()`, `Tool.run()`, `GroundingChecker.verify()`.
+**Execution:** The facade rejects invalid prices, then calls `handle()`. The controller builds context and asks `Planner.nextStep()` repeatedly. Each `ToolCallStep` is validated and executed by `ToolManager`, and its result becomes an observation. When the planner returns a `FinalAnswerStep`, `GroundingChecker.verify()` confirms every figure appears in tool results (otherwise `Planner.revise()` runs once). The trace is saved and the `AgentResult` is returned.
 
 ### F09 — Savings Goal Planner with Auto-Replan
 **Use case:** UC08 · **Sequence diagram:** SD06
 **Classes:** `GoalsView`; `GoalService` (validate, evaluate status, feasibility); `GoalPlanner` (required monthly amount, options); `ForecastEngine` (monthly surplus); `GoalTool` (agent access); `AgentController`; `ProposalService` and `CommandFactory` (turn suggestions into pending proposals); `AlertMonitor` (goal-risk alerts).
-**Important methods:** `WealthSeiFacade.plan_goal()/replan_goal()`, `GoalService.create_goal()/evaluate_all()/feasibility()`, `GoalPlanner.required_monthly()/build_options()`, `ProposalService.create_from_drafts()`.
-**Execution:** `create_goal()` validates and saves the goal. The agent calls `GoalTool`, which invokes `feasibility()`: `required_monthly()` versus `monthly_surplus()`, then `build_options()` (raise contribution, extend deadline, trim categories). The agent explains the plan and returns drafts; `create_from_drafts()` filters protected categories and stores pending proposals. After each import `evaluate_all()` recomputes status and publishes an alert for AT_RISK/BEHIND goals, prompting **Replan**.
+**Important methods:** `WealthSeiFacade.planGoal()/replanGoal()`, `GoalService.createGoal()/evaluateAll()/feasibility()`, `GoalPlanner.requiredMonthly()/buildOptions()`, `ProposalService.createFromDrafts()`.
+**Execution:** `createGoal()` validates and saves the goal. The agent calls `GoalTool`, which invokes `feasibility()`: `requiredMonthly()` versus `monthlySurplus()`, then `buildOptions()` (raise contribution, extend deadline, trim categories). The agent explains the plan and returns drafts; `createFromDrafts()` filters protected categories and stores pending proposals. After each import `evaluateAll()` recomputes status and publishes an alert for AT_RISK/BEHIND goals, prompting **Replan**.
 
 ### F10 — What-If Scenario Simulator
 **Use case:** UC09 · **Sequence diagram:** SD07
 **Classes:** `AssistantView`; `AgentController`; `Planner` (NL → structured tool call); `ToolManager` (validates arguments); `ScenarioTool`; `ScenarioSimulator`; `ScenarioChange` and its four implementations (`CancelRecurringChange`, `CapCategoryChange`, `IncomeChange`, `OneTimeExpenseChange`); `ForecastEngine`; `GroundingChecker`.
-**Important methods:** `WealthSeiFacade.run_what_if()`, `ScenarioSimulator.simulate()`, `ScenarioChange.apply_to()`, `ForecastEngine.project()`, `ForecastInputs.clone()`, `WealthSeiFacade.create_proposals()`.
-**Execution:** The planner turns the text into a `ScenarioTool` call with structured changes; invalid values are rejected by validation and the agent asks a clarifying question instead. `simulate()` projects the baseline, takes a **deep copy** of the baseline `ForecastInputs` with `clone()` (so a scenario can never mutate the baseline), applies each `ScenarioChange` to the copy, projects again, and returns a `ScenarioResult`. The agent narrates the comparison using only these figures.
+**Important methods:** `WealthSeiFacade.runWhatIf()`, `ScenarioSimulator.simulate()`, `ScenarioChange.applyTo()`, `ForecastEngine.project()`, `ForecastInputs.deepCopy()`, `WealthSeiFacade.createProposals()`.
+**Execution:** The planner turns the text into a `ScenarioTool` call with structured changes; invalid values are rejected by validation and the agent asks a clarifying question instead. `simulate()` projects the baseline, takes a **deep copy** of the baseline `ForecastInputs` with `deepCopy()` (so a scenario can never mutate the baseline), applies each `ScenarioChange` to the copy, projects again, and returns a `ScenarioResult`. The agent narrates the comparison using only these figures.
 
 ### F11 — Monthly AI Review and Fix Plan
 **Use case:** UC10 · **Sequence diagram:** SD08
 **Classes:** `ReportView`; `ReviewService` (orchestrates); `AnalyticsService`, `BudgetService`, `GoalService` (deterministic metrics); `AgentController` and `MemoryManager` (narrative with previous-review context); `ProposalService`; `ReviewRepository`.
-**Important methods:** `WealthSeiFacade.generate_monthly_review()`, `ReviewService.generate()`, `AgentController.handle()`, `ProposalService.create_from_drafts()`, `ReviewRepository.save()`.
+**Important methods:** `WealthSeiFacade.generateMonthlyReview()`, `ReviewService.generate()`, `AgentController.handle()`, `ProposalService.createFromDrafts()`, `ReviewRepository.save()`.
 **Execution:** `generate()` gathers the metrics, then runs the agent with task `MONTHLY_REVIEW`. The agent calls tools to verify each claim and returns a narrative plus up to three drafts. If the agent fails, a metrics-only narrative is built deterministically. Drafts become pending proposals, and the `MonthlyReview` is saved and returned.
 
 ### F12 — Natural-Language Finance Chat with Agent Trace
 **Use case:** UC11 · **Sequence diagram:** SD09
 **Classes:** `AssistantView` (chat and trace toggle); `AgentController`; `MemoryManager` with `ConversationMemory` (bounded recent turns) and `UserProfileMemory` (preferences); `Planner`; `ToolManager` with all six tools; `GroundingChecker`; `TraceRepository` and `AgentTrace`.
-**Important methods:** `WealthSeiFacade.ask()/get_trace()`, `MemoryManager.build_context()/remember()`, `ConversationMemory.recent()/append()`, `GroundingChecker.verify()`, `TraceRepository.save()/load()`.
-**Execution:** `build_context()` merges recent messages and preferences so follow-ups such as "and last month?" resolve. The planner chooses tools per question; off-topic questions get a polite redirect without tools. After grounding verification, the trace is saved and the turn stored. `get_trace(id)` reloads the steps for the "How did you get this?" view.
+**Important methods:** `WealthSeiFacade.ask()/getTrace()`, `MemoryManager.buildContext()/remember()`, `ConversationMemory.recent()/append()`, `GroundingChecker.verify()`, `TraceRepository.save()/load()`.
+**Execution:** `buildContext()` merges recent messages and preferences so follow-ups such as "and last month?" resolve. The planner chooses tools per question; off-topic questions get a polite redirect without tools. After grounding verification, the trace is saved and the turn stored. `getTrace(id)` reloads the steps for the "How did you get this?" view.
 
 ### F13 — Proposal Approval Queue
 **Use cases:** UC12 (review) and UC14 (creation) · **Sequence diagrams:** SD10 (approval), SD06 (creation)
 **Classes:** `ProposalView`; `ProposalService` (create, list, decide, expire, guardrails); `Proposal` (context) with `ProposalState` and its four implementations; `CommandFactory`; `Command` implementations (`SetBudgetLimitCommand`, `UpdateGoalContributionCommand`, `FlagSubscriptionCommand`); `CommandHistory`; `ProposalRepository`.
-**Important methods:** `WealthSeiFacade.decide_proposal()`, `ProposalService.decide()/create_from_drafts()/passes_guardrails()`, `Proposal.approve()/reject()`, `ProposalState.approve()`, `CommandHistory.execute()`, `CommandFactory.create()`.
-**Execution:** At creation, `passes_guardrails()` discards drafts that touch protected categories and `CommandFactory.create()` builds the command. On approval, `Proposal.approve()` delegates to the current state: `PendingState` executes the command via `CommandHistory` and switches to `AppliedState`; other states raise `IllegalStateTransitionError`. A failing command leaves the proposal Pending.
+**Important methods:** `WealthSeiFacade.decideProposal()`, `ProposalService.decide()/createFromDrafts()/passesGuardrails()`, `Proposal.approve()/reject()`, `ProposalState.approve()`, `CommandHistory.execute()`, `CommandFactory.create()`.
+**Execution:** At creation, `passesGuardrails()` discards drafts that touch protected categories and `CommandFactory.create()` builds the command. On approval, `Proposal.approve()` delegates to the current state: `PendingState` executes the command via `CommandHistory` and switches to `AppliedState`; other states throw `IllegalStateTransitionException`. A failing command leaves the proposal Pending.
 
 ### F14 — Report Export
 **Use case:** UC13 · **Sequence diagram:** SD11
 **Classes:** `ReportView`; `ReportService` (collects data, chooses exporter); `ReportExporter` (template method `export()`); `MarkdownExporter`, `CsvExporter`, `TextExporter`.
-**Important methods:** `WealthSeiFacade.export_report()`, `ReportService.build_report_data()/exporter_for()`, `ReportExporter.export()`, `write_header()/write_summary()/write_category_table()/write_review_section()/write_footer()`.
-**Execution:** `build_report_data()` combines `BudgetStatus` and the saved `MonthlyReview` (if any). `exporter_for(fmt)` (a Factory) returns the right subclass; its inherited `export()` calls the five `write…` steps in fixed order and writes the file. If no review exists, the report contains metrics only, with a note.
+**Important methods:** `WealthSeiFacade.exportReport()`, `ReportService.buildReportData()/exporterFor()`, `ReportExporter.export()`, `writeHeader()/writeSummary()/writeCategoryTable()/writeReviewSection()/writeFooter()`.
+**Execution:** `buildReportData()` combines `BudgetStatus` and the saved `MonthlyReview` (if any). `exporterFor(fmt)` (a Factory) returns the right subclass; its inherited `export()` calls the five `write…` steps in fixed order and writes the file. If no review exists, the report contains metrics only, with a note.
 
 ---
 
@@ -2449,28 +2466,32 @@ sequenceDiagram
 
 ### Appendix A — Testability map (preparing for Stage 3)
 
-| Deterministic components (`pytest` tests) | Agent components (behavioural tests) |
+| Deterministic components (JUnit 5 tests) | Agent components (behavioural tests) |
 |---|---|
-| `Money` (Decimal arithmetic and rounding), `ForecastInputs.clone()` (deep copy), `CsvImporter` and adapters, `Categorizer` with rule strategies, `BudgetService`, `AlertMonitor`, `RecurringDetector`, `ForecastEngine`, `SafeToSpendCalculator`, `HabitAnalyzer`, `HealthScoreCalculator`, `GoalPlanner`, `ScenarioSimulator`, `CommandHistory` and commands, `Proposal` states, `ProposalService.passes_guardrails()`, `ToolManager` argument validation, `ResponseParser`, `GroundingChecker`, `ReportExporter`s | `AgentController` loop, `Planner` and `PromptBuilder`, tool selection, use of tool results, recovery from tool or LLM failure, memory use, clarifying questions, proposal quality |
+| `Money` (`BigDecimal` arithmetic and rounding), `ForecastInputs.deepCopy()` (deep copy), `CsvImporter` and adapters, `Categorizer` with rule strategies, `BudgetService`, `AlertMonitor`, `RecurringDetector`, `ForecastEngine`, `SafeToSpendCalculator`, `HabitAnalyzer`, `HealthScoreCalculator`, `GoalPlanner`, `ScenarioSimulator`, `CommandHistory` and commands, `Proposal` states, `ProposalService.passesGuardrails()`, `ToolManager` argument validation, `ResponseParser`, `GroundingChecker`, `ReportExporter`s | `AgentController` loop, `Planner` and `PromptBuilder`, tool selection, use of tool results, recovery from tool or LLM failure, memory use, clarifying questions, proposal quality |
 
 Agent behaviours planned for behavioural testing: (1) selects the forecast/budget tools before answering an affordability question; (2) never states a monetary figure absent from tool results; (3) does not execute a tool with invalid arguments; (4) reports tool failure instead of guessing; (5) respects protected categories in proposals; (6) asks for clarification on ambiguous what-if requests.
+
+**Note on KUMA (Stage 3):** KUMA is a Python SDK that does not run the agent itself, and WealthSei is written in Java. The agent will therefore be exercised from a small Python harness that calls WealthSei's CLI (for example `wealthsei ask "..." --json`). Because KUMA's own trace capture works inside a Python process, the CLI's `--json` option (Appendix B) prints the answer, status and the agent's trace (tool calls, arguments and results) as JSON, and the harness returns that JSON to KUMA as the agent output. Every agent behaviour must therefore be reachable from the CLI.
 
 ### Appendix B — CLI command map (GUI/CLI parity)
 
 | CLI command | Facade method | Feature |
 |---|---|---|
-| `wealthsei import <file>` | `import_transactions()` | F01 |
-| `wealthsei categorize <tx_id> <category>` · `undo` · `redo` | `correct_category()`, `undo()`, `redo()` | F02 |
-| `wealthsei budget set <month> <category> <amount>` · `budget status <month>` | `set_budget()`, `get_budget_status()` | F03 |
-| `wealthsei recurring` | `get_recurring_payments()` | F04 |
-| `wealthsei safe [date]` | `get_safe_to_spend()` | F05 |
-| `wealthsei habits <month>` | `get_habit_insights()` | F06 |
-| `wealthsei score <month>` | `get_health_score()` | F07 |
-| `wealthsei afford "<item>" <price>` | `check_affordability()` | F08 |
-| `wealthsei goal add "<name>" <target> <deadline>` · `goal replan <id>` | `plan_goal()`, `replan_goal()` | F09 |
-| `wealthsei whatif "<text>"` | `run_what_if()` | F10 |
-| `wealthsei review <month>` | `generate_monthly_review()` | F11 |
-| `wealthsei ask "<question>"` · `trace <id>` | `ask()`, `get_trace()` | F12 |
-| `wealthsei proposals list` · `approve <id>` · `reject <id>` | `list_pending_proposals()`, `decide_proposal()` | F13 |
-| `wealthsei export <month> --format md --out <file>` | `export_report()` | F14 |
-| `wealthsei prefs protect <category>` | `set_protected_category()` | supports F09, F11, F13 |
+| `wealthsei import <file>` | `importTransactions()` | F01 |
+| `wealthsei categorize <txId> <category>` · `undo` · `redo` | `correctCategory()`, `undo()`, `redo()` | F02 |
+| `wealthsei budget set <month> <category> <amount>` · `budget status <month>` | `setBudget()`, `getBudgetStatus()` | F03 |
+| `wealthsei recurring` | `getRecurringPayments()` | F04 |
+| `wealthsei safe [date]` | `getSafeToSpend()` | F05 |
+| `wealthsei habits <month>` | `getHabitInsights()` | F06 |
+| `wealthsei score <month>` | `getHealthScore()` | F07 |
+| `wealthsei afford "<item>" <price>` | `checkAffordability()` | F08 |
+| `wealthsei goal add "<name>" <target> <deadline>` · `goal replan <id>` | `planGoal()`, `replanGoal()` | F09 |
+| `wealthsei whatif "<text>"` | `runWhatIf()` | F10 |
+| `wealthsei review <month>` | `generateMonthlyReview()` | F11 |
+| `wealthsei ask "<question>"` · `trace <id>` | `ask()`, `getTrace()` | F12 |
+| `wealthsei proposals list` · `approve <id>` · `reject <id>` | `listPendingProposals()`, `decideProposal()` | F13 |
+| `wealthsei export <month> --format md --out <file>` | `exportReport()` | F14 |
+| `wealthsei prefs protect <category>` | `setProtectedCategory()` | supports F09, F11, F13 |
+
+**`--json` option:** every agent command (`afford`, `goal`, `whatif`, `review`, `ask`) accepts `--json` to print the `AgentResult` (answer, status, proposal drafts, grounding report) together with its `AgentTrace` as JSON, for automated testing. It is a formatting option of the same facade calls, not a separate feature.
