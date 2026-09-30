@@ -1,0 +1,68 @@
+<diagram program="umletino" version="15.1"><zoom_level>9</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>0</x><y>0</y><w>4590</w><h>1818</h></coordinates><panel_attributes>title=SD04 — Analytics with Explanation: Recurring, Safe-to-Spend, Habits, Score (UC04–UC06, F04–F07)
+obj=User~User ACTOR
+obj=DashboardView~DV
+obj=WealthSeiFacade~F
+obj=AnalyticsService~AS
+obj=PlanRepository~PLR
+obj=TransactionRepository~TR
+obj=RecurringDetector~RD
+obj=ForecastEngine~FE
+obj=SafeToSpendCalculator~SC
+obj=HabitAnalyzer~HA
+obj=HealthScoreCalculator~HS
+obj=BudgetService~BS
+obj=AlertMonitor~AM
+obj=ExplanationService~EX
+obj=LLMProvider~LLM
+
+User-&gt;&gt;&gt;DV: open Recurring, Safe-to-Spend, Habits or Score panel
+combinedFragment=alt~cf1 DV AM; DV: [Recurring payments (F04)]
+DV-&gt;&gt;&gt;F: getRecurringPayments()
+F-&gt;&gt;&gt;AS: detectRecurring()
+AS-&gt;&gt;&gt;TR: query(all history)
+TR.&gt;AS: transactions
+AS-&gt;&gt;&gt;RD: detect(transactions)
+RD.&gt;AS: List of RecurringPayment
+AS.&gt;F: recurring payments
+..=cf1; DV: [Safe-to-spend (F05)]
+DV-&gt;&gt;&gt;F: getSafeToSpend(today)
+F-&gt;&gt;&gt;AS: safeToSpend(today)
+AS-&gt;&gt;&gt;PLR: find()
+PLR.&gt;AS: FinancialPlan
+AS-&gt;&gt;&gt;AS +1: detectRecurring() for items the plan does not cover
+AS-&gt;&gt;&gt;FE: project(inputs, 30)
+FE.&gt;AS: Forecast
+AS-&gt;&gt;&gt;SC: calculate(forecast, goals, buffer)
+SC.&gt;AS: SafeToSpendResult
+combinedFragment=opt~cf2 AS AM; AS:            [lowest projected balance is below the buffer]
+AS-&gt;&gt;&gt;AM: publish(LOW_BALANCE alert)
+--=cf2
+AS.&gt;F: SafeToSpendResult
+..=cf1; DV: [Habits (F06)]
+DV-&gt;&gt;&gt;F: getHabitInsights(month)
+F-&gt;&gt;&gt;AS: habits(month)
+AS-&gt;&gt;&gt;TR: query(month filter)
+TR.&gt;AS: transactions
+AS-&gt;&gt;&gt;HA: analyze(transactions)
+HA.&gt;AS: List of Insight
+AS.&gt;F: insights
+..=cf1; DV: [Health score (F07)]
+DV-&gt;&gt;&gt;F: getHealthScore(month)
+F-&gt;&gt;&gt;AS: healthScore(month)
+AS-&gt;&gt;&gt;BS: getStatus(month)
+BS.&gt;AS: BudgetStatus
+AS-&gt;&gt;&gt;HS: calculate(status, forecast, goals)
+HS.&gt;AS: HealthScore
+AS.&gt;F: HealthScore
+--=cf1
+F-&gt;&gt;&gt;EX: explain(facts)
+EX-&gt;&gt;&gt;LLM: complete(request containing computed facts only)
+combinedFragment=alt~cf3 F LLM; F: [LLM unavailable]
+LLM.&gt;EX: error
+EX.&gt;F: fallbackText (template)
+..=cf3; F: [response received]
+LLM.&gt;EX: response
+EX.&gt;F: explanation text
+--=cf3
+F.&gt;DV: result with explanation
+DV.&gt;User: cards, chart or gauge</panel_attributes><additional_attributes></additional_attributes></element></diagram>

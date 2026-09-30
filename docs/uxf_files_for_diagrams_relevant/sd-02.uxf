@@ -1,0 +1,56 @@
+<diagram program="umletino" version="15.1"><zoom_level>10</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>100</x><y>70</y><w>3000</w><h>1720</h></coordinates><panel_attributes>title=SD02 — Categorize and Correct Transactions (UC02, F02)
+obj=User~User ACTOR
+obj=TransactionsView~TV
+obj=WealthSeiFacade~F
+obj=CommandHistory~CH
+obj=RecategorizeCommand~RC
+obj=TransactionService~TS
+obj=Categorizer~CAT
+obj=LearnedRuleStrategy~LR
+obj=KeywordRuleStrategy~KR
+obj=LLMCategorizationStrategy~LS
+obj=LLMProvider~LLM
+
+TS: Part A - automatic categorization (called from SD01)
+TS-&gt;&gt;&gt;CAT: categorize(tx)
+CAT-&gt;&gt;&gt;LR: categorize(tx)
+combinedFragment=alt~cf1 TS LLM; TS: [learned rule found]
+LR.&gt;CAT: category
+..=cf1; TS: [no learned rule]
+CAT-&gt;&gt;&gt;KR: categorize(tx)
+combinedFragment=alt~cf2 TS LLM; TS: [keyword matches]
+KR.&gt;CAT: category
+..=cf2; TS: [no keyword match]
+CAT-&gt;&gt;&gt;LS: categorize(tx)
+LS-&gt;&gt;&gt;LLM: complete(request listing allowed categories)
+combinedFragment=alt~cf3 TS LS; TS:            [LLM error, or category not in allowed list]
+LS.&gt;CAT: empty
+CAT.&gt;TS: UNCATEGORIZED (flagged for manual review)
+..=cf3; TS: [valid category]
+LS.&gt;CAT: category
+--=cf3
+--=cf2
+--=cf1
+CAT.&gt;TS: Category
+User: Part B - manual correction and undo
+User-&gt;&gt;&gt;TV: change category of a transaction
+TV-&gt;&gt;&gt;F: correctCategory(txId, newCategory)
+F-&gt;&gt;&gt;CH: execute(RecategorizeCommand)
+CH-&gt;&gt;&gt;RC: execute()
+RC-&gt;&gt;&gt;TS: updateCategory(txId, newCategory)
+RC-&gt;&gt;&gt;LR: learn(merchant, newCategory)
+CH.&gt;F: done
+F.&gt;TV: updated Transaction
+TV.&gt;User: row updated
+User-&gt;&gt;&gt;TV: click Undo
+TV-&gt;&gt;&gt;F: undo()
+F-&gt;&gt;&gt;CH: undo()
+combinedFragment=alt~cf4 F LR; F: [history is empty]
+CH.&gt;F: nothing to undo
+..=cf4; F: [a command is available]
+CH-&gt;&gt;&gt;RC: undo()
+RC-&gt;&gt;&gt;TS: updateCategory(txId, oldCategory)
+RC-&gt;&gt;&gt;LR: forget(merchant)
+CH.&gt;F: done
+--=cf4
+F.&gt;TV: refreshed view</panel_attributes><additional_attributes></additional_attributes></element></diagram>

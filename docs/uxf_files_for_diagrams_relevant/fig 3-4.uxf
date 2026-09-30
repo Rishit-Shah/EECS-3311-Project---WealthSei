@@ -1,0 +1,145 @@
+<diagram program="umletino" version="15.1"><zoom_level>10</zoom_level><element><id>UMLClass</id><coordinates><x>1160</x><y>0</y><w>260</w><h>160</h></coordinates><panel_attributes>AgentController
+--
+-planner: Planner
+-tools: ToolManager
+-memory: MemoryManager
+-grounding: GroundingChecker
+-traces: TraceRepository
+-maxSteps: int
+--
++handle(task: AgentTask) AgentResult</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>20</x><y>280</y><w>170</w><h>90</h></coordinates><panel_attributes>AgentTask
+--
+-type: TaskType
+-userInput: String
+-params: TaskParams</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>480</y><w>170</w><h>130</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
+TaskType
+--
+AFFORDABILITY
+GOAL_PLAN
+WHAT_IF
+MONTHLY_REVIEW
+CHAT</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>270</x><y>270</y><w>260</w><h>130</h></coordinates><panel_attributes>AgentContext
+--
+-task: AgentTask
+-history: List&lt;Message&gt;
+-protectedCategories: List&lt;Category&gt;
+-lastReviewSummary: String
+-toolSpecs: List&lt;ToolSpec&gt;
+-observations: List&lt;ToolResult&gt;
+--
++addObservation(result: ToolResult)
++setToolSpecs(specs: List&lt;ToolSpec&gt;)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>570</x><y>260</y><w>200</w><h>120</h></coordinates><panel_attributes>AgentResult
+--
+-answer: String
+-drafts: List&lt;ProposalDraft&gt;
+-status: AgentStatus
+-grounding: GroundingReport
+-traceId: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>200</x><y>480</y><w>170</w><h>130</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
+AgentStatus
+--
+COMPLETED
+TOOL_FAILURE
+STEP_LIMIT
+MODEL_UNAVAILABLE
+UNGROUNDED</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>820</x><y>250</y><w>270</w><h>150</h></coordinates><panel_attributes>Planner
+--
+-promptBuilder: PromptBuilder
+-parser: ResponseParser
+-llm: LLMProvider
+--
++nextStep(ctx: AgentContext) AgentStep
++revise(ctx: AgentContext,
+   report: GroundingReport) AgentStep</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>420</x><y>500</y><w>260</w><h>90</h></coordinates><panel_attributes>PromptBuilder
+--
++build(ctx: AgentContext) LLMRequest
++buildRepairPrompt(rawText: String)
+   LLMRequest</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>720</x><y>510</y><w>280</w><h>60</h></coordinates><panel_attributes>ResponseParser
+--
++parse(response: LLMResponse) AgentStep</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>320</x><y>720</y><w>170</w><h>50</h></coordinates><panel_attributes>&lt;&lt;abstract&gt;&gt;
+/AgentStep/</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>200</x><y>880</y><w>170</w><h>60</h></coordinates><panel_attributes>ToolCallStep
+--
+-call: ToolCall</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>410</x><y>970</y><w>200</w><h>80</h></coordinates><panel_attributes>FinalAnswerStep
+--
+-answer: String
+-drafts: List&lt;ProposalDraft&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1160</x><y>260</y><w>250</w><h>120</h></coordinates><panel_attributes>ToolManager
+--
+-tools: List&lt;Tool&gt;
+--
++register(tool: Tool)
++listSpecs() List&lt;ToolSpec&gt;
++execute(call: ToolCall) ToolResult</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1040</x><y>500</y><w>240</w><h>90</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/Tool/
+--
+/+spec() ToolSpec/
+/+run(args: ToolArgs) ToolResult/</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>530</x><y>680</y><w>180</w><h>120</h></coordinates><panel_attributes>ToolSpec
+--
+-name: String
+-description: String
+-params: List&lt;ParamSpec&gt;
+--
++validate(args: ToolArgs)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1030</x><y>980</y><w>170</w><h>80</h></coordinates><panel_attributes>ToolCall
+--
+-toolName: String
+-args: ToolArgs</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1320</x><y>500</y><w>170</w><h>90</h></coordinates><panel_attributes>ToolResult
+--
+-success: boolean
+-dataJson: String
+-error: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>760</x><y>720</y><w>170</w><h>30</h></coordinates><panel_attributes>TransactionQueryTool</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>970</x><y>720</y><w>170</w><h>30</h></coordinates><panel_attributes>BudgetStatusTool</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1180</x><y>720</y><w>170</w><h>30</h></coordinates><panel_attributes>ForecastTool</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1390</x><y>720</y><w>170</w><h>30</h></coordinates><panel_attributes>InsightTool</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1600</x><y>720</y><w>170</w><h>30</h></coordinates><panel_attributes>GoalTool</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1810</x><y>720</y><w>170</w><h>30</h></coordinates><panel_attributes>ScenarioTool</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1470</x><y>230</y><w>300</w><h>170</h></coordinates><panel_attributes>MemoryManager
+--
+-shortTerm: ConversationMemory
+-longTerm: UserProfileMemory
+-repo: MemoryRepository
+--
++buildContext(task: AgentTask) AgentContext
++remember(task: AgentTask,
+   result: AgentResult)
++setProtectedCategory(category: Category,
+   protected: boolean)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1530</x><y>480</y><w>180</w><h>120</h></coordinates><panel_attributes>ConversationMemory
+--
+-windowSize: int
+-chatMemory: ChatMemory
+--
++append(message: Message)
++recent() List&lt;Message&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1760</x><y>490</y><w>280</w><h>100</h></coordinates><panel_attributes>UserProfileMemory
+--
+-protectedCategories: List&lt;Category&gt;
+-pastReviewSummaries: List&lt;String&gt;
+--
++getProtectedCategories() List&lt;Category&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1820</x><y>280</y><w>350</w><h>80</h></coordinates><panel_attributes>GroundingChecker
+--
++verify(answer: String,
+   observations: List&lt;ToolResult&gt;) GroundingReport</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2440</x><y>510</y><w>230</w><h>80</h></coordinates><panel_attributes>GroundingReport
+--
+-grounded: boolean
+-ungroundedFigures: List&lt;String&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2210</x><y>260</y><w>180</w><h>120</h></coordinates><panel_attributes>AgentTrace
+--
+-id: String
+-taskType: TaskType
+-steps: List&lt;TraceStep&gt;
+--
++addStep(step: TraceStep)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2720</x><y>480</y><w>170</w><h>120</h></coordinates><panel_attributes>TraceStep
+--
+-index: int
+-kind: String
+-toolName: String
+-argsJson: String
+-resultSummary: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2440</x><y>270</y><w>240</w><h>90</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/TraceRepository/
+--
++save(trace: AgentTrace)
++load(traceId: String) AgentTrace</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2090</x><y>500</y><w>310</w><h>90</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/MemoryRepository/
+--
++savePreferences(profile: UserProfileMemory)
++loadPreferences() UserProfileMemory</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>950</x><y>150</y><w>350</w><h>120</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>322;10;10;91</additional_attributes></element><element><id>Relation</id><coordinates><x>1280</x><y>150</y><w>30</w><h>130</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;10;105</additional_attributes></element><element><id>Relation</id><coordinates><x>1300</x><y>150</y><w>350</w><h>100</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;326;77</additional_attributes></element><element><id>Relation</id><coordinates><x>1320</x><y>150</y><w>700</w><h>150</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;678;126</additional_attributes></element><element><id>Relation</id><coordinates><x>1350</x><y>150</y><w>1230</w><h>140</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;1208;119</additional_attributes></element><element><id>Relation</id><coordinates><x>120</x><y>150</y><w>1070</w><h>150</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>1042;10;10;129</additional_attributes></element><element><id>Relation</id><coordinates><x>670</x><y>150</y><w>610</w><h>130</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>585;10;10;105</additional_attributes></element><element><id>Relation</id><coordinates><x>390</x><y>150</y><w>870</w><h>140</h></coordinates><panel_attributes>lt=..&gt;
+creates per run</panel_attributes><additional_attributes>842;10;10;117</additional_attributes></element><element><id>Relation</id><coordinates><x>1330</x><y>150</y><w>910</w><h>140</h></coordinates><panel_attributes>lt=..&gt;
+creates per run</panel_attributes><additional_attributes>10;10;881;115</additional_attributes></element><element><id>Relation</id><coordinates><x>70</x><y>360</y><w>50</w><h>140</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>24;10;10;120</additional_attributes></element><element><id>Relation</id><coordinates><x>280</x><y>370</y><w>420</w><h>130</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>398;10;10;106</additional_attributes></element><element><id>Relation</id><coordinates><x>2300</x><y>370</y><w>450</w><h>130</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=0..*</panel_attributes><additional_attributes>10;10;426;103</additional_attributes></element><element><id>Relation</id><coordinates><x>540</x><y>390</y><w>420</w><h>140</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>392;10;10;113</additional_attributes></element><element><id>Relation</id><coordinates><x>850</x><y>390</y><w>170</w><h>150</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>144;10;10;127</additional_attributes></element><element><id>Relation</id><coordinates><x>390</x><y>560</y><w>490</w><h>180</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>463;10;10;158</additional_attributes></element><element><id>Relation</id><coordinates><x>280</x><y>760</y><w>130</w><h>140</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>105;10;10;120</additional_attributes></element><element><id>Relation</id><coordinates><x>410</x><y>760</y><w>130</w><h>240</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;10;106;213</additional_attributes></element><element><id>Relation</id><coordinates><x>1170</x><y>370</y><w>140</w><h>150</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+m1=1
+m2=1..*</panel_attributes><additional_attributes>112;10;10;127</additional_attributes></element><element><id>Relation</id><coordinates><x>830</x><y>580</y><w>310</w><h>170</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>282;10;10;141</additional_attributes></element><element><id>Relation</id><coordinates><x>1040</x><y>580</y><w>120</w><h>170</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>94;10;10;141</additional_attributes></element><element><id>Relation</id><coordinates><x>1150</x><y>580</y><w>140</w><h>170</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>10;10;115;141</additional_attributes></element><element><id>Relation</id><coordinates><x>1170</x><y>580</y><w>330</w><h>170</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>10;10;305;141</additional_attributes></element><element><id>Relation</id><coordinates><x>1190</x><y>580</y><w>520</w><h>170</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>10;10;493;141</additional_attributes></element><element><id>Relation</id><coordinates><x>1210</x><y>580</y><w>710</w><h>170</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>10;10;682;141</additional_attributes></element><element><id>Relation</id><coordinates><x>610</x><y>580</y><w>510</w><h>120</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>482;10;10;99</additional_attributes></element><element><id>Relation</id><coordinates><x>1310</x><y>370</y><w>120</w><h>150</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>10;10;94;127</additional_attributes></element><element><id>Relation</id><coordinates><x>1560</x><y>390</y><w>90</w><h>120</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=1</panel_attributes><additional_attributes>10;10;64;95</additional_attributes></element><element><id>Relation</id><coordinates><x>1610</x><y>390</y><w>310</w><h>130</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=1</panel_attributes><additional_attributes>10;10;290;102</additional_attributes></element><element><id>Relation</id><coordinates><x>1670</x><y>400</y><w>600</w><h>120</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;576;99</additional_attributes></element><element><id>Relation</id><coordinates><x>1980</x><y>350</y><w>600</w><h>180</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>10;10;574;155</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>1120</y><w>950</w><h>70</h></coordinates><panel_attributes>Agent subsystem. Tools call TransactionService, BudgetService (Fig 3.2), AnalyticsService, GoalService, ScenarioSimulator (Fig 3.3); Planner uses LLMProvider (Fig 3.5).
+bg=yellow</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>360</x><y>900</y><w>710</w><h>100</h></coordinates><panel_attributes>lt=&lt;..</panel_attributes><additional_attributes>690;80;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1130</x><y>370</y><w>80</w><h>630</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;610;60;10</additional_attributes></element></diagram>

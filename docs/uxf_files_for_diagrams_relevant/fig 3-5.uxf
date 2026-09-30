@@ -1,0 +1,51 @@
+<diagram program="umletino" version="15.1"><zoom_level>10</zoom_level><element><id>UMLClass</id><coordinates><x>705</x><y>0</y><w>314</w><h>80</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/LLMProvider/
+--
+/+complete(request: LLMRequest) LLMResponse/</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>30</x><y>147</y><w>301</w><h>164</h></coordinates><panel_attributes>ClaudeProvider
+--
+-chatModel: ChatModel
+-model: String
+--
++complete(request: LLMRequest) LLMResponse
+-toChatRequest(request: LLMRequest)
+   ChatRequest
+-toLlmResponse(response: ChatResponse)
+   LLMResponse</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>36</x><y>393</y><w>288</w><h>80</h></coordinates><panel_attributes>&lt;&lt;LangChain4j interface - adaptee&gt;&gt;
+ChatModel
+--
++chat(request: ChatRequest) ChatResponse</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>95</x><y>555</y><w>170</w><h>52</h></coordinates><panel_attributes>&lt;&lt;LangChain4j&gt;&gt;
+AnthropicChatModel</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>371</x><y>182</y><w>301</w><h>94</h></coordinates><panel_attributes>MockLLMProvider
+--
+-scriptedReplies: List&lt;String&gt;
+--
++complete(request: LLMRequest) LLMResponse</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>711</x><y>175</y><w>301</w><h>108</h></coordinates><panel_attributes>&lt;&lt;abstract&gt;&gt;
+/LLMProviderDecorator/
+--
+#inner: LLMProvider
+--
++complete(request: LLMRequest) LLMResponse</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>541</x><y>379</y><w>301</w><h>108</h></coordinates><panel_attributes>RetryingLLMProvider
+--
+-maxRetries: int
+-backoffSeconds: double
+--
++complete(request: LLMRequest) LLMResponse</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>882</x><y>386</y><w>301</w><h>94</h></coordinates><panel_attributes>LoggingLLMProvider
+--
+-logger: Logger
+--
++complete(request: LLMRequest) LLMResponse</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1052</x><y>175</y><w>195</w><h>108</h></coordinates><panel_attributes>LLMRequest
+--
+-systemPrompt: String
+-messages: List&lt;Message&gt;
+-toolSpecs: List&lt;ToolSpec&gt;
+-model: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1287</x><y>182</y><w>195</w><h>94</h></coordinates><panel_attributes>LLMResponse
+--
+-text: String
+-toolCalls: List&lt;ToolCall&gt;
+-tokensUsed: int</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>170</x><y>70</y><w>640</w><h>100</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>613;10;10;77</additional_attributes></element><element><id>Relation</id><coordinates><x>511</x><y>70</y><w>330</w><h>140</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>303;10;10;112</additional_attributes></element><element><id>Relation</id><coordinates><x>816</x><y>70</y><w>50</w><h>130</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>30;10;10;105</additional_attributes></element><element><id>Relation</id><coordinates><x>681</x><y>273</y><w>170</w><h>130</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>145;10;10;106</additional_attributes></element><element><id>Relation</id><coordinates><x>886</x><y>273</y><w>170</w><h>140</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;10;146;113</additional_attributes></element><element><id>Relation</id><coordinates><x>867</x><y>70</y><w>70</w><h>130</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+wraps
+m1=1
+m2=1</panel_attributes><additional_attributes>29;105;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>170</x><y>301</y><w>60</w><h>120</h></coordinates><panel_attributes>lt=-&gt;
+wraps
+m1=1
+m2=1</panel_attributes><additional_attributes>10;10;10;92</additional_attributes></element><element><id>Relation</id><coordinates><x>170</x><y>463</y><w>30</w><h>120</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>10;10;10;92</additional_attributes></element><element><id>Relation</id><coordinates><x>899</x><y>70</y><w>270</w><h>130</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>10;10;250;105</additional_attributes></element><element><id>Relation</id><coordinates><x>930</x><y>70</y><w>480</w><h>140</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>10;10;454;112</additional_attributes></element><element><id>UMLNote</id><coordinates><x>30</x><y>647</y><w>1320</w><h>30</h></coordinates><panel_attributes>LLM provider layer (Adapter + Decorator). Planner, LLMCategorizationStrategy and ExplanationService depend on LLMProvider. Runtime: new LoggingLLMProvider(new RetryingLLMProvider(new ClaudeProvider(chatModel, model))).
+bg=yellow</panel_attributes><additional_attributes></additional_attributes></element></diagram>

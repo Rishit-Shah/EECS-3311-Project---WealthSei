@@ -1,0 +1,80 @@
+<diagram program="umletino" version="15.1"><zoom_level>12</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>0</x><y>0</y><w>8244</w><h>2796</h></coordinates><panel_attributes>title=SD05 — Purchase Affordability: the full agent loop (UC07, F08)
+obj=User~User ACTOR
+obj=AssistantView~AV
+obj=WealthSeiFacade~F
+obj=ProposalService~PS
+obj=AgentController~AC
+obj=MemoryManager~MM
+obj=ToolManager~TM
+obj=Planner~PL
+obj=PromptBuilder~PB
+obj=ResponseParser~RP
+obj=LLMProvider~LLM
+obj=Tool~T
+obj=GroundingChecker~GC
+obj=TraceRepository~TR
+obj=AgentTrace~TRC CREATED_LATER
+
+User-&gt;&gt;&gt;AV: enter item and price, click Check
+AV-&gt;&gt;&gt;F: checkAffordability(item, price)
+combinedFragment=alt~cf1 User TRC; User: [price missing or not positive]
+F.&gt;AV: ValidationException
+AV.&gt;User: ask for a valid price
+..=cf1; User: [input valid]
+F-&gt;&gt;&gt;AC: handle(AgentTask AFFORDABILITY)
+AC-&gt;&gt;&gt;MM: buildContext(task)
+MM.&gt;AC: AgentContext (recent messages, preferences)
+AC-&gt;&gt;&gt;TM: listSpecs()
+TM.&gt;AC: List of ToolSpec
+AC-&gt;&gt;&gt;TRC: new AgentTrace(taskType)
+combinedFragment=loop~cf2 AC TRC; AC: [until FinalAnswerStep or maxSteps reached]
+AC-&gt;&gt;&gt;PL: nextStep(ctx)
+PL-&gt;&gt;&gt;PB: build(ctx)
+PB.&gt;PL: LLMRequest
+PL-&gt;&gt;&gt;LLM: complete(request)
+LLM.&gt;PL: LLMResponse (text or tool calls)
+PL-&gt;&gt;&gt;RP: parse(response)
+combinedFragment=alt~cf3 PL LLM; PL: [malformed response]
+RP.&gt;PL: throw MalformedResponseException
+PL-&gt;&gt;&gt;PB: buildRepairPrompt(rawText)
+PL-&gt;&gt;&gt;LLM: complete(repair request)
+PL: still malformed leads to AgentStatus MODEL_UNAVAILABLE
+..=cf3; PL: [parsed]
+RP.&gt;PL: AgentStep
+--=cf3
+PL.&gt;AC: AgentStep
+combinedFragment=opt~cf4 AC TRC; AC: [step is a ToolCallStep]
+AC-&gt;&gt;&gt;TM: execute(toolCall)
+TM-&gt;&gt;&gt;TM +1: spec.validate(args)
+combinedFragment=alt~cf5 AC T; AC: [invalid arguments]
+TM.&gt;AC: ToolResult failure (tool not run)
+..=cf5; AC: [valid arguments]
+TM-&gt;&gt;&gt;T: run(args)
+T.&gt;TM: ToolResult (data)
+TM.&gt;AC: ToolResult
+--=cf5
+AC-&gt;&gt;&gt;AC +1: ctx.addObservation(result)
+AC-&gt;&gt;&gt;TRC: addStep(step)
+--=cf4
+--=cf2
+AC: reaching maxSteps gives AgentStatus STEP_LIMIT with a partial answer
+AC-&gt;&gt;&gt;GC: verify(answer, observations)
+GC.&gt;AC: GroundingReport
+combinedFragment=opt~cf6 AC PL; AC: [figures not grounded in tool results]
+AC-&gt;&gt;&gt;PL: revise(ctx, report)
+PL.&gt;AC: corrected FinalAnswerStep
+--=cf6
+AC-&gt;&gt;&gt;TR: save(trace)
+AC-&gt;&gt;&gt;MM: remember(task, result)
+AC.&gt;F: AgentResult
+F.&gt;AV: AgentResult
+AV.&gt;User: verdict, reasoning, Why link
+combinedFragment=opt~cf7 User PS; User: [user clicks Save as proposal - extension of UC07, includes UC14]
+User-&gt;&gt;&gt;AV: click Save as proposal
+AV-&gt;&gt;&gt;F: createProposals(drafts, traceId)
+F-&gt;&gt;&gt;PS: createFromDrafts(drafts, traceId)
+PS.&gt;F: List of Proposal
+F.&gt;AV: List of Proposal
+AV.&gt;User: proposals saved as pending
+--=cf7
+--=cf1</panel_attributes><additional_attributes></additional_attributes></element></diagram>

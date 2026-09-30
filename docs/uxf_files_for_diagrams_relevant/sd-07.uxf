@@ -1,0 +1,55 @@
+<diagram program="umletino" version="15.1"><zoom_level>13</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>0</x><y>0</y><w>6955</w><h>2106</h></coordinates><panel_attributes>title=SD07 — What-If Scenario (UC09, F10)
+obj=User~User ACTOR
+obj=AssistantView~AV
+obj=WealthSeiFacade~F
+obj=AgentController~AC
+obj=Planner~PL
+obj=ToolManager~TM
+obj=ScenarioTool~ST
+obj=ScenarioSimulator~SS
+obj=PlanRepository~PLR
+obj=ScenarioChange~SCH
+obj=ForecastEngine~FE
+obj=GroundingChecker~GC
+
+User-&gt;&gt;&gt;AV: type what-if text
+AV-&gt;&gt;&gt;F: runWhatIf(description)
+F-&gt;&gt;&gt;AC: handle(AgentTask WHAT_IF)
+combinedFragment=loop~cf1 AC FE; AC: [agent loop (see SD05)]
+AC-&gt;&gt;&gt;PL: nextStep(ctx)
+PL.&gt;AC: ToolCallStep (ScenarioTool with structured changes)
+AC-&gt;&gt;&gt;TM: execute(toolCall)
+TM-&gt;&gt;&gt;TM +1: spec.validate(args)
+combinedFragment=alt~cf2 AC FE; AC:             [invalid or unknown change (bad category, negative value, more than 5 changes)]
+TM.&gt;AC: ToolResult failure
+AC-&gt;&gt;&gt;PL: nextStep(ctx)
+PL.&gt;AC: FinalAnswerStep (clarifying question)
+..=cf2; AC: [valid]
+TM-&gt;&gt;&gt;ST: run(args)
+ST-&gt;&gt;&gt;SS: simulate(scenario)
+SS-&gt;&gt;&gt;PLR: find()
+PLR.&gt;SS: FinancialPlan
+SS-&gt;&gt;&gt;FE: project(baselineInputs, 180)
+FE.&gt;SS: baseline Forecast
+SS-&gt;&gt;&gt;SS +1: baselineInputs.deepCopy() (deep copy)
+combinedFragment=loop~cf3 SS SCH; 
+SS: [each change]
+SS-&gt;&gt;&gt;SCH: applyTo(inputs)
+SCH.&gt;SS: modified inputs
+--=cf3
+SS-&gt;&gt;&gt;FE: project(modifiedInputs, 180)
+FE.&gt;SS: scenario Forecast
+SS.&gt;ST: ScenarioResult
+ST.&gt;TM: ToolResult
+TM.&gt;AC: ToolResult
+--=cf2
+--=cf1
+AC-&gt;&gt;&gt;GC: verify(answer, observations)
+GC.&gt;AC: GroundingReport
+AC.&gt;F: AgentResult
+F.&gt;AV: AgentResult
+AV.&gt;User: comparison table, chart, or clarifying question
+combinedFragment=opt~cf4 AV F; AV: [user clicks Turn into proposals]
+AV-&gt;&gt;&gt;F: createProposals(drafts, traceId)
+F.&gt;AV: List of Proposal
+--=cf4</panel_attributes><additional_attributes></additional_attributes></element></diagram>

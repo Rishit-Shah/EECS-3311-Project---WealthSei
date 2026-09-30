@@ -1,0 +1,146 @@
+<diagram program="umletino" version="15.1"><zoom_level>10</zoom_level><element><id>UMLClass</id><coordinates><x>840</x><y>420</y><w>255</w><h>136</h></coordinates><panel_attributes>Money
+--
+-amount: BigDecimal
+--
++add(other: Money) Money
++subtract(other: Money) Money
++multiply(factor: BigDecimal) Money
++compareTo(other: Money) int</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>550</x><y>440</y><w>170</w><h>94</h></coordinates><panel_attributes>Category
+--
+-id: String
+-name: String
+-essential: boolean</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>240</x><y>20</y><w>175</w><h>94</h></coordinates><panel_attributes>FinancialPlan
+--
+-currentBalance: Money
+-balanceAsOf: LocalDate
+-safetyBuffer: Money</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>30</x><y>230</y><w>175</w><h>108</h></coordinates><panel_attributes>IncomeSource
+--
+-name: String
+-amount: Money
+-frequency: Frequency
+-nextPayDate: LocalDate</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>240</x><y>230</y><w>175</w><h>108</h></coordinates><panel_attributes>FixedBill
+--
+-name: String
+-amount: Money
+-frequency: Frequency
+-nextDueDate: LocalDate</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>460</x><y>230</y><w>170</w><h>94</h></coordinates><panel_attributes>PlannedExpense
+--
+-description: String
+-amount: Money
+-date: LocalDate</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>880</x><y>210</y><w>170</w><h>136</h></coordinates><panel_attributes>Transaction
+--
+-id: String
+-date: LocalDate
+-amount: Money
+-merchant: String
+-description: String
+-income: boolean</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>660</x><y>40</y><w>170</w><h>66</h></coordinates><panel_attributes>Budget
+--
+-month: YearMonth</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>670</x><y>250</y><w>170</w><h>66</h></coordinates><panel_attributes>BudgetLine
+--
+-limit: Money</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1330</x><y>30</y><w>170</w><h>80</h></coordinates><panel_attributes>BudgetStatus
+--
+-month: YearMonth
+-totalSpent: Money</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1330</x><y>230</y><w>170</w><h>108</h></coordinates><panel_attributes>BudgetLineStatus
+--
+-spent: Money
+-limit: Money
+/ratio: double
+-level: AlertSeverity</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>30</x><y>600</y><w>182</w><h>108</h></coordinates><panel_attributes>Alert
+--
+-type: AlertType
+-severity: AlertSeverity
+-message: String
+-createdAt: Instant</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>870</x><y>0</y><w>195</w><h>150</h></coordinates><panel_attributes>RecurringPayment
+--
+-merchant: String
+-amount: Money
+-frequency: Frequency
+-nextDue: LocalDate
+-confidence: double
+-flaggedForReview: boolean
+-income: boolean</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1540</x><y>0</y><w>202</w><h>150</h></coordinates><panel_attributes>SavingsGoal
+--
+-id: String
+-name: String
+-target: Money
+-deadline: LocalDate
+-saved: Money
+-monthlyContribution: Money
+-status: GoalStatus</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1550</x><y>220</y><w>170</w><h>122</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
+GoalStatus
+--
+ON_TRACK
+AT_RISK
+BEHIND
+ACHIEVED</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1780</x><y>30</y><w>189</w><h>80</h></coordinates><panel_attributes>Forecast
+--
+-days: List&lt;DailyBalance&gt;
+/lowestBalance: Money</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1790</x><y>240</y><w>170</w><h>80</h></coordinates><panel_attributes>DailyBalance
+--
+-date: LocalDate
+-balance: Money</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>520</x><y>600</y><w>195</w><h>122</h></coordinates><panel_attributes>SafeToSpendResult
+--
+-dailyAllowance: Money
+-remainingThisMonth: Money
+-upcomingBills: Money
+-goalReserve: Money
+-explanation: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1100</x><y>10</y><w>182</w><h>122</h></coordinates><panel_attributes>Insight
+--
+-type: InsightType
+-title: String
+-evidence: String
+-severity: AlertSeverity
+-explanation: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2020</x><y>240</y><w>170</w><h>80</h></coordinates><panel_attributes>HealthScore
+--
+-total: int
+-explanation: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2020</x><y>440</y><w>170</w><h>94</h></coordinates><panel_attributes>ScoreComponent
+--
+-name: String
+-points: int
+-maxPoints: int</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2240</x><y>20</y><w>222</w><h>94</h></coordinates><panel_attributes>Scenario
+--
+-id: String
+-name: String
+-changes: List&lt;ScenarioChange&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2250</x><y>230</y><w>202</w><h>94</h></coordinates><panel_attributes>ScenarioResult
+--
+-baselineEndBalance: Money
+-scenarioEndBalance: Money
+-monthlySavingsDelta: Money</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2010</x><y>10</y><w>195</w><h>122</h></coordinates><panel_attributes>MonthlyReview
+--
+-month: YearMonth
+-narrative: String
+-proposalIds: List&lt;String&gt;
+-traceId: String
+-generatedAt: Instant</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>100</x><y>110</y><w>220</w><h>140</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=0..*</panel_attributes><additional_attributes>194;10;10;119</additional_attributes></element><element><id>Relation</id><coordinates><x>320</x><y>110</y><w>50</w><h>140</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=0..*</panel_attributes><additional_attributes>10;10;10;119</additional_attributes></element><element><id>Relation</id><coordinates><x>350</x><y>110</y><w>220</w><h>150</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=0..*</panel_attributes><additional_attributes>10;10;192;126</additional_attributes></element><element><id>Relation</id><coordinates><x>350</x><y>330</y><w>270</w><h>130</h></coordinates><panel_attributes>lt=-&gt;
+m1=*
+m2=0..1</panel_attributes><additional_attributes>10;10;247;104</additional_attributes></element><element><id>Relation</id><coordinates><x>530</x><y>320</y><w>120</w><h>150</h></coordinates><panel_attributes>lt=-&gt;
+m1=*
+m2=0..1</panel_attributes><additional_attributes>10;10;88;121</additional_attributes></element><element><id>Relation</id><coordinates><x>660</x><y>340</y><w>320</w><h>120</h></coordinates><panel_attributes>lt=-&gt;
+categorized as
+m1=*
+m2=1</panel_attributes><additional_attributes>291;10;10;100</additional_attributes></element><element><id>Relation</id><coordinates><x>960</x><y>340</y><w>50</w><h>100</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>30;10;10;79</additional_attributes></element><element><id>Relation</id><coordinates><x>720</x><y>90</y><w>60</w><h>180</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=1..*</panel_attributes><additional_attributes>20;10;17;154</additional_attributes></element><element><id>Relation</id><coordinates><x>630</x><y>310</y><w>130</w><h>150</h></coordinates><panel_attributes>lt=-&gt;
+m1=*
+m2=1</panel_attributes><additional_attributes>109;10;10;125</additional_attributes></element><element><id>Relation</id><coordinates><x>1400</x><y>100</y><w>50</w><h>150</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=0..*</panel_attributes><additional_attributes>10;10;10;126</additional_attributes></element><element><id>Relation</id><coordinates><x>1860</x><y>100</y><w>50</w><h>160</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=1..*</panel_attributes><additional_attributes>10;10;10;140</additional_attributes></element><element><id>Relation</id><coordinates><x>2100</x><y>310</y><w>50</w><h>150</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=1..4</panel_attributes><additional_attributes>10;10;10;128</additional_attributes></element><element><id>Relation</id><coordinates><x>1630</x><y>140</y><w>30</w><h>110</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;10;84</additional_attributes></element><element><id>Relation</id><coordinates><x>940</x><y>140</y><w>110</w><h>100</h></coordinates><panel_attributes>lt=..&gt;
+derived from</panel_attributes><additional_attributes>29;10;10;77</additional_attributes></element><element><id>Relation</id><coordinates><x>2340</x><y>110</y><w>110</w><h>140</h></coordinates><panel_attributes>lt=..&gt;
+simulated into</panel_attributes><additional_attributes>10;10;10;116</additional_attributes></element><element><id>Relation</id><coordinates><x>2100</x><y>120</y><w>40</w><h>140</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+m1=1
+m2=1</panel_attributes><additional_attributes>10;10;10;119</additional_attributes></element><element><id>Relation</id><coordinates><x>980</x><y>120</y><w>240</w><h>120</h></coordinates><panel_attributes>lt=..&gt;
+evidence</panel_attributes><additional_attributes>220;10;10;91</additional_attributes></element><element><id>UMLNote</id><coordinates><x>30</x><y>860</y><w>900</w><h>70</h></coordinates><panel_attributes>Domain model (conceptual). Records and enums not drawn here are listed in the value-object table of the report.
+bg=yellow</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>720</y><w>370</w><h>20</h></coordinates><panel_attributes>Created by AlertMonitor and received by AlertListener (Fig 3.2).
+bg=yellow</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLNote</id><coordinates><x>480</x><y>730</y><w>390</w><h>20</h></coordinates><panel_attributes>Returned by SafeToSpendCalculator and AnalyticsService (Fig 3.3).
+bg=yellow</panel_attributes><additional_attributes></additional_attributes></element></diagram>

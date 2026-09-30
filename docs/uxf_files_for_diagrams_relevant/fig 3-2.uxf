@@ -1,0 +1,132 @@
+<diagram program="umletino" version="15.1"><zoom_level>10</zoom_level><element><id>UMLClass</id><coordinates><x>670</x><y>0</y><w>301</w><h>234</h></coordinates><panel_attributes>TransactionService
+--
+-repo: TransactionRepository
+-importer: CsvImporter
+-categorizer: Categorizer
+--
++importFile(path: Path) ImportResult
++query(filter: TxFilter) List&lt;Transaction&gt;
++updateCategory(txId: String,
+   category: Category) Transaction
++addTransaction(entry: NewTransaction)
+   Transaction
+-removeDuplicates(txs: List&lt;Transaction&gt;)
+   List&lt;Transaction&gt;
+-validate(entry: NewTransaction)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>310</x><y>320</y><w>261</w><h>122</h></coordinates><panel_attributes>CsvImporter
+--
+-adapterTypes: List&lt;Class&gt;
+--
++parse(path: Path) ParseResult
++detectAdapter(header: List&lt;String&gt;,
+   parser: CSVParser) BankCsvAdapter</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>170</x><y>530</y><w>301</w><h>136</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/BankCsvAdapter/
+--
+#parser: CSVParser
+--
++canHandle(header: List&lt;String&gt;) boolean
++readTransactions() ParseResult
+#toTransaction(row: CSVRecord) Transaction</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>780</y><w>170</w><h>38</h></coordinates><panel_attributes>SignedAmountCsvAdapter</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>200</x><y>780</y><w>170</w><h>38</h></coordinates><panel_attributes>DebitCreditCsvAdapter</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>670</x><y>330</y><w>294</w><h>94</h></coordinates><panel_attributes>Categorizer
+--
+-strategies: List&lt;CategorizationStrategy&gt;
+--
++categorize(tx: Transaction) Category</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>890</x><y>550</y><w>222</w><h>94</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/CategorizationStrategy/
+--
+/+categorize(tx: Transaction)/
+/   Optional&lt;Category&gt;/</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>690</x><y>730</y><w>314</w><h>136</h></coordinates><panel_attributes>LearnedRuleStrategy
+--
+-rules: RuleRepository
+--
++categorize(tx: Transaction)
+   Optional&lt;Category&gt;
++learn(merchant: String, category: Category)
++forget(merchant: String)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1050</x><y>750</y><w>235</w><h>108</h></coordinates><panel_attributes>KeywordRuleStrategy
+--
+-keywords: Map&lt;String, Category&gt;
+--
++categorize(tx: Transaction)
+   Optional&lt;Category&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1320</x><y>740</y><w>208</w><h>122</h></coordinates><panel_attributes>LLMCategorizationStrategy
+--
+-llm: LLMProvider
+-allowed: List&lt;Category&gt;
+--
++categorize(tx: Transaction)
+   Optional&lt;Category&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1010</x><y>310</y><w>301</w><h>136</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/TransactionRepository/
+--
++saveAll(txs: List&lt;Transaction&gt;)
++query(filter: TxFilter) List&lt;Transaction&gt;
++updateCategory(txId: String,
+   category: Category)
++findById(txId: String) Transaction</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>690</x><y>940</y><w>307</w><h>108</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/RuleRepository/
+--
++save(merchant: String, category: Category)
++delete(merchant: String)
++findAll() List&lt;LearnedRule&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1820</x><y>50</y><w>314</w><h>122</h></coordinates><panel_attributes>PlanService
+--
+-repo: PlanRepository
+--
++getPlan() FinancialPlan
++savePlan(plan: FinancialPlan) FinancialPlan
+-validate(plan: FinancialPlan)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1880</x><y>330</y><w>195</w><h>94</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/PlanRepository/
+--
++save(plan: FinancialPlan)
++find() FinancialPlan</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1280</x><y>10</y><w>347</w><h>206</h></coordinates><panel_attributes>BudgetService
+--
+-repo: BudgetRepository
+-txRepo: TransactionRepository
+-monitor: AlertMonitor
+--
++setBudget(month: YearMonth,
+   limits: BudgetLimits) BudgetStatus
++setLimit(month: YearMonth,
+   category: Category, limit: Money) BudgetStatus
++getStatus(month: YearMonth) BudgetStatus
++refreshAlerts(months: Set&lt;YearMonth&gt;)
+-validate(limits: BudgetLimits)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1350</x><y>330</y><w>222</w><h>94</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/BudgetRepository/
+--
++save(budget: Budget)
++find(month: YearMonth) Budget</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1610</x><y>300</y><w>235</w><h>164</h></coordinates><panel_attributes>&lt;&lt;subject&gt;&gt;
+AlertMonitor
+--
+-listeners: List&lt;AlertListener&gt;
+--
++attach(listener: AlertListener)
++detach(listener: AlertListener)
++evaluate(status: BudgetStatus)
++publish(alert: Alert)
+-notifyListeners(alert: Alert)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1640</x><y>560</y><w>182</w><h>80</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/AlertListener/
+--
+/+onAlert(alert: Alert)/</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>420</x><y>770</y><w>235</w><h>52</h></coordinates><panel_attributes>&lt;&lt;Apache Commons CSV - adaptee&gt;&gt;
+CSVParser</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>430</x><y>220</y><w>360</w><h>120</h></coordinates><panel_attributes>lt=-&gt;
+m1=1
+m2=1</panel_attributes><additional_attributes>335;10;10;98</additional_attributes></element><element><id>Relation</id><coordinates><x>810</x><y>220</y><w>40</w><h>140</h></coordinates><panel_attributes>lt=-&gt;
+m1=1
+m2=1</panel_attributes><additional_attributes>10;10;11;112</additional_attributes></element><element><id>Relation</id><coordinates><x>860</x><y>220</y><w>280</w><h>120</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;260;91</additional_attributes></element><element><id>Relation</id><coordinates><x>310</x><y>430</y><w>150</w><h>120</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+chooses one
+m1=1
+m2=1..*</panel_attributes><additional_attributes>130;10;10;99</additional_attributes></element><element><id>Relation</id><coordinates><x>70</x><y>650</y><w>220</w><h>150</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>196;10;10;127</additional_attributes></element><element><id>Relation</id><coordinates><x>280</x><y>650</y><w>60</w><h>150</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>40;10;10;127</additional_attributes></element><element><id>Relation</id><coordinates><x>360</x><y>650</y><w>190</w><h>140</h></coordinates><panel_attributes>lt=-&gt;
+wraps
+m1=1
+m2=1</panel_attributes><additional_attributes>10;10;170;120</additional_attributes></element><element><id>Relation</id><coordinates><x>810</x><y>420</y><w>220</w><h>160</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+ordered chain
+m1=1
+m2=1..*</panel_attributes><additional_attributes>10;10;197;134</additional_attributes></element><element><id>Relation</id><coordinates><x>840</x><y>630</y><w>150</w><h>120</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>129;10;10;99</additional_attributes></element><element><id>Relation</id><coordinates><x>1000</x><y>630</y><w>190</w><h>140</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>10;10;167;113</additional_attributes></element><element><id>Relation</id><coordinates><x>1030</x><y>630</y><w>420</w><h>130</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>10;10;391;106</additional_attributes></element><element><id>Relation</id><coordinates><x>840</x><y>860</y><w>30</w><h>100</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;10;78</additional_attributes></element><element><id>Relation</id><coordinates><x>1970</x><y>160</y><w>30</w><h>190</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;10;168</additional_attributes></element><element><id>Relation</id><coordinates><x>1450</x><y>210</y><w>30</w><h>150</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;10;126</additional_attributes></element><element><id>Relation</id><coordinates><x>1180</x><y>210</y><w>240</w><h>130</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>216;10;10;105</additional_attributes></element><element><id>Relation</id><coordinates><x>1510</x><y>210</y><w>240</w><h>120</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;218;91</additional_attributes></element><element><id>Relation</id><coordinates><x>1720</x><y>450</y><w>70</w><h>130</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+notifies
+m1=1
+m2=0..*</panel_attributes><additional_attributes>10;10;11;106</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>1080</y><w>900</w><h>70</h></coordinates><panel_attributes>Import, categorization, plan, budgets and alerts. LLMCategorizationStrategy uses LLMProvider (Fig 3.5).
+bg=yellow</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1320</x><y>590</y><w>210</w><h>70</h></coordinates><panel_attributes>BudgetService
+--
+-repo: BudgetRepository
+-txRepo: TransactionRepository
+-monitor: AlertMonitor
+--
++setBudget(month: YearMonth, limits: BudgetLimits) BudgetStatus
++setLimit(month: YearMonth, category: Category, limit: Money) BudgetStatus
++getStatus(month: YearMonth) BudgetStatus
++refreshAlerts(months: Set&lt;YearMonth&gt;)
+-validate(limits: BudgetLimits)</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1470</x><y>450</y><w>180</w><h>160</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;140;160;16</additional_attributes></element><element><id>Relation</id><coordinates><x>1400</x><y>410</y><w>80</w><h>200</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;180;60;16</additional_attributes></element><element><id>Relation</id><coordinates><x>1220</x><y>440</y><w>160</w><h>170</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>140;150;10;16</additional_attributes></element></diagram>

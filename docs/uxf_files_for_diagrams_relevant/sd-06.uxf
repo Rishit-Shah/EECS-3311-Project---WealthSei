@@ -1,0 +1,63 @@
+<diagram program="umletino" version="15.1"><zoom_level>10</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>0</x><y>0</y><w>6520</w><h>1720</h></coordinates><panel_attributes>title=SD06 — Savings Goal Planning and Replanning (UC08, F09)
+obj=User~User ACTOR
+obj=GoalsView~GV
+obj=DashboardView~DV
+obj=WealthSeiFacade~F
+obj=GoalService~GS
+obj=AlertMonitor~AM
+obj=GoalPlanner~GP
+obj=ForecastEngine~FE
+obj=PlanRepository~PLR
+obj=AgentController~AC
+obj=ToolManager~TM
+obj=GoalTool~GT
+obj=ProposalService~PS
+obj=CommandFactory~CF
+obj=ProposalRepository~PR
+obj=Proposal~P CREATED_LATER
+
+User: Part A - after every import, goals are re-evaluated
+F-&gt;&gt;&gt;GS: evaluateAll()
+GS-&gt;&gt;&gt;GS +1: evaluate(goal)
+combinedFragment=opt~cf0 DV AM; DV: [a goal is AT_RISK or BEHIND]
+GS-&gt;&gt;&gt;AM: publish(alert)
+AM-&gt;&gt;&gt;DV: onAlert(alert)
+DV.&gt;User: goal-at-risk alert with a Replan button
+--=cf0
+GS.&gt;F: List of SavingsGoal
+User: Part B - plan a goal (Replan re-enters the flow here)
+User-&gt;&gt;&gt;GV: fill goal form, click Plan
+GV-&gt;&gt;&gt;F: planGoal(request)
+F-&gt;&gt;&gt;GS: createGoal(request)
+combinedFragment=alt~cf1 User P; User: [deadline in the past or target not positive]
+GS.&gt;F: throw ValidationException
+F.&gt;GV: error message
+..=cf1; User: [goal valid]
+GS.&gt;F: SavingsGoal
+F-&gt;&gt;&gt;AC: handle(AgentTask GOAL_PLAN)
+combinedFragment=loop~cf2 GS GT; GS: [agent loop (see SD05)]
+AC-&gt;&gt;&gt;TM: execute(toolCall GoalTool)
+TM-&gt;&gt;&gt;GT: run(args)
+GT-&gt;&gt;&gt;GS: feasibility(goal)
+GS-&gt;&gt;&gt;GP: requiredMonthly(goal, today)
+GS-&gt;&gt;&gt;PLR: find()
+GS-&gt;&gt;&gt;FE: monthlySurplus(inputs)
+GS-&gt;&gt;&gt;GP: buildOptions(goal, surplus)
+GS.&gt;GT: FeasibilityReport
+GT.&gt;TM: ToolResult
+TM.&gt;AC: ToolResult
+--=cf2
+AC.&gt;F: AgentResult (plan text, ProposalDrafts)
+F-&gt;&gt;&gt;PS: createFromDrafts(drafts, traceId)
+combinedFragment=loop~cf3 PS P; PS: [each draft]
+PS-&gt;&gt;&gt;PS +1: passesGuardrails(draft)
+PS-&gt;&gt;&gt;CF: create(draft)
+CF.&gt;PS: Command
+PS-&gt;&gt;&gt;P: new Proposal(draft, command, new PendingState())
+PS-&gt;&gt;&gt;PR: save(proposal)
+--=cf3
+PS.&gt;F: List of Proposal
+F.&gt;GV: goal, plan, proposals
+GV.&gt;User: plan and pending proposals
+--=cf1
+User: Replan: onReplan(goalId) calls replanGoal(goalId) which enters the flow at AgentController.handle()</panel_attributes><additional_attributes></additional_attributes></element></diagram>

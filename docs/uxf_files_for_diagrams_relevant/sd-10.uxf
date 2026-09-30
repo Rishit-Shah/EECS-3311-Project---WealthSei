@@ -1,0 +1,74 @@
+<diagram program="umletino" version="15.1"><zoom_level>10</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>20</x><y>0</y><w>2190</w><h>2530</h></coordinates><panel_attributes>title=SD10 — Proposal Approval (UC12, F13)
+obj=User~User ACTOR
+obj=ProposalView~PV
+obj=WealthSeiFacade~F
+obj=ProposalService~PS
+obj=ProposalRepository~PR
+obj=Proposal~P
+obj=ProposalState~ST
+obj=CommandHistory~CH
+obj=Command~CMD
+obj=Receiver service~RCV
+
+User: Part A - approve a proposal
+User-&gt;&gt;&gt;PV: select a proposal, click Approve
+PV-&gt;&gt;&gt;F: decideProposal(id, true)
+F-&gt;&gt;&gt;PS: decide(id, true)
+PS-&gt;&gt;&gt;PR: findById(id)
+PR.&gt;PS: Proposal
+PS-&gt;&gt;&gt;P: approve(history)
+P-&gt;&gt;&gt;ST: approve(proposal, history)
+combinedFragment=alt~cf1 PS RCV; PS:       [current state is PendingState]
+ST-&gt;&gt;&gt;CH: execute(command)
+CH-&gt;&gt;&gt;CMD: execute()
+CMD-&gt;&gt;&gt;RCV: apply change (for example BudgetService.setLimit)
+combinedFragment=alt~cf2 PS RCV; PS:       [command succeeds]
+RCV.&gt;CMD: ok
+CMD.&gt;CH: ok
+CH.&gt;ST: ok
+ST-&gt;&gt;&gt;P: setState(AppliedState)
+..=cf2; PS: [command fails]
+CMD.&gt;CH: throw CommandFailedException
+CH.&gt;ST: exception
+ST.&gt;PS: exception (state stays Pending)
+--=cf2
+..=cf1; PS: [state is Applied, Rejected or Expired]
+ST.&gt;PS: throw IllegalStateTransitionException
+--=cf1
+PS-&gt;&gt;&gt;PR: save(proposal)
+PS.&gt;F: Proposal or error
+F.&gt;PV: Proposal or error message
+PV.&gt;User: status shown, affected views refreshed
+User: Part B - reject a proposal
+User-&gt;&gt;&gt;PV: select a proposal, click Reject
+PV-&gt;&gt;&gt;F: decideProposal(id, false)
+F-&gt;&gt;&gt;PS: decide(id, false)
+PS-&gt;&gt;&gt;PR: findById(id)
+PR.&gt;PS: Proposal
+PS-&gt;&gt;&gt;P: reject()
+P-&gt;&gt;&gt;ST: reject(proposal)
+combinedFragment=alt~cf3 PS ST; PS:        [current state is PendingState]
+ST-&gt;&gt;&gt;P: setState(RejectedState)
+..=cf3; PS: [state is Applied, Rejected or Expired]
+ST.&gt;PS: throw IllegalStateTransitionException
+--=cf3
+PS-&gt;&gt;&gt;PR: save(proposal)
+PS.&gt;F: Proposal or error
+F.&gt;PV: Proposal or error message
+PV.&gt;User: status shown
+User: Part C - old proposals expire automatically
+User-&gt;&gt;&gt;PV: open the Proposals view
+PV-&gt;&gt;&gt;F: listPendingProposals()
+F-&gt;&gt;&gt;PS: expireOld(month)
+PS-&gt;&gt;&gt;PR: findPending()
+PR.&gt;PS: List of Proposal
+combinedFragment=loop~cf4 PS ST; PS:            [each pending proposal from an earlier month]
+PS-&gt;&gt;&gt;P: expire()
+P-&gt;&gt;&gt;ST: expire(proposal)
+ST-&gt;&gt;&gt;P: setState(ExpiredState)
+PS-&gt;&gt;&gt;PR: save(proposal)
+--=cf4
+F-&gt;&gt;&gt;PS: listPending()
+PS.&gt;F: List of Proposal
+F.&gt;PV: List of Proposal
+PV.&gt;User: pending proposals shown</panel_attributes><additional_attributes></additional_attributes></element></diagram>

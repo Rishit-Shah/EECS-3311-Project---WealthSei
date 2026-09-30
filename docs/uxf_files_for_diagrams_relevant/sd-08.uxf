@@ -1,0 +1,48 @@
+<diagram program="umletino" version="15.1"><zoom_level>11</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>0</x><y>0</y><w>4026</w><h>1595</h></coordinates><panel_attributes>title=SD08 — Monthly AI Review (UC10, F11)
+obj=User~User ACTOR
+obj=ReportView~RV
+obj=WealthSeiFacade~F
+obj=ReviewService~RS
+obj=AnalyticsService~AS
+obj=BudgetService~BS
+obj=GoalService~GS
+obj=AgentController~AC
+obj=MemoryManager~MM
+obj=Planner~PL
+obj=ToolManager~TM
+obj=ProposalService~PS
+obj=ReviewRepository~RR
+obj=PlanRepository~PLR
+
+User-&gt;&gt;&gt;RV: choose month, click Generate Review
+RV-&gt;&gt;&gt;F: generateMonthlyReview(month)
+F-&gt;&gt;&gt;RS: generate(month)
+RS-&gt;&gt;&gt;BS: getStatus(month)
+RS-&gt;&gt;&gt;AS: healthScore(month)
+RS-&gt;&gt;&gt;AS: habits(month)
+RS-&gt;&gt;&gt;GS: evaluateAll()
+RS-&gt;&gt;&gt;PLR: find()
+combinedFragment=alt~cf1 User RR; User: [no transactions in the month]
+RS.&gt;F: throw NoDataException
+F.&gt;RV: error message
+..=cf1; User: [data available]
+RS-&gt;&gt;&gt;AC: handle(AgentTask MONTHLY_REVIEW)
+AC-&gt;&gt;&gt;MM: buildContext(task)
+MM.&gt;AC: AgentContext (includes lastReviewSummary)
+combinedFragment=loop~cf2 AC TM; AC:              [agent loop (see SD05) using BudgetStatusTool, InsightTool, TransactionQueryTool]
+AC-&gt;&gt;&gt;PL: nextStep(ctx)
+PL.&gt;AC: AgentStep
+AC-&gt;&gt;&gt;TM: execute(toolCall)
+TM.&gt;AC: ToolResult
+--=cf2
+AC.&gt;RS: AgentResult (narrative, up to 3 ProposalDrafts)
+combinedFragment=opt~cf3 RS AS; RS:          [agent failed or figures ungrounded]
+RS-&gt;&gt;&gt;RS +1: build metrics-only narrative
+--=cf3
+RS-&gt;&gt;&gt;PS: createFromDrafts(drafts, traceId)
+PS.&gt;RS: List of Proposal (protected categories filtered out)
+RS-&gt;&gt;&gt;RR: save(review)
+RS.&gt;F: MonthlyReview
+F.&gt;RV: MonthlyReview
+RV.&gt;User: review text and number of pending proposals
+--=cf1</panel_attributes><additional_attributes></additional_attributes></element></diagram>

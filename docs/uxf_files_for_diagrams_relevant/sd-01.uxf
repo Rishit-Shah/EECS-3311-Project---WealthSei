@@ -1,0 +1,64 @@
+<diagram program="umletino" version="15.1"><zoom_level>14</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>0</x><y>0</y><w>6846</w><h>2702</h></coordinates><panel_attributes>title=SD01 — Import or Add Transactions (UC01, F01)
+obj=User~User ACTOR
+obj=TransactionsView~TV
+obj=WealthSeiFacade~F
+obj=TransactionService~TS
+obj=CsvImporter~CI
+obj=BankCsvAdapter~AD
+obj=Categorizer~CAT
+obj=TransactionRepository~TR
+obj=BudgetService~BS
+obj=GoalService~GS
+
+User: Part A - import a CSV file
+User-&gt;&gt;&gt;TV: choose CSV file, click Import
+TV-&gt;&gt;&gt;F: importTransactions(file)
+F-&gt;&gt;&gt;TS: importFile(file)
+TS-&gt;&gt;&gt;CI: parse(file)
+CI-&gt;&gt;&gt;CI +1: detectAdapter(header)
+combinedFragment=alt~cf1 User GS; User: [no adapter recognises the header, or file unreadable]
+CI.&gt;TS: throw UnsupportedFormatException
+TS.&gt;F: throw TransactionImportException
+F.&gt;TV: error message
+TV.&gt;User: show supported layouts, nothing saved
+..=cf1; User: [adapter found]
+CI-&gt;&gt;&gt;AD: readTransactions()
+combinedFragment=loop~cf2 AD CAT; AD: [each record read from the CSVParser (adaptee)]
+AD-&gt;&gt;&gt;AD +1: toTransaction(row)
+--=cf2
+AD: an InvalidRowException rejects only that row
+AD.&gt;CI: ParseResult (transactions, rejected rows)
+CI.&gt;TS: ParseResult
+TS-&gt;&gt;&gt;TS +1: removeDuplicates(transactions)
+combinedFragment=loop~cf3 TS CAT; TS:[each new transaction]
+TS-&gt;&gt;&gt;CAT: categorize(tx)
+CAT.&gt;TS: Category (see SD02)
+--=cf3
+TS-&gt;&gt;&gt;TR: saveAll(transactions)
+TS.&gt;F: ImportResult (imported, duplicates, rejected)
+F-&gt;&gt;&gt;BS: refreshAlerts(affected months)
+F-&gt;&gt;&gt;GS: evaluateAll()
+F.&gt;TV: ImportResult
+TV.&gt;User: import summary
+--=cf1
+User: Part B - add a single transaction by hand
+User-&gt;&gt;&gt;TV: fill in the Add Transaction form, click Save
+TV-&gt;&gt;&gt;F: addTransaction(entry)
+F-&gt;&gt;&gt;TS: addTransaction(entry)
+TS-&gt;&gt;&gt;TS +1: validate(entry)
+combinedFragment=alt~cf4 User GS; User: [zero amount, empty merchant or future date]
+TS.&gt;F: throw ValidationException
+F.&gt;TV: error message
+TV.&gt;User: show the validation error
+..=cf4; User: [entry valid]
+combinedFragment=opt~cf5 TS CAT; TS: [no category chosen]
+TS-&gt;&gt;&gt;CAT: categorize(tx)
+CAT.&gt;TS: Category
+--=cf5
+TS-&gt;&gt;&gt;TR: saveAll(list of one Transaction)
+TS.&gt;F: Transaction
+F-&gt;&gt;&gt;BS: refreshAlerts(affected month)
+F-&gt;&gt;&gt;GS: evaluateAll()
+F.&gt;TV: Transaction
+TV.&gt;User: row added
+--=cf4</panel_attributes><additional_attributes></additional_attributes></element></diagram>

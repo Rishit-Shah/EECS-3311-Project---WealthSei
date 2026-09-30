@@ -1,0 +1,52 @@
+<diagram program="umletino" version="15.1"><zoom_level>3</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>1053</x><y>10</y><w>930</w><h>489</h></coordinates><panel_attributes>title=SD03 — Budget and Plan Setup, Tracking and Alerts (UC03, F03)
+obj=User~User ACTOR
+obj=DashboardView~DV
+obj=WealthSeiFacade~F
+obj=PlanService~PLS
+obj=PlanRepository~PLR
+obj=BudgetService~BS
+obj=BudgetRepository~BR
+obj=TransactionRepository~TR
+obj=AlertMonitor~AM
+obj=AlertListener~L
+
+DV: DashboardView and CliApp registered earlier via addAlertListener(), which calls AlertMonitor.attach()
+DV: Part A - save the plan (income, balance, bills, planned expenses)
+User-&gt;&gt;&gt;DV: enter the plan, click Save Plan
+DV-&gt;&gt;&gt;F: savePlan(plan)
+F-&gt;&gt;&gt;PLS: savePlan(plan)
+PLS-&gt;&gt;&gt;PLS +1: validate(plan)
+combinedFragment=alt~cf1 User PLR; User:             [negative amount, missing pay date, unknown frequency or future balance date]
+PLS.&gt;F: throw ValidationException
+F.&gt;DV: error message
+DV.&gt;User: show the validation error
+..=cf1; User: [plan valid]
+PLS-&gt;&gt;&gt;PLR: save(plan)
+PLS.&gt;F: FinancialPlan
+F.&gt;DV: FinancialPlan
+DV.&gt;User: plan saved, forecasts use it from now on
+--=cf1
+DV: Part B - set budget limits and raise alerts
+User-&gt;&gt;&gt;DV: edit category limits, click Save
+DV-&gt;&gt;&gt;F: setBudget(month, limits)
+F-&gt;&gt;&gt;BS: setBudget(month, limits)
+BS-&gt;&gt;&gt;BS +1: validate(limits)
+combinedFragment=alt~cf2 User L; User:  [a limit is negative or invalid]
+BS.&gt;F: throw InvalidBudgetException
+F.&gt;DV: error message
+DV.&gt;User: show validation error
+..=cf2; User: [limits valid]
+BS-&gt;&gt;&gt;BR: save(budget)
+BS-&gt;&gt;&gt;TR: query(month filter)
+TR.&gt;BS: transactions
+BS-&gt;&gt;&gt;BS +1: build BudgetStatus
+BS-&gt;&gt;&gt;AM: evaluate(status)
+combinedFragment=loop~cf3 User L; User:                 [each category at 80 percent or more of its limit]
+AM-&gt;&gt;&gt;AM +1: create Alert (WARNING or OVER)
+AM-&gt;&gt;&gt;L: onAlert(alert)
+L.&gt;User: toast in GUI or line in CLI
+--=cf3
+BS.&gt;F: BudgetStatus
+F.&gt;DV: BudgetStatus
+DV.&gt;User: progress bars updated
+--=cf2</panel_attributes><additional_attributes></additional_attributes></element></diagram>

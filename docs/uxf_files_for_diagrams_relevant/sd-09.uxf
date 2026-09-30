@@ -1,0 +1,53 @@
+<diagram program="umletino" version="15.1"><zoom_level>12</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>0</x><y>0</y><w>3036</w><h>1968</h></coordinates><panel_attributes>title=SD09 — Finance Chat with Memory and Trace (UC11, F12)
+obj=User~User ACTOR
+obj=AssistantView~AV
+obj=WealthSeiFacade~F
+obj=AgentController~AC
+obj=MemoryManager~MM
+obj=ConversationMemory~CM
+obj=UserProfileMemory~UM
+obj=Planner~PL
+obj=ToolManager~TM
+obj=Tool~T
+obj=GroundingChecker~GC
+obj=TraceRepository~TRP
+
+User-&gt;&gt;&gt;AV: type a question
+AV-&gt;&gt;&gt;F: ask(question)
+F-&gt;&gt;&gt;AC: handle(AgentTask CHAT)
+AC-&gt;&gt;&gt;MM: buildContext(task)
+MM-&gt;&gt;&gt;CM: recent()
+CM.&gt;MM: recent messages
+MM-&gt;&gt;&gt;UM: getProtectedCategories()
+UM.&gt;MM: preferences
+MM.&gt;AC: AgentContext
+combinedFragment=loop~cf1 AC T; AC:       [until FinalAnswerStep or maxSteps reached]
+AC-&gt;&gt;&gt;PL: nextStep(ctx)
+combinedFragment=alt~cf2 AC T; AC:        [question is outside finance scope]
+PL.&gt;AC: FinalAnswerStep (polite redirect, no tools)
+..=cf2; AC: [tool needed]
+PL.&gt;AC: ToolCallStep
+AC-&gt;&gt;&gt;TM: execute(toolCall)
+TM-&gt;&gt;&gt;T: run(args)
+T.&gt;TM: ToolResult
+TM.&gt;AC: ToolResult
+--=cf2
+--=cf1
+combinedFragment=alt~cf3 F TRP; F: [LLM unavailable]
+AC.&gt;F: AgentResult (status MODEL_UNAVAILABLE, offline message)
+..=cf3; F: [answer produced]
+AC-&gt;&gt;&gt;GC: verify(answer, observations)
+GC.&gt;AC: GroundingReport
+AC-&gt;&gt;&gt;TRP: save(trace)
+AC-&gt;&gt;&gt;MM: remember(task, result)
+MM-&gt;&gt;&gt;CM: append(message)
+AC.&gt;F: AgentResult
+--=cf3
+F.&gt;AV: AgentResult
+AV.&gt;User: answer
+User-&gt;&gt;&gt;AV: click How did you get this?
+AV-&gt;&gt;&gt;F: getTrace(traceId)
+F-&gt;&gt;&gt;TRP: load(traceId)
+TRP.&gt;F: AgentTrace
+F.&gt;AV: AgentTrace
+AV.&gt;User: tool calls and data used</panel_attributes><additional_attributes></additional_attributes></element></diagram>

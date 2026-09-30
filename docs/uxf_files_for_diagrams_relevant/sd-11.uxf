@@ -1,0 +1,43 @@
+<diagram program="umletino" version="15.1"><zoom_level>17</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>0</x><y>0</y><w>5865</w><h>2142</h></coordinates><panel_attributes>title=SD11 — Export Report (UC13, F14)
+obj=User~User ACTOR
+obj=ReportView~RV
+obj=WealthSeiFacade~F
+obj=ReportService~RS
+obj=BudgetService~BS
+obj=ReviewRepository~RR
+obj=ReportExporter~EX
+obj=File System~FS
+
+User-&gt;&gt;&gt;RV: choose month, format, path, click Export
+RV-&gt;&gt;&gt;F: exportReport(month, fmt, path)
+F-&gt;&gt;&gt;RS: export(month, fmt, path)
+RS-&gt;&gt;&gt;RS +1: buildReportData(month)
+RS-&gt;&gt;&gt;BS: getStatus(month)
+BS.&gt;RS: BudgetStatus
+RS-&gt;&gt;&gt;RR: findByMonth(month)
+RR.&gt;RS: MonthlyReview or none
+combinedFragment=alt~cf1 User FS; User: [no data for the month]
+RS.&gt;F: throw NoDataException
+F.&gt;RV: error message
+..=cf1; User: [data available]
+RS-&gt;&gt;&gt;RS +1: exporterFor(fmt)
+RS-&gt;&gt;&gt;EX: export(reportData, path)
+EX-&gt;&gt;&gt;EX +1: writeHeader(data)
+EX-&gt;&gt;&gt;EX +1: writeSummary(data)
+EX-&gt;&gt;&gt;EX +1: writeCategoryTable(data)
+EX-&gt;&gt;&gt;EX +1: writeReviewSection(data)
+EX-&gt;&gt;&gt;EX +1: writeFooter(data)
+EX-&gt;&gt;&gt;FS: write file
+combinedFragment=alt~cf2 User FS; User: [path not writable]
+FS.&gt;EX: IOException
+EX.&gt;RS: throw ExportException
+RS.&gt;F: error
+F.&gt;RV: error message
+..=cf2; User: [file written]
+FS.&gt;EX: ok
+EX.&gt;RS: Path
+RS.&gt;F: Path
+F.&gt;RV: Path
+RV.&gt;User: confirmation with file location
+--=cf2
+--=cf1</panel_attributes><additional_attributes></additional_attributes></element></diagram>

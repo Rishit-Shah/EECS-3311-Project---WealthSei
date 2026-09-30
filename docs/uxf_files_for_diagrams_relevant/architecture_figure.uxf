@@ -1,0 +1,41 @@
+<diagram program="umletino" version="15.1"><zoom_level>12</zoom_level><element><id>UMLGeneric</id><coordinates><x>1500</x><y>117</y><w>456</w><h>144</h></coordinates><panel_attributes>Presentation layer
+halign=center
+valign=top</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>0</x><y>525</y><w>1728</w><h>312</h></coordinates><panel_attributes>Deterministic core - unit-testable
+halign=center
+valign=top</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>1884</x><y>405</y><w>912</w><h>276</h></coordinates><panel_attributes>Agent subsystem - behaviour-tested
+halign=center
+valign=top</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>1740</x><y>165</y><w>192</w><h>60</h></coordinates><panel_attributes>JavaFX GUI:
+MainWindow + 6 views
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>1536</x><y>177</y><w>156</w><h>48</h></coordinates><panel_attributes>CliApp (picocli)
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>1632</x><y>333</y><w>192</w><h>60</h></coordinates><panel_attributes>WealthSeiFacade
+(single entry point)
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>1164</x><y>693</y><w>228</w><h>60</h></coordinates><panel_attributes>TransactionService,
+CsvImporter, Categorizer
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>1428</x><y>693</y><w>144</w><h>60</h></coordinates><panel_attributes>BudgetService,
+AlertMonitor
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>48</x><y>669</y><w>336</w><h>96</h></coordinates><panel_attributes>AnalyticsService:
+RecurringDetector, ForecastEngine,
+SafeToSpendCalculator, HabitAnalyzer,
+HealthScoreCalculator
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>876</x><y>705</y><w>228</w><h>48</h></coordinates><panel_attributes>GoalService, GoalPlanner
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>648</x><y>705</y><w>168</w><h>48</h></coordinates><panel_attributes>ScenarioSimulator
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>420</x><y>693</y><w>156</w><h>60</h></coordinates><panel_attributes>ProposalService,
+CommandHistory
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>1464</x><y>585</y><w>144</w><h>60</h></coordinates><panel_attributes>ReviewService,
+ReportService
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>2256</x><y>441</y><w>156</w><h>48</h></coordinates><panel_attributes>AgentController
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>2376</x><y>597</y><w>216</w><h>60</h></coordinates><panel_attributes>Planner, PromptBuilder,
+ResponseParser
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>2616</x><y>597</y><w>132</w><h>48</h></coordinates><panel_attributes>MemoryManager
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>1920</x><y>597</y><w>204</w><h>48</h></coordinates><panel_attributes>ToolManager + 6 Tools
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>2160</x><y>597</y><w>168</w><h>60</h></coordinates><panel_attributes>GroundingChecker,
+AgentTrace
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>1476</x><y>1065</y><w>216</w><h>96</h></coordinates><panel_attributes>LLMProvider chain:
+Logging - Retry -
+ClaudeProvider wrapping
+LangChain4j
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLGeneric</id><coordinates><x>2184</x><y>1113</y><w>204</w><h>60</h></coordinates><panel_attributes>SQLite via
+Repository interfaces
+halign=center</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1740</x><y>225</y><w>132</w><h>144</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>87;10;10;98</additional_attributes></element><element><id>Relation</id><coordinates><x>1608</x><y>213</y><w>132</w><h>156</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;86;105</additional_attributes></element><element><id>Relation</id><coordinates><x>852</x><y>381</y><w>864</w><h>168</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>696;10;10;119</additional_attributes></element><element><id>Relation</id><coordinates><x>1764</x><y>381</y><w>588</w><h>84</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;300;40;469;48</additional_attributes></element><element><id>Relation</id><coordinates><x>1524</x><y>477</y><w>804</w><h>144</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;92;646;10</additional_attributes></element><element><id>Relation</id><coordinates><x>2340</x><y>477</y><w>168</w><h>156</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;120;102</additional_attributes></element><element><id>Relation</id><coordinates><x>1608</x><y>645</y><w>888</w><h>456</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>717;10;10;352</additional_attributes></element><element><id>Relation</id><coordinates><x>2352</x><y>477</y><w>372</w><h>144</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;281;99</additional_attributes></element><element><id>Relation</id><coordinates><x>2016</x><y>477</y><w>336</w><h>144</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>253;10;10;99</additional_attributes></element><element><id>Relation</id><coordinates><x>2232</x><y>477</y><w>132</w><h>156</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>90;10;15;102</additional_attributes></element><element><id>Relation</id><coordinates><x>1716</x><y>633</y><w>396</w><h>132</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>302;12;270;80;10;90</additional_attributes></element><element><id>Relation</id><coordinates><x>852</x><y>825</y><w>1440</w><h>312</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;1179;238</additional_attributes></element><element><id>Relation</id><coordinates><x>2292</x><y>633</y><w>432</w><h>516</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>331;10;10;403</additional_attributes></element><element><id>Relation</id><coordinates><x>1260</x><y>741</y><w>348</w><h>360</h></coordinates><panel_attributes>lt=.&gt;
+fallback categorization</panel_attributes><additional_attributes>10;10;270;272</additional_attributes></element><element><id>Relation</id><coordinates><x>204</x><y>765</y><w>1380</w><h>336</h></coordinates><panel_attributes>lt=.&gt;
+explanations</panel_attributes><additional_attributes>10;10;1127;258</additional_attributes></element></diagram>

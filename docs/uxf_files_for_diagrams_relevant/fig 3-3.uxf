@@ -1,0 +1,105 @@
+<diagram program="umletino" version="15.1"><zoom_level>10</zoom_level><element><id>UMLClass</id><coordinates><x>1636</x><y>3</y><w>301</w><h>262</h></coordinates><panel_attributes>AnalyticsService
+--
+-txRepo: TransactionRepository
+-goalRepo: GoalRepository
+-recurringRepo: RecurringRepository
+-planRepo: PlanRepository
+-budgets: BudgetService
+-monitor: AlertMonitor
+--
++detectRecurring() List&lt;RecurringPayment&gt;
++flagRecurring(merchant: String,
+   flagged: boolean)
++forecast(days: int) Forecast
++safeToSpend(today: LocalDate)
+   SafeToSpendResult
++habits(month: YearMonth) List&lt;Insight&gt;
++healthScore(month: YearMonth) HealthScore</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2313</x><y>361</y><w>228</w><h>80</h></coordinates><panel_attributes>RecurringDetector
+--
++detect(txs: List&lt;Transaction&gt;)
+   List&lt;RecurringPayment&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>330</x><y>347</y><w>281</w><h>108</h></coordinates><panel_attributes>ForecastEngine
+--
++project(inputs: ForecastInputs,
+   days: int) Forecast
++monthlySurplus(inputs: ForecastInputs)
+   Money</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>35</x><y>536</y><w>248</w><h>150</h></coordinates><panel_attributes>ForecastInputs
+--
+-plan: FinancialPlan
+-transactions: List&lt;Transaction&gt;
+-recurring: List&lt;RecurringPayment&gt;
+-startDate: LocalDate
+-startBalance: Money
+--
++deepCopy() ForecastInputs</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2581</x><y>347</y><w>426</w><h>108</h></coordinates><panel_attributes>SafeToSpendCalculator
+--
+-buffer: Money
+--
++calculate(forecast: Forecast,
+   goals: List&lt;SavingsGoal&gt;, buffer: Money) SafeToSpendResult</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1301</x><y>361</y><w>235</w><h>80</h></coordinates><panel_attributes>HabitAnalyzer
+--
++analyze(txs: List&lt;Transaction&gt;)
+   List&lt;Insight&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1577</x><y>361</y><w>420</w><h>80</h></coordinates><panel_attributes>HealthScoreCalculator
+--
++calculate(status: BudgetStatus,
+   forecast: Forecast, goals: List&lt;SavingsGoal&gt;) HealthScore</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>20</x><y>726</y><w>301</w><h>108</h></coordinates><panel_attributes>ExplanationService
+--
+-llm: LLMProvider
+--
++explain(facts: AnalysisFacts) String
+-fallbackText(facts: AnalysisFacts) String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>661</x><y>3</y><w>281</w><h>262</h></coordinates><panel_attributes>GoalService
+--
+-repo: GoalRepository
+-txRepo: TransactionRepository
+-planRepo: PlanRepository
+-planner: GoalPlanner
+-forecastEngine: ForecastEngine
+-monitor: AlertMonitor
+--
++createGoal(request: GoalRequest)
+   SavingsGoal
++evaluate(goal: SavingsGoal) GoalStatus
++evaluateAll() List&lt;SavingsGoal&gt;
++feasibility(goal: SavingsGoal)
+   FeasibilityReport
++updateContribution(goalId: String,
+   amount: Money)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>651</x><y>353</y><w>301</w><h>136</h></coordinates><panel_attributes>GoalPlanner
+--
++requiredMonthly(goal: SavingsGoal,
+   today: LocalDate) Money
++projectedCompletion(goal: SavingsGoal,
+   monthlySurplus: Money) LocalDate
++buildOptions(goal: SavingsGoal,
+   monthlySurplus: Money) List&lt;GoalOption&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>210</x><y>72</y><w>314</w><h>122</h></coordinates><panel_attributes>ScenarioSimulator
+--
+-forecastEngine: ForecastEngine
+-txRepo: TransactionRepository
+-planRepo: PlanRepository
+--
++simulate(scenario: Scenario) ScenarioResult</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>3322</x><y>79</y><w>248</w><h>108</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/ScenarioChange/
+--
+/+applyTo(inputs: ForecastInputs)/
+/   ForecastInputs/
+/+describe() String/</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>3046</x><y>368</y><w>170</w><h>66</h></coordinates><panel_attributes>CancelRecurringChange
+--
+-name: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>3257</x><y>361</y><w>170</w><h>80</h></coordinates><panel_attributes>CapCategoryChange
+--
+-category: Category
+-monthlyCap: Money</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>3467</x><y>368</y><w>170</w><h>66</h></coordinates><panel_attributes>IncomeChange
+--
+-monthlyDelta: Money</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>3676</x><y>361</y><w>170</w><h>80</h></coordinates><panel_attributes>OneTimeExpenseChange
+--
+-amount: Money
+-onDate: LocalDate</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>992</x><y>347</y><w>268</w><h>108</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/GoalRepository/
+--
++save(goal: SavingsGoal)
++findAll() List&lt;SavingsGoal&gt;
++findById(goalId: String) SavingsGoal</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2037</x><y>347</y><w>235</w><h>108</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/RecurringRepository/
+--
++saveFlag(merchant: String,
+   flagged: boolean)
++flaggedMerchants() List&lt;String&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1829</x><y>255</y><w>620</w><h>130</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;10;598;106</additional_attributes></element><element><id>Relation</id><coordinates><x>509</x><y>255</y><w>1220</w><h>120</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>1198;10;10;92</additional_attributes></element><element><id>Relation</id><coordinates><x>1855</x><y>255</y><w>960</w><h>120</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;10;939;92</additional_attributes></element><element><id>Relation</id><coordinates><x>1408</x><y>255</y><w>380</w><h>130</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>352;10;10;106</additional_attributes></element><element><id>Relation</id><coordinates><x>1776</x><y>255</y><w>40</w><h>130</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;10;11;106</additional_attributes></element><element><id>Relation</id><coordinates><x>1147</x><y>255</y><w>610</w><h>120</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>586;10;10;92</additional_attributes></element><element><id>Relation</id><coordinates><x>1802</x><y>255</y><w>380</w><h>120</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;352;92</additional_attributes></element><element><id>Relation</id><coordinates><x>791</x><y>255</y><w>30</w><h>120</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;10;10;98</additional_attributes></element><element><id>Relation</id><coordinates><x>460</x><y>255</y><w>320</w><h>120</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>292;10;10;92</additional_attributes></element><element><id>Relation</id><coordinates><x>840</x><y>255</y><w>280</w><h>120</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;254;92</additional_attributes></element><element><id>Relation</id><coordinates><x>177</x><y>445</y><w>320</w><h>120</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>293;10;10;91</additional_attributes></element><element><id>Relation</id><coordinates><x>393</x><y>184</y><w>50</w><h>190</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>10;10;28;163</additional_attributes></element><element><id>Relation</id><coordinates><x>120</x><y>184</y><w>230</w><h>380</h></coordinates><panel_attributes>lt=..&gt;
+clones baseline</panel_attributes><additional_attributes>210;10;10;352</additional_attributes></element><element><id>Relation</id><coordinates><x>3121</x><y>177</y><w>300</w><h>220</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>272;10;10;191</additional_attributes></element><element><id>Relation</id><coordinates><x>3332</x><y>177</y><w>120</w><h>210</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>96;10;10;184</additional_attributes></element><element><id>Relation</id><coordinates><x>3453</x><y>177</y><w>120</w><h>220</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>10;10;99;191</additional_attributes></element><element><id>Relation</id><coordinates><x>3488</x><y>177</y><w>300</w><h>210</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>10;10;273;184</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>864</y><w>900</w><h>70</h></coordinates><panel_attributes>Analytics, goals and scenario simulation. Uses PlanRepository, BudgetService (Fig 3.2), LLMProvider (Fig 3.5) and Scenario (Fig 3.7).
+bg=yellow</panel_attributes><additional_attributes></additional_attributes></element></diagram>
