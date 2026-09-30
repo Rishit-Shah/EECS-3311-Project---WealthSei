@@ -2,11 +2,7 @@
 ### An AI Personal Finance Agent
 
 **Course:** EECS3311 Software Design, Fall 2026 · **Stage:** 1 (Design)
-**Student:** Rishit Shah, _[student ID]_ · **Repository:** [github.com/Rishit-Shah/EECS-3311-Project---WealthSei](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei)
-
-**About the name:** *WealthSei* combines *wealth* with *sensei* (Japanese for teacher or mentor): the agent acts as a personal mentor for everyday money decisions.
-
-> **Notice:** WealthSei provides informational guidance only. It is not professional financial advice. This notice is shown in the GUI footer and in the CLI banner.
+**Student:** Rishit Shah, _[219773050]_ · **Repository:** [github.com/Rishit-Shah/EECS-3311-Project---WealthSei](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei)
 
 ## Contents
 
@@ -151,29 +147,6 @@ flowchart TB
 | `domain` | `Money` (wraps `BigDecimal`) and records such as `Transaction`, `Budget`, `SavingsGoal`; the standard `java.time.YearMonth`, `LocalDate` and `Instant` are used directly |
 | `repository` | repository interfaces and their `Sqlite…` implementations |
 | `src/test/java` | JUnit 5 tests (Stage 3) |
-
-### 1.8 What makes WealthSei distinctive (beyond the sample "Personal Finance Assistant")
-
-| ★ | Feature | Why it is different |
-|---|---|---|
-| ★ | **Safe-to-Spend Coach (F05)** | Turns budgets into one actionable number for *today*, accounting for upcoming bills and goal contributions, with a 30-day low-balance forecast |
-| ★ | **Spending Habit Detective (F06)** | Finds behavioural patterns (weekend spikes, post-payday splurges, small-purchase leaks), not just category totals |
-| ★ | **Financial Health Score (F07)** | Transparent 0–100 score with a component breakdown and improvement hints |
-| ★ | **Goal Planner with Auto-Replan (F09)** | Goals re-evaluate after every import and the agent proposes a revised plan when a goal slips |
-| ★ | **What-If Scenario Simulator (F10)** | Plain-English scenarios simulated by deterministic code and compared with the baseline |
-| ★ | **Proposal Approval Queue (F13)** | Human-in-the-loop: the agent proposes, the user decides; every change is undoable |
-| ★ | **Agent Trace + Grounding Check (F12)** | Users can see exactly which tools and data produced an answer; unsupported figures are caught |
-
-### 1.9 Minimum-requirements checklist
-
-| Requirement | How WealthSei satisfies it |
-|---|---|
-| GUI | JavaFX `MainWindow` with 6 views covering all major features (Section 3, Fig 3.1) |
-| CLI | `CliApp` exposes the same `WealthSeiFacade` operations (Appendix B) |
-| ≥ 10 meaningful features | 14 features (F01–F14); none are login/logout/about-type features |
-| ≥ 5 design patterns | 9: Facade, Strategy, Adapter, Observer, Command, State, Decorator, Template Method, Factory (Section 4) |
-| AI/LLM model | Claude Sonnet 5 and Claude Haiku 4.5 behind `LLMProvider` |
-| Agent behaviour | Planning, tool use, memory, multi-step execution, decision-making, self-check (grounding), human-in-the-loop |
 
 ---
 
@@ -369,31 +342,6 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 ---
 
 ## 3. UML Class Diagrams
-
-### 3.0 Notation used (following the EECS 3311 UML lectures)
-
-| Lecture notation | How it appears in the diagrams |
-|---|---|
-| Attribute `visibility name: type` | `-amount: BigDecimal` |
-| Method `visibility name(param: type): returnType` | `+add(other: Money) Money` (the tool draws the `:` before the return type; `void` return types are omitted) |
-| Visibility `+` public, `-` private, `#` protected, `~` package | Same meaning as in Java; `#` marks hook methods meant for subclasses |
-| Derived attribute `/name` (computed, not stored) | `/ratio: double` |
-| Static member (underlined) | `$` suffix (no static members are needed in this design) |
-| Generic types | written `List~T~` and `Map~K, V~`; the tool draws them as `List<T>` and `Map<K, V>` |
-| Interface: `«interface»` above the name | `<<interface>>` (a Java `interface`); other stereotypes such as `<<facade>>` and `<<subject>>` are used the same way |
-| Abstract class `«abstract»`; abstract methods in italics | `<<abstract>>`; abstract methods are marked with `*` |
-| Association (solid, arrow = direction) | `-->` |
-| Dependency (dashed open arrow, «use») | `..>` |
-| Aggregation (hollow diamond): parts survive the container | `o--` |
-| Composition (filled diamond): parts die with the container | `*--` |
-| Inheritance (solid line, hollow triangle) | `<|--` |
-| Realization (dashed line, hollow triangle) | `<|..` |
-| Multiplicity `1`, `0..1`, `0..*`, `1..*`, `2..7` | quoted at each end of a relationship |
-
-**Perspective (lecture slide "Class diagram perspective"):** Figures 3.1–3.6 are at the *implementation* level, a blueprint for the Java packages listed in Section 1.7. Fig 3.7 is the *conceptual* domain model. As the lecture says, class diagrams show structure, not how objects interact or algorithmic detail; those are shown by the sequence diagrams in Section 7.
-
-The model is split into seven figures so each stays readable. Classes that appear in several figures are the same class. Simple value objects and enums are listed in a table after Fig 3.7. SQLite implementations of repository interfaces (e.g., `SqliteTransactionRepository`) are omitted.
-
 ### Fig 3.1 — Presentation layer and Facade
 
 ```mermaid
@@ -2461,37 +2409,3 @@ sequenceDiagram
 **Execution:** `buildReportData()` combines `BudgetStatus` and the saved `MonthlyReview` (if any). `exporterFor(fmt)` (a Factory) returns the right subclass; its inherited `export()` calls the five `write…` steps in fixed order and writes the file. If no review exists, the report contains metrics only, with a note.
 
 ---
-
-## 10. Appendices
-
-### Appendix A — Testability map (preparing for Stage 3)
-
-| Deterministic components (JUnit 5 tests) | Agent components (behavioural tests) |
-|---|---|
-| `Money` (`BigDecimal` arithmetic and rounding), `ForecastInputs.deepCopy()` (deep copy), `CsvImporter` and adapters, `Categorizer` with rule strategies, `BudgetService`, `AlertMonitor`, `RecurringDetector`, `ForecastEngine`, `SafeToSpendCalculator`, `HabitAnalyzer`, `HealthScoreCalculator`, `GoalPlanner`, `ScenarioSimulator`, `CommandHistory` and commands, `Proposal` states, `ProposalService.passesGuardrails()`, `ToolManager` argument validation, `ResponseParser`, `GroundingChecker`, `ReportExporter`s | `AgentController` loop, `Planner` and `PromptBuilder`, tool selection, use of tool results, recovery from tool or LLM failure, memory use, clarifying questions, proposal quality |
-
-Agent behaviours planned for behavioural testing: (1) selects the forecast/budget tools before answering an affordability question; (2) never states a monetary figure absent from tool results; (3) does not execute a tool with invalid arguments; (4) reports tool failure instead of guessing; (5) respects protected categories in proposals; (6) asks for clarification on ambiguous what-if requests.
-
-**Note on KUMA (Stage 3):** KUMA is a Python SDK that does not run the agent itself, and WealthSei is written in Java. The agent will therefore be exercised from a small Python harness that calls WealthSei's CLI (for example `wealthsei ask "..." --json`). Because KUMA's own trace capture works inside a Python process, the CLI's `--json` option (Appendix B) prints the answer, status and the agent's trace (tool calls, arguments and results) as JSON, and the harness returns that JSON to KUMA as the agent output. Every agent behaviour must therefore be reachable from the CLI.
-
-### Appendix B — CLI command map (GUI/CLI parity)
-
-| CLI command | Facade method | Feature |
-|---|---|---|
-| `wealthsei import <file>` | `importTransactions()` | F01 |
-| `wealthsei categorize <txId> <category>` · `undo` · `redo` | `correctCategory()`, `undo()`, `redo()` | F02 |
-| `wealthsei budget set <month> <category> <amount>` · `budget status <month>` | `setBudget()`, `getBudgetStatus()` | F03 |
-| `wealthsei recurring` | `getRecurringPayments()` | F04 |
-| `wealthsei safe [date]` | `getSafeToSpend()` | F05 |
-| `wealthsei habits <month>` | `getHabitInsights()` | F06 |
-| `wealthsei score <month>` | `getHealthScore()` | F07 |
-| `wealthsei afford "<item>" <price>` | `checkAffordability()` | F08 |
-| `wealthsei goal add "<name>" <target> <deadline>` · `goal replan <id>` | `planGoal()`, `replanGoal()` | F09 |
-| `wealthsei whatif "<text>"` | `runWhatIf()` | F10 |
-| `wealthsei review <month>` | `generateMonthlyReview()` | F11 |
-| `wealthsei ask "<question>"` · `trace <id>` | `ask()`, `getTrace()` | F12 |
-| `wealthsei proposals list` · `approve <id>` · `reject <id>` | `listPendingProposals()`, `decideProposal()` | F13 |
-| `wealthsei export <month> --format md --out <file>` | `exportReport()` | F14 |
-| `wealthsei prefs protect <category>` | `setProtectedCategory()` | supports F09, F11, F13 |
-
-**`--json` option:** every agent command (`afford`, `goal`, `whatif`, `review`, `ask`) accepts `--json` to print the `AgentResult` (answer, status, proposal drafts, grounding report) together with its `AgentTrace` as JSON, for automated testing. It is a formatting option of the same facade calls, not a separate feature.
