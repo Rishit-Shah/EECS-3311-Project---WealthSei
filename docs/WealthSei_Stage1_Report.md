@@ -984,9 +984,9 @@ Every diagram is drawn in UMLet. The PNG is what appears in this report, and the
 EECS-3311-Project---WealthSei/
 └── docs/
     ├── WealthSei_Stage1_Report.md
-    └── diagrams/
-        ├── png/   20 images
-        └── uxf/   20 UMLet files
+    └── Uxf_files/ 
+    └── diagrams/ 
+       
 ```
 
 Folders: [`docs/diagrams/png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/tree/main/docs/diagrams/png) · [`docs/diagrams/uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/tree/main/docs/diagrams/uxf)
