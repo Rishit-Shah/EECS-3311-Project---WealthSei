@@ -102,7 +102,7 @@ All models sit behind one interface, `LLMProvider`, and are reached through **La
 
 ![Fig 1 — Layered architecture](diagrams/png/Fig_1_Layered_Architecture.png)
 
-*Image:* [`Fig_1_Layered_Architecture.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_1_Layered_Architecture.png) · *Editable UMLet source:* [`Fig_1_Layered_Architecture.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_1_Layered_Architecture.uxf)
+*Image:* [`Fig_1_Layered_Architecture.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_1_Layered_Architecture.png) 
 
 **Planned Maven/Java package layout** (each UML class maps to one Java class; Stage 2 will trace to these):
 
@@ -142,24 +142,23 @@ Alex is a student. The numbers are made up.
 
 ## 2. Detailed Feature Specifications
 
-| ID | Feature | Type | ★ |
-|---|---|---|---|
-| F01 | Import or Add Transactions | Deterministic | |
-| F02 | Smart Categorization and Correction (with Undo) | Hybrid | |
-| F03 | Budget and Plan Setup, Tracking and Alerts | Deterministic | |
-| F04 | Recurring Payment and Subscription Detector | Hybrid | |
-| F05 | Safe-to-Spend Coach | Hybrid | ★ |
-| F06 | Spending Habit Detective | Hybrid | ★ |
-| F07 | Financial Health Score | Hybrid | ★ |
-| F08 | Purchase Affordability Check | AI (agent) | |
-| F09 | Savings Goal Planner with Auto-Replan | AI (agent) | ★ |
-| F10 | What-If Scenario Simulator | AI (agent) | ★ |
-| F11 | Monthly AI Review and Fix Plan | AI (agent) | |
-| F12 | Natural-Language Finance Chat with Agent Trace | AI (agent) | ★ |
-| F13 | Proposal Approval Queue | Hybrid | ★ |
-| F14 | Report Export | Deterministic | |
-
-_★ marks the distinctive features (the ones that go beyond a typical finance app)._
+| ID | Feature | Type |
+|---|---|---|
+| F01 | Import or Add Transactions | Deterministic |
+| F02 | Smart Categorization and Correction (with Undo) | Hybrid |
+| F03 | Budget and Plan Setup, Tracking and Alerts | Deterministic |
+| F04 | Recurring Payment and Subscription Detector | Hybrid |
+| F05 | Safe-to-Spend Coach | Hybrid |
+| F06 | Spending Habit Detective | Hybrid |
+| F07 | Financial Health Score | Hybrid |
+| F08 | Purchase Affordability Check | AI (agent) |
+| F09 | Savings Goal Planner with Auto-Replan | AI (agent) |
+| F10 | What-If Scenario Simulator | AI (agent) |
+| F11 | Monthly AI Review and Fix Plan | AI (agent) |
+| F12 | Natural-Language Finance Chat with Agent Trace | AI (agent) |
+| F13 | Proposal Approval Queue | Hybrid |
+| F14 | Report Export | Deterministic |
+ 
 
 _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM used for a bounded sub-task. **AI (agent)** = LLM plans and calls tools; all numbers still come from deterministic tools._
 
@@ -175,7 +174,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Expected workflow** | *Import:* 1) User picks a file. 2) `CsvImporter` reads the header and picks a matching `BankCsvAdapter`. 3) The adapter's `readTransactions()` turns each record into a `Transaction`. 4) Duplicates (same date, amount, merchant) are removed. 5) `Categorizer` assigns categories. 6) Rows are saved. 7) Budget alerts and goal status are refreshed. 8) A summary is shown. *Manual add:* 1) User fills in the form. 2) `TransactionService.addTransaction()` validates it. 3) `Categorizer` assigns a category if none was chosen. 4) The row is saved and alerts and goals are refreshed. |
 | **Error / alternative cases** | Unreadable or non-CSV file → error, nothing saved. Unknown header → "unsupported format" listing supported layouts. Invalid record (bad date or amount) → skipped and listed. All rows duplicates → "0 new transactions". Manual entry with a zero amount, an empty merchant, or a future date → validation error. A manual entry matching an existing row (same date, amount, merchant) → warns of a possible duplicate and asks to confirm. |
 
-### F02 — Smart Categorization and Correction (with Undo) · Hybrid
+### F02 - Smart Categorization and Correction (with Undo) · Hybrid
 
 | Field | Details |
 |---|---|
@@ -211,7 +210,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Expected workflow** | 1) `AnalyticsService.detectRecurring()` loads history. 2) `RecurringDetector.detect()` groups by merchant and tests regularity. 3) `ExplanationService.explain()` writes the summary. 4) Panel is displayed. |
 | **Error / alternative cases** | Fewer than 3 occurrences → "not enough history". Irregular amounts → shown as "possible" with lower confidence. LLM failure → template summary. |
 
-### F05 — Safe-to-Spend Coach ★ · Hybrid
+### F05 — Safe-to-Spend Coach  · Hybrid
 
 | Field | Details |
 |---|---|
@@ -223,7 +222,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Expected workflow** | 1) `AnalyticsService.safeToSpend()` loads the plan and the transactions. 2) Recurring payments are detected for items the plan does not cover. 3) `ForecastEngine.project()` builds the 30-day forecast day by day: start balance, plus income on pay dates, minus bills and planned expenses on their dates, minus expected everyday spending (the recent average, or the budget limits when history is short). 4) `SafeToSpendCalculator.calculate()` computes the allowance. 5) If the lowest projected balance is below the buffer → `AlertMonitor.publish()`. 6) `ExplanationService.explain()` adds text. |
 | **Error / alternative cases** | No plan and no transactions → prompt to set up a plan or import. Result would be negative → show $0 and "over-committed by $X" with an alert. Balance date older than the newest transaction → the balance is rolled forward using the newer transactions. Transactions do not reach today → "data may be out of date" notice. LLM unavailable → template text. |
 
-### F06 — Spending Habit Detective ★ · Hybrid
+### F06 — Spending Habit Detective · Hybrid
 
 | Field | Details |
 |---|---|
@@ -235,7 +234,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Expected workflow** | 1) `AnalyticsService.habits()` loads transactions. 2) `HabitAnalyzer.analyze()` applies rules. 3) `ExplanationService.explain()` adds text. 4) Cards displayed. |
 | **Error / alternative cases** | Less than 30 days of data → "need more data". No pattern found → "no notable patterns". LLM failure → evidence-only cards. |
 
-### F07 — Financial Health Score ★ · Hybrid
+### F07 — Financial Health Score · Hybrid
 
 | Field | Details |
 |---|---|
@@ -259,7 +258,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Expected workflow** | 1) Input validated. 2) `AgentController.handle()` builds context. 3) Loop: `Planner.nextStep()` → tool calls (`BudgetStatusTool`, `ForecastTool`, `GoalTool`, `TransactionQueryTool`) → observations. 4) Final answer → `GroundingChecker.verify()`. 5) Trace saved; result shown. |
 | **Error / alternative cases** | Missing or non-positive price → validation error, agent not called. Tool failure → agent states which data was unavailable and qualifies its answer (no guessing). Malformed LLM output → one repair retry, then error message. Step limit reached → partial answer flagged. Ungrounded figures → answer revised or blocked. |
 
-### F09 — Savings Goal Planner with Auto-Replan ★ · AI (agent)
+### F09 — Savings Goal Planner with Auto-Replan · AI (agent)
 
 | Field | Details |
 |---|---|
@@ -271,7 +270,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Expected workflow** | 1) `GoalService.createGoal()` validates and saves. 2) `AgentController.handle()` runs the loop; `GoalTool` → `GoalService.feasibility()` → `GoalPlanner`. 3) Drafts pass guardrails (protected categories) and become pending proposals. 4) Plan and proposals shown. |
 | **Error / alternative cases** | Deadline in the past or target ≤ 0 → validation error. Infeasible even if all discretionary spending is cut → agent says so and proposes only a deadline extension. Little history → uses budget totals with a "lower confidence" note. |
 
-### F10 — What-If Scenario Simulator ★ · AI (agent)
+### F10 — What-If Scenario Simulator · AI (agent)
 
 | Field | Details |
 |---|---|
@@ -295,7 +294,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Expected workflow** | 1) `ReviewService.generate()` gathers score, habits, budget status, goal status. 2) `AgentController.handle()` writes narrative and drafts using tools. 3) `ProposalService.createFromDrafts()` filters and stores proposals. 4) Review saved and shown. |
 | **Error / alternative cases** | No transactions in month → refused with message. Review exists → offer to regenerate. Agent fails → metrics-only review saved (no narrative). Proposals touching protected categories are filtered out. |
 
-### F12 — Natural-Language Finance Chat with Agent Trace ★ · AI (agent)
+### F12 — Natural-Language Finance Chat with Agent Trace · AI (agent)
 
 | Field | Details |
 |---|---|
@@ -307,7 +306,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Expected workflow** | 1) `MemoryManager.buildContext()` adds recent messages and preferences. 2) Loop of `Planner.nextStep()` → tool calls. 3) `GroundingChecker.verify()`. 4) Trace saved; `MemoryManager.remember()` stores the turn. 5) Answer displayed; trace available on demand. |
 | **Error / alternative cases** | Off-topic question → polite redirect, no tools. No data → says none available. Vague time ("recently") → assumes last 30 days and states it, or asks. LLM unavailable → offline message suggesting dashboard/CLI commands. History over the window → oldest messages dropped. |
 
-### F13 — Proposal Approval Queue ★ · Hybrid
+### F13 — Proposal Approval Queue · Hybrid
 
 | Field | Details |
 |---|---|
@@ -341,31 +340,30 @@ The class diagrams are split into seven figures so each stays readable. Every fi
 
 ![Fig 3.1 — Presentation layer and Facade](diagrams/png/Fig_3_1_Presentation_and_Facade.png)
 
-*Image:* [`Fig_3_1_Presentation_and_Facade.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_1_Presentation_and_Facade.png) · *Editable UMLet source:* [`Fig_3_1_Presentation_and_Facade.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_1_Presentation_and_Facade.uxf)
+*Image:* [`Fig_3_1_Presentation_and_Facade.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_1_Presentation_and_Facade.png) 
 
 ### Fig 3.2 — Import, categorization, plan, budgets and alerts
 
 ![Fig 3.2 — Import, categorization, plan, budgets and alerts](diagrams/png/Fig_3_2_Import_Categorization_Plan_Budgets.png)
 
-*Image:* [`Fig_3_2_Import_Categorization_Plan_Budgets.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_2_Import_Categorization_Plan_Budgets.png) · *Editable UMLet source:* [`Fig_3_2_Import_Categorization_Plan_Budgets.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_2_Import_Categorization_Plan_Budgets.uxf)
+*Image:* [`Fig_3_2_Import_Categorization_Plan_Budgets.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_2_Import_Categorization_Plan_Budgets.png) 
 
 ### Fig 3.3 — Analytics, goals and scenario simulation (all deterministic)
 
 ![Fig 3.3 — Analytics, goals and scenario simulation (all deterministic)](diagrams/png/Fig_3_3_Analytics_Goals_Scenario.png)
 
-*Image:* [`Fig_3_3_Analytics_Goals_Scenario.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_3_Analytics_Goals_Scenario.png) · *Editable UMLet source:* [`Fig_3_3_Analytics_Goals_Scenario.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_3_Analytics_Goals_Scenario.uxf)
+*Image:* [`Fig_3_3_Analytics_Goals_Scenario.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_3_Analytics_Goals_Scenario.png) 
 
 ### Fig 3.4 — Agent subsystem
 
 ![Fig 3.4 — Agent subsystem](diagrams/png/Fig_3_4_Agent_Subsystem.png)
 
-*Image:* [`Fig_3_4_Agent_Subsystem.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_4_Agent_Subsystem.png) · *Editable UMLet source:* [`Fig_3_4_Agent_Subsystem.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_4_Agent_Subsystem.uxf)
-
+*Image:* [`Fig_3_4_Agent_Subsystem.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_4_Agent_Subsystem.png) 
 ### Fig 3.5 — LLM provider layer (Adapter + Decorator)
 
 ![Fig 3.5 — LLM provider layer (Adapter + Decorator)](diagrams/png/Fig_3_5_LLM_Provider_Layer.png)
 
-*Image:* [`Fig_3_5_LLM_Provider_Layer.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_5_LLM_Provider_Layer.png) · *Editable UMLet source:* [`Fig_3_5_LLM_Provider_Layer.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_5_LLM_Provider_Layer.uxf)
+*Image:* [`Fig_3_5_LLM_Provider_Layer.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_5_LLM_Provider_Layer.png)
 
 _Runtime composition (lecture style, `vc = new 3D(vc)`):_ `LLMProvider provider = new LoggingLLMProvider(new RetryingLLMProvider(new ClaudeProvider(chatModel, model)))`.
 
@@ -373,13 +371,13 @@ _Runtime composition (lecture style, `vc = new 3D(vc)`):_ `LLMProvider provider 
 
 ![Fig 3.6 — Proposals, commands, reviews and reports](diagrams/png/Fig_3_6_Proposals_Commands_Reviews_Reports.png)
 
-*Image:* [`Fig_3_6_Proposals_Commands_Reviews_Reports.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_6_Proposals_Commands_Reviews_Reports.png) · *Editable UMLet source:* [`Fig_3_6_Proposals_Commands_Reviews_Reports.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_6_Proposals_Commands_Reviews_Reports.uxf)
+*Image:* [`Fig_3_6_Proposals_Commands_Reviews_Reports.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_6_Proposals_Commands_Reviews_Reports.png) 
 
 ### Fig 3.7 — Domain model (conceptual)
 
 ![Fig 3.7 — Domain model (conceptual)](diagrams/png/Fig_3_7_Domain_Model.png)
 
-*Image:* [`Fig_3_7_Domain_Model.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_7_Domain_Model.png) · *Editable UMLet source:* [`Fig_3_7_Domain_Model.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_7_Domain_Model.uxf)
+*Image:* [`Fig_3_7_Domain_Model.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_7_Domain_Model.png) 
 
 **Supporting value objects and enums** (Java `record` or `enum`; not drawn to keep the figures readable). `YearMonth`, `LocalDate` and `Instant` are the standard `java.time` classes:
 
@@ -524,7 +522,7 @@ Nine patterns are used. Each is described with the four elements from the lectur
 
 ![Fig 5 — Use-case diagram](diagrams/png/Fig_5_Use_Case_Diagram.png)
 
-*Image:* [`Fig_5_Use_Case_Diagram.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_5_Use_Case_Diagram.png) · *Editable UMLet source:* [`Fig_5_Use_Case_Diagram.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_5_Use_Case_Diagram.uxf)
+*Image:* [`Fig_5_Use_Case_Diagram.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_5_Use_Case_Diagram.png) 
 
 **Coverage:** F01→UC01 · F02→UC02 · F03→UC03 · F04→UC04 · F05→UC05 · F06, F07→UC06 · F08→UC07 · F09→UC08 · F10→UC09 · F11→UC10 · F12→UC11 · F13→UC12, UC14 · F14→UC13.
 
@@ -754,31 +752,31 @@ Eleven diagrams cover all fourteen use cases (UC14 is shown inside SD06, SD07 an
 
 ![SD01 — Import or Add Transactions (UC01, F01)](diagrams/png/SD01_Import_or_Add_Transactions.png)
 
-*Image:* [`SD01_Import_or_Add_Transactions.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD01_Import_or_Add_Transactions.png) · *Editable UMLet source:* [`SD01_Import_or_Add_Transactions.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD01_Import_or_Add_Transactions.uxf)
+*Image:* [`SD01_Import_or_Add_Transactions.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD01_Import_or_Add_Transactions.png) 
 
 ### SD02 — Categorize and Correct Transactions (UC02, F02)
 
 ![SD02 — Categorize and Correct Transactions (UC02, F02)](diagrams/png/SD02_Categorize_and_Correct_Transactions.png)
 
-*Image:* [`SD02_Categorize_and_Correct_Transactions.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD02_Categorize_and_Correct_Transactions.png) · *Editable UMLet source:* [`SD02_Categorize_and_Correct_Transactions.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD02_Categorize_and_Correct_Transactions.uxf)
+*Image:* [`SD02_Categorize_and_Correct_Transactions.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD02_Categorize_and_Correct_Transactions.png) 
 
 ### SD03 — Budget and Plan Setup, Tracking and Alerts (UC03, F03)
 
 ![SD03 — Budget and Plan Setup, Tracking and Alerts (UC03, F03)](diagrams/png/SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.png)
 
-*Image:* [`SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.png) · *Editable UMLet source:* [`SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.uxf)
+*Image:* [`SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.png) 
 
 ### SD04 — Analytics with Explanation: Recurring, Safe-to-Spend, Habits, Score (UC04–UC06, F04–F07)
 
 ![SD04 — Analytics with Explanation: Recurring, Safe-to-Spend, Habits, Score (UC04–UC06, F04–F07)](diagrams/png/SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.png)
 
-*Image:* [`SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.png) · *Editable UMLet source:* [`SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.uxf)
+*Image:* [`SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.png) 
 
 ### SD05 — Purchase Affordability: the full agent loop (UC07, F08)
 
 ![SD05 — Purchase Affordability: the full agent loop (UC07, F08)](diagrams/png/SD05_Purchase_Affordability_the_full_agent_loop.png)
 
-*Image:* [`SD05_Purchase_Affordability_the_full_agent_loop.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD05_Purchase_Affordability_the_full_agent_loop.png) · *Editable UMLet source:* [`SD05_Purchase_Affordability_the_full_agent_loop.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD05_Purchase_Affordability_the_full_agent_loop.uxf)
+*Image:* [`SD05_Purchase_Affordability_the_full_agent_loop.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD05_Purchase_Affordability_the_full_agent_loop.png) 
 
 _Tools used in this scenario:_ `BudgetStatusTool`, `ForecastTool`, `GoalTool`, `TransactionQueryTool`. Saving a suggested plan calls `WealthSeiFacade.createProposals(drafts, traceId)`.
 
@@ -786,37 +784,37 @@ _Tools used in this scenario:_ `BudgetStatusTool`, `ForecastTool`, `GoalTool`, `
 
 ![SD06 — Savings Goal Planning and Replanning (UC08, F09)](diagrams/png/SD06_Savings_Goal_Planning_and_Replanning.png)
 
-*Image:* [`SD06_Savings_Goal_Planning_and_Replanning.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD06_Savings_Goal_Planning_and_Replanning.png) · *Editable UMLet source:* [`SD06_Savings_Goal_Planning_and_Replanning.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD06_Savings_Goal_Planning_and_Replanning.uxf)
+*Image:* [`SD06_Savings_Goal_Planning_and_Replanning.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD06_Savings_Goal_Planning_and_Replanning.png) 
 
 ### SD07 — What-If Scenario (UC09, F10)
 
 ![SD07 — What-If Scenario (UC09, F10)](diagrams/png/SD07_What_If_Scenario.png)
 
-*Image:* [`SD07_What_If_Scenario.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD07_What_If_Scenario.png) · *Editable UMLet source:* [`SD07_What_If_Scenario.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD07_What_If_Scenario.uxf)
+*Image:* [`SD07_What_If_Scenario.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD07_What_If_Scenario.png) 
 
 ### SD08 — Monthly AI Review (UC10, F11)
 
 ![SD08 — Monthly AI Review (UC10, F11)](diagrams/png/SD08_Monthly_AI_Review.png)
 
-*Image:* [`SD08_Monthly_AI_Review.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD08_Monthly_AI_Review.png) · *Editable UMLet source:* [`SD08_Monthly_AI_Review.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD08_Monthly_AI_Review.uxf)
+*Image:* [`SD08_Monthly_AI_Review.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD08_Monthly_AI_Review.png) 
 
 ### SD09 — Finance Chat with Memory and Trace (UC11, F12)
 
 ![SD09 — Finance Chat with Memory and Trace (UC11, F12)](diagrams/png/SD09_Finance_Chat_with_Memory_and_Trace.png)
 
-*Image:* [`SD09_Finance_Chat_with_Memory_and_Trace.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD09_Finance_Chat_with_Memory_and_Trace.png) · *Editable UMLet source:* [`SD09_Finance_Chat_with_Memory_and_Trace.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD09_Finance_Chat_with_Memory_and_Trace.uxf)
+*Image:* [`SD09_Finance_Chat_with_Memory_and_Trace.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD09_Finance_Chat_with_Memory_and_Trace.png) 
 
 ### SD10 — Proposal Approval (UC12, F13)
 
 ![SD10 — Proposal Approval (UC12, F13)](diagrams/png/SD10_Proposal_Approval.png)
 
-*Image:* [`SD10_Proposal_Approval.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD10_Proposal_Approval.png) · *Editable UMLet source:* [`SD10_Proposal_Approval.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD10_Proposal_Approval.uxf)
+*Image:* [`SD10_Proposal_Approval.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD10_Proposal_Approval.png) 
 
 ### SD11 — Export Report (UC13, F14)
 
 ![SD11 — Export Report (UC13, F14)](diagrams/png/SD11_Export_Report.png)
 
-*Image:* [`SD11_Export_Report.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD11_Export_Report.png) · *Editable UMLet source:* [`SD11_Export_Report.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD11_Export_Report.uxf)
+*Image:* [`SD11_Export_Report.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD11_Export_Report.png) 
 
 ---
 
