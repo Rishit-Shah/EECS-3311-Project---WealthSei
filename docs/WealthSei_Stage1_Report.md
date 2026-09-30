@@ -987,7 +987,7 @@ EECS-3311-Project---WealthSei/
        
 ```
 
-Folders: [`docs/diagrams/png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/tree/main/docs/diagrams/png) · [`docs/diagrams/uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/tree/main/docs/diagrams/uxf)
+Folders: [`docs/diagrams/png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/tree/main/docs/diagrams/png) · [`docs/uxf_files_for_diagrams_relevant`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/tree/main/docs/diagrams/uxf_files_for_diagram_relevant)
 
 | ID | Diagram | Image | UMLet file |
 |---|---|---|---|
