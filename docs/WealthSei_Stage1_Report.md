@@ -4,6 +4,8 @@
 **Course:** EECS3311 Software Design, Fall 2026 · **Stage:** 1 (Design)
 **Student:** Rishit Shah, _[219773050]_ · **Repository:** [github.com/Rishit-Shah/EECS-3311-Project---WealthSei](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei)
 
+> **Notice:** WealthSei provides informational guidance only. It is not professional financial advice. This notice is shown in the GUI footer and in the CLI banner.
+
 ## Contents
 
 1. Project Overview
@@ -15,7 +17,7 @@
 7. Sequence Diagrams
 8. Feature-to-Design Traceability Table
 9. Feature Implementation Explanations
-10. Appendices (testability map, CLI command map)
+10. Appendices (testing map, CLI command map, diagram files, requirements checklist)
 
 ---
 
@@ -31,9 +33,9 @@ Individuals who manage a personal budget without financial expertise: university
 
 ### 1.3 What the agent can do
 
-- Import bank CSV exports (two layouts, auto-detected) and categorize transactions, learning from the user's corrections.
-- Track monthly budgets and push alerts to both the GUI and the CLI.
-- Compute a **daily Safe-to-Spend allowance**, forecast the next 30 days of cash flow, and warn before the balance drops below a safety buffer.
+- Import bank CSV exports (two layouts, auto-detected) or add a transaction by hand, and categorize transactions, learning from the user's corrections.
+- Take the user's **plan** (income, current balance, fixed bills, planned expenses) and track monthly budgets, pushing alerts to both the GUI and the CLI.
+- Compute a **daily Safe-to-Spend allowance**, forecast the next 30 days of cash flow from the plan (income, bills, planned expenses) and recent spending, and warn before the balance drops below a safety buffer.
 - Detect recurring payments and subscriptions, spending habits, and a transparent **Financial Health Score**.
 - **Plan multi-step answers with tools:** "Can I afford $600 for a laptop?", savings-goal planning and automatic re-planning, and natural-language **what-if simulations**.
 - Write a **monthly review** with concrete "fix" suggestions.
@@ -71,6 +73,16 @@ All models sit behind one interface, `LLMProvider`, and are reached through **La
 5. **Memory is explicit.** `MemoryManager` supplies bounded recent messages and stored preferences (e.g., protected categories such as Groceries).
 6. **Graceful degradation.** If the LLM is unavailable, deterministic fallbacks are used (template explanations, "Uncategorized" flag, metrics-only review).
 
+**Where the LLM is used.** There are three kinds of use, and nowhere else:
+
+| Kind of use | Features | Model | What the LLM does | Without the LLM |
+|---|---|---|---|---|
+| **1. Classify** | F02 | Claude Haiku 4.5 | Picks a category for a merchant that no learned rule or keyword recognizes | The transaction is marked `UNCATEGORIZED` for the user to fix |
+| **2. Explain** | F04, F05, F06, F07 | Claude Haiku 4.5 | Turns numbers already computed by code into plain-language text and tips | A template sentence built from the same numbers |
+| **3. Plan and reason with tools (the agent)** | F08, F09, F10, F11, F12 | Claude Sonnet 5 | Decides which tools to call, turns a what-if sentence into structured changes, and writes the verdicts, plans, reviews, answers and suggestions | The agent reports that the model is unavailable; F11 falls back to a metrics-only review |
+
+**No LLM at all:** F01 (import or add), F03 (plan, budgets, alerts), F13 (the approval workflow itself; the proposals it holds were written by the agent) and F14 (export). In every feature the LLM never computes a number: amounts, forecasts, scores and totals always come from plain code.
+
 **How LangChain4j is used.** LangChain4j offers a low-level tool API (`ChatModel` plus `ToolSpecification`) and a high-level one (AI Services with `@Tool` methods). WealthSei deliberately uses the low-level API and keeps the agent loop in its own classes.
 
 | LangChain4j piece | Used? | Where and why |
@@ -88,48 +100,9 @@ All models sit behind one interface, `LLMProvider`, and are reached through **La
 
 **Fig 1 — Layered architecture**
 
-```mermaid
-flowchart TB
-    subgraph P["Presentation layer"]
-        GUI["JavaFX GUI: MainWindow + 6 views"]
-        CLI["CliApp (picocli)"]
-    end
-    FAC["WealthSeiFacade (single entry point)"]
-    subgraph S["Deterministic core - unit-testable"]
-        TS["TransactionService, CsvImporter, Categorizer"]
-        BS["BudgetService, AlertMonitor"]
-        AN["AnalyticsService: RecurringDetector, ForecastEngine, SafeToSpendCalculator, HabitAnalyzer, HealthScoreCalculator"]
-        GS["GoalService, GoalPlanner"]
-        SIM["ScenarioSimulator"]
-        PS["ProposalService, CommandHistory"]
-        RS["ReviewService, ReportService"]
-    end
-    subgraph A["Agent subsystem - behaviour-tested"]
-        AC["AgentController"]
-        PL["Planner, PromptBuilder, ResponseParser"]
-        MM["MemoryManager"]
-        TM["ToolManager + 6 Tools"]
-        GC["GroundingChecker, AgentTrace"]
-    end
-    LLM["LLMProvider chain: Logging - Retry - ClaudeProvider wrapping LangChain4j"]
-    DB[("SQLite via Repository interfaces")]
+![Fig 1 — Layered architecture](diagrams/png/Fig_1_Layered_Architecture.png)
 
-    GUI --> FAC
-    CLI --> FAC
-    FAC --> S
-    FAC --> AC
-    RS --> AC
-    AC --> PL
-    PL --> LLM
-    AC --> MM
-    AC --> TM
-    AC --> GC
-    TM --> S
-    S --> DB
-    MM --> DB
-    TS -. "fallback categorization" .-> LLM
-    AN -. "explanations" .-> LLM
-```
+*Image:* [`Fig_1_Layered_Architecture.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_1_Layered_Architecture.png) · *Editable UMLet source:* [`Fig_1_Layered_Architecture.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_1_Layered_Architecture.uxf)
 
 **Planned Maven/Java package layout** (each UML class maps to one Java class; Stage 2 will trace to these):
 
@@ -137,16 +110,33 @@ flowchart TB
 |---|---|
 | `presentation` | `MainWindow`, the six JavaFX views, `CliApp` |
 | `facade` | `WealthSeiFacade` |
-| `service` | `TransactionService`, `BudgetService`, `AnalyticsService`, `GoalService`, `ProposalService`, `ReviewService`, `ReportService`, `ExplanationService` |
+| `service` | `TransactionService`, `PlanService`, `BudgetService`, `AnalyticsService`, `GoalService`, `ProposalService`, `ReviewService`, `ReportService`, `ExplanationService` |
 | `analytics` | `RecurringDetector`, `ForecastEngine`, `ForecastInputs`, `SafeToSpendCalculator`, `HabitAnalyzer`, `HealthScoreCalculator`, `GoalPlanner`, `ScenarioSimulator`, `ScenarioChange` and its four implementations |
 | `importing` | `CsvImporter`, `BankCsvAdapter` and implementations, `Categorizer`, `CategorizationStrategy` and implementations |
 | `agent` | `AgentController`, `Planner`, `PromptBuilder`, `ResponseParser`, `ToolManager`, `Tool` and the six tools, `MemoryManager`, `GroundingChecker`, `AgentTrace` |
 | `llm` | `LLMProvider`, `ClaudeProvider`, `MockLLMProvider`, the decorators |
 | `command` | `Command`, `CommandHistory`, `CommandFactory`, the four concrete commands, `Proposal` and the proposal states |
 | `report` | `ReportExporter` and the three exporters |
-| `domain` | `Money` (wraps `BigDecimal`) and records such as `Transaction`, `Budget`, `SavingsGoal`; the standard `java.time.YearMonth`, `LocalDate` and `Instant` are used directly |
+| `domain` | `Money` (wraps `BigDecimal`) and records such as `Transaction`, `Budget`, `SavingsGoal`, `FinancialPlan`, `IncomeSource`, `FixedBill`, `PlannedExpense`; the standard `java.time.YearMonth`, `LocalDate` and `Instant` are used directly |
 | `repository` | repository interfaces and their `Sqlite…` implementations |
 | `src/test/java` | JUnit 5 tests (Stage 3) |
+
+### 1.8 Example scenario: a first-time user
+
+Alex is a student. The numbers are made up.
+
+| Step | What Alex does | What WealthSei does | Features |
+|---|---|---|---|
+| 1 | Opens the app for the first time | Empty dashboard: each panel says "no data yet" and suggests "1. Set up your plan, 2. Import a CSV or add transactions, 3. Check categories" | none |
+| 2 | Enters the plan: $2,400 monthly income (next pay day Oct 1), balance $1,150 as of Sep 28, rent $900 due Oct 1, a $150 textbook on Oct 5, a $200 buffer, and limits Groceries $300, Dining $150, Transport $80 | Validates and saves the plan and budget | F03 |
+| 3 | Imports three months of bank CSV | Detects the bank layout, skips duplicates, categorizes rows (rules first, the LLM only for unknown merchants), shows a summary | F01, F02 |
+| 4 | Adds a $12 cash coffee by hand | Validates, categorizes, saves, refreshes alerts | F01 |
+| 5 | Looks at the dashboard | Shows budget bars and alerts, subscriptions, Safe-to-Spend today, the 30-day forecast, health score and habit tips. Plain code computes every number; the LLM only explains them | F03–F07 |
+| 6 | Moves "Uber Eats" from Transport to Dining | Applies the change, learns the rule, offers Undo | F02 |
+| 7 | Asks "Can I afford a $600 laptop?" | The agent calls its budget, forecast and goal tools and answers with a verdict and reasoning; "How did you get this?" shows the tool calls | F08, F12 |
+| 8 | Creates a goal: $1,000 by January | The agent checks feasibility against the plan and suggests changes, which go to the approval queue | F09, F13 |
+| 9 | Approves one suggestion | The budget changes; the change can be undone | F13 |
+| 10 | At month-end, generates the AI review and exports it | Compares plan with actual, writes the review and fix proposals, saves a report file | F11, F14 |
 
 ---
 
@@ -154,9 +144,9 @@ flowchart TB
 
 | ID | Feature | Type | ★ |
 |---|---|---|---|
-| F01 | Import Transactions (CSV) | Deterministic | |
+| F01 | Import or Add Transactions | Deterministic | |
 | F02 | Smart Categorization and Correction (with Undo) | Hybrid | |
-| F03 | Budget Setup, Tracking and Alerts | Deterministic | |
+| F03 | Budget and Plan Setup, Tracking and Alerts | Deterministic | |
 | F04 | Recurring Payment and Subscription Detector | Hybrid | |
 | F05 | Safe-to-Spend Coach | Hybrid | ★ |
 | F06 | Spending Habit Detective | Hybrid | ★ |
@@ -169,19 +159,21 @@ flowchart TB
 | F13 | Proposal Approval Queue | Hybrid | ★ |
 | F14 | Report Export | Deterministic | |
 
+_★ marks the distinctive features (the ones that go beyond a typical finance app)._
+
 _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM used for a bounded sub-task. **AI (agent)** = LLM plans and calls tools; all numbers still come from deterministic tools._
 
-### F01 — Import Transactions (CSV) · Deterministic
+### F01 — Import or Add Transactions · Deterministic
 
 | Field | Details |
 |---|---|
-| **Description** | Loads a bank or credit-card CSV export, auto-detects one of two supported layouts (single signed-amount column, or separate debit/credit columns) using a matching adapter that wraps an Apache Commons CSV `CSVParser`, normalizes rows into `Transaction` objects, skips duplicates, and auto-categorizes new rows (F02). |
-| **User interaction** | `TransactionsView` → **Import CSV** → file chooser → summary dialog. CLI: `wealthsei import <file>`. |
-| **Input** | Path to a CSV file. |
-| **Output** | `ImportResult` (imported count, duplicates skipped, rejected rows with reasons); transactions appear in the table. |
-| **AI involvement** | Deterministic parsing and de-duplication. Categorization of the new rows is F02 (hybrid). |
-| **Expected workflow** | 1) User picks file. 2) `CsvImporter` reads the header and picks a matching `BankCsvAdapter`. 3) The adapter's `readTransactions()` turns each row into a `Transaction`. 4) Duplicates (same date, amount, merchant) are removed. 5) `Categorizer` assigns categories. 6) Rows are saved. 7) Budget alerts and goal status are refreshed. 8) Summary is shown. |
-| **Error / alternative cases** | Unreadable or non-CSV file → error, nothing saved. Unknown header → "unsupported format" listing supported layouts. Invalid row (bad date or amount) → skipped and listed. All rows duplicates → "0 new transactions". |
+| **Description** | Gets transactions into the app in two ways. (a) **Import** a bank or credit-card CSV export: one of two supported layouts (single signed-amount column, or separate debit/credit columns) is auto-detected by a matching adapter that wraps an Apache Commons CSV `CSVParser`; records become `Transaction` objects, duplicates are skipped, and new rows are auto-categorized (F02). (b) **Add a single transaction by hand** (date, amount, merchant, optional category, income or expense), useful for cash spending, for a missing row, and for demos without a CSV. |
+| **User interaction** | `TransactionsView` → **Import CSV** (file chooser, then a summary dialog) or **Add Transaction** (small form). CLI: `wealthsei import <file.csv>`, `wealthsei add-tx --date <d> --amount <a> --merchant <m> [--category <c>] [--income]`. |
+| **Input** | A CSV file path, or a `NewTransaction` (date, amount, merchant, description, optional category, income flag). |
+| **Output** | `ImportResult` (imported count, duplicates skipped, rejected rows with reasons), or the newly added `Transaction`; rows appear in the table. |
+| **AI involvement** | Deterministic parsing, validation and de-duplication. Categorization of new rows is F02 (hybrid). |
+| **Expected workflow** | *Import:* 1) User picks a file. 2) `CsvImporter` reads the header and picks a matching `BankCsvAdapter`. 3) The adapter's `readTransactions()` turns each record into a `Transaction`. 4) Duplicates (same date, amount, merchant) are removed. 5) `Categorizer` assigns categories. 6) Rows are saved. 7) Budget alerts and goal status are refreshed. 8) A summary is shown. *Manual add:* 1) User fills in the form. 2) `TransactionService.addTransaction()` validates it. 3) `Categorizer` assigns a category if none was chosen. 4) The row is saved and alerts and goals are refreshed. |
+| **Error / alternative cases** | Unreadable or non-CSV file → error, nothing saved. Unknown header → "unsupported format" listing supported layouts. Invalid record (bad date or amount) → skipped and listed. All rows duplicates → "0 new transactions". Manual entry with a zero amount, an empty merchant, or a future date → validation error. A manual entry matching an existing row (same date, amount, merchant) → warns of a possible duplicate and asks to confirm. |
 
 ### F02 — Smart Categorization and Correction (with Undo) · Hybrid
 
@@ -195,23 +187,23 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 | **Expected workflow** | Auto: `Categorizer` tries each `CategorizationStrategy` in order until one returns a category. Manual: Facade wraps the change in a `RecategorizeCommand`; `CommandHistory` executes it (update transaction + learn rule); Undo restores the old category and forgets the rule. |
 | **Error / alternative cases** | LLM unavailable or times out → `UNCATEGORIZED`, flagged for manual review. LLM returns a category not in the list → rejected, `UNCATEGORIZED`. Unknown `txId` → error. Undo with empty history → "nothing to undo". |
 
-### F03 — Budget Setup, Tracking and Alerts · Deterministic
+### F03 — Budget and Plan Setup, Tracking and Alerts · Deterministic
 
 | Field | Details |
 |---|---|
-| **Description** | User sets monthly spending limits per category. The app tracks spent/limit/percentage live and raises alerts at 80% (warning) and 100% (over budget). Alerts are delivered to whichever interfaces are listening (GUI toast, CLI console). |
-| **User interaction** | `DashboardView` budget panel: editable limits, progress bars, alert toasts. CLI: `wealthsei budget set <month> <category> <amount>`, `wealthsei budget status <month>`. |
-| **Input** | Month; category limits (≥ 0). |
-| **Output** | `BudgetStatus` (per-category spent, limit, ratio, level); `Alert` events. |
+| **Description** | The user describes their money **plan** once and keeps it up to date: **income sources** (amount, frequency, next pay date), **current balance** (with the date it is accurate), **fixed bills** (rent, phone, subscriptions: amount, frequency, next due date), **planned one-off expenses** (description, amount, date) and a **safety buffer**. The user also sets monthly spending limits per category. The app tracks spent / limit / percentage live and raises alerts at 80% (warning) and 100% (over budget), delivered to whichever interfaces are listening (GUI toast, CLI console). The plan is what makes forecasting (F05, F08–F10) simple and accurate. |
+| **User interaction** | `DashboardView`: a **Plan** panel (income, balance, bills, planned expenses), editable category limits with progress bars, and alert toasts. CLI: `wealthsei plan show`, `plan set-income <name> <amount> <frequency> <nextPayDate>`, `plan add-bill <name> <amount> <frequency> <nextDueDate>`, `plan add-expense <description> <amount> <date>`, `plan set-balance <amount> <asOfDate>`, `budget set <month> <category> <amount>`, `budget status <month>`. |
+| **Input** | Plan items (amounts ≥ 0, valid dates and frequencies); a month and category limits (≥ 0). |
+| **Output** | The saved `FinancialPlan`; `BudgetStatus` (per-category spent, limit, ratio, level); `Alert` events. |
 | **AI involvement** | None (deterministic). |
-| **Expected workflow** | 1) Limits validated. 2) `BudgetService` saves the `Budget`. 3) Status computed from transactions. 4) `AlertMonitor.evaluate()` publishes an `Alert` for each line at or above 80%. 5) Listeners display it. |
-| **Error / alternative cases** | Negative or non-numeric limit → rejected with message. Spending in a category with no budget → shown as "unbudgeted". No transactions → all usage 0%. |
+| **Expected workflow** | *Plan:* 1) User edits the plan. 2) `PlanService` validates and saves it. 3) Forecasts and Safe-to-Spend use the new plan the next time they run. *Budget:* 1) Limits are validated. 2) `BudgetService` saves the `Budget`. 3) Status is computed from transactions. 4) `AlertMonitor.evaluate()` publishes an `Alert` for each line at or above 80%. 5) Listeners display it. |
+| **Error / alternative cases** | A negative or non-numeric amount, a missing pay date, an unknown frequency, or a balance date in the future → rejected with a message. Spending in a category with no budget → shown as "unbudgeted". No transactions → all usage 0%. No plan yet → the app still works from imported history and shows a "set up your plan for better forecasts" hint. |
 
 ### F04 — Recurring Payment and Subscription Detector · Hybrid
 
 | Field | Details |
 |---|---|
-| **Description** | Finds payments that repeat at a regular interval (weekly, monthly, yearly) with similar amounts; lists subscriptions, total monthly cost, next due dates, and price increases. Users can flag an item for review. |
+| **Description** | Finds payments that repeat at a regular interval (weekly, monthly, yearly) with similar amounts; lists subscriptions, total monthly cost, next due dates, and price increases. Users can flag an item for review. It also detects recurring **income**, and detected items that match a fixed bill in the plan (F03) are not counted twice. |
 | **User interaction** | `DashboardView` → **Recurring** panel. CLI: `wealthsei recurring`. |
 | **Input** | Transaction history (≥ 3 occurrences per pattern). |
 | **Output** | List of `RecurringPayment` (merchant, amount, frequency, next due, confidence), total monthly cost, plain-language summary. |
@@ -223,13 +215,13 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 
 | Field | Details |
 |---|---|
-| **Description** | Computes a **daily discretionary allowance** for the rest of the month: *(balance + expected income − upcoming recurring bills − goal contributions − safety buffer) ÷ days left*. Projects the next 30 days of balance and raises a low-balance alert if the projection falls below the buffer. |
+| **Description** | Computes a **daily discretionary allowance** for the rest of the month: *(balance now + income still due − bills still due − planned expenses still due − goal contributions − safety buffer) ÷ days left*, floored at zero. The **balance now** is the plan's current balance plus every transaction dated after the balance date. **Income, bills and planned expenses still due** come from the plan's dated events; recurring payments detected in history fill in anything the plan does not cover. It also projects the next 30 days of balance and raises a low-balance alert if the projection falls below the buffer. |
 | **User interaction** | `DashboardView` **Safe to Spend Today** card and 30-day balance chart. CLI: `wealthsei safe [date]`. |
-| **Input** | Date (default today); opening balance and transactions; recurring payments; goals; buffer setting (default $200). |
+| **Input** | Date (default today); the plan (F03: income, balance, fixed bills, planned expenses, buffer); transactions; detected recurring payments; goals. |
 | **Output** | `SafeToSpendResult` (daily allowance, remaining this month, upcoming bills, goal reserve), `Forecast`, explanation, optional `LOW_BALANCE` alert. |
 | **AI involvement** | **Hybrid.** All figures deterministic; the LLM only explains and gives tips from those figures. |
-| **Expected workflow** | 1) `AnalyticsService.safeToSpend()` detects recurring payments. 2) `ForecastEngine.project()` builds the 30-day forecast. 3) `SafeToSpendCalculator.calculate()` computes the allowance. 4) If the lowest projected balance < buffer → `AlertMonitor.publish()`. 5) `ExplanationService.explain()` adds text. |
-| **Error / alternative cases** | No transactions → prompt to import. Result would be negative → show $0 and "over-committed by $X" with alert. LLM unavailable → template text. |
+| **Expected workflow** | 1) `AnalyticsService.safeToSpend()` loads the plan and the transactions. 2) Recurring payments are detected for items the plan does not cover. 3) `ForecastEngine.project()` builds the 30-day forecast day by day: start balance, plus income on pay dates, minus bills and planned expenses on their dates, minus expected everyday spending (the recent average, or the budget limits when history is short). 4) `SafeToSpendCalculator.calculate()` computes the allowance. 5) If the lowest projected balance is below the buffer → `AlertMonitor.publish()`. 6) `ExplanationService.explain()` adds text. |
+| **Error / alternative cases** | No plan and no transactions → prompt to set up a plan or import. Result would be negative → show $0 and "over-committed by $X" with an alert. Balance date older than the newest transaction → the balance is rolled forward using the newer transactions. Transactions do not reach today → "data may be out of date" notice. LLM unavailable → template text. |
 
 ### F06 — Spending Habit Detective ★ · Hybrid
 
@@ -295,7 +287,7 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 
 | Field | Details |
 |---|---|
-| **Description** | At month-end (or on demand), produces a review: deterministic metrics (income, spending, savings rate, over-budget categories, habits, score, goal status) plus an agent-written narrative (*what happened, what went well, what to fix*) and up to **3 concrete fix proposals** (e.g., "lower Dining limit by $60", "flag Subscription X for review"). The agent compares against the previous review from memory. |
+| **Description** | At month-end (or on demand), produces a review: deterministic metrics (income, spending, savings rate, **plan versus actual**, over-budget categories, habits, score, goal status) plus an agent-written narrative (*what happened, what went well, what to fix*) and up to **3 concrete fix proposals** (e.g., "lower Dining limit by $60", "flag Subscription X for review"). The agent compares against the previous review from memory. |
 | **User interaction** | `ReportView` → **Generate Review**; **See proposals** button. CLI: `wealthsei review <month>`. |
 | **Input** | Month with transactions. |
 | **Output** | `MonthlyReview` (saved) and pending `Proposal`s. |
@@ -342,935 +334,59 @@ _Type meanings: **Deterministic** = no LLM. **Hybrid** = deterministic core, LLM
 ---
 
 ## 3. UML Class Diagrams
+
+The class diagrams are split into seven figures so each stays readable. Every figure is a PNG exported from UMLet; the editable `.uxf` file is linked under it and all files are listed in Appendix C. A class that appears in several figures is the same class, and a relationship to a class drawn in another figure is not repeated (each figure carries a note naming those links). Simple value objects and enums are listed in the table after Fig 3.7.
+
 ### Fig 3.1 — Presentation layer and Facade
 
-```mermaid
-classDiagram
-    direction TB
-    class MainWindow {
-        +show()
-    }
-    class TransactionsView {
-        +onImportClicked()
-        +onCategoryChanged(txId: String, category: Category)
-        +onUndoClicked()
-    }
-    class DashboardView {
-        +refresh()
-        +onBudgetSaved()
-        +onAlert(alert: Alert)
-    }
-    class GoalsView {
-        +onCreateGoal()
-        +onReplan(goalId: String)
-    }
-    class AssistantView {
-        +onAffordCheck(item: String, price: Money)
-        +onWhatIf(text: String)
-        +onAskSubmitted(question: String)
-        +onShowTrace(traceId: String)
-    }
-    class ReportView {
-        +onGenerateReview(month: YearMonth)
-        +onExport(fmt: ExportFormat)
-    }
-    class ProposalView {
-        +onApprove(proposalId: String)
-        +onReject(proposalId: String)
-    }
-    class CliApp {
-        +run(args: List~String~) int
-        +onAlert(alert: Alert)
-    }
-    class AlertListener {
-        <<interface>>
-        +onAlert(alert: Alert)*
-    }
-    class WealthSeiFacade {
-        <<facade>>
-        -transactions: TransactionService
-        -budgets: BudgetService
-        -analytics: AnalyticsService
-        -explainer: ExplanationService
-        -goals: GoalService
-        -proposals: ProposalService
-        -reviews: ReviewService
-        -reports: ReportService
-        -agent: AgentController
-        -history: CommandHistory
-        -traces: TraceRepository
-        +importTransactions(path: Path) ImportResult
-        +correctCategory(txId: String, category: Category) Transaction
-        +undo()
-        +redo()
-        +setBudget(month: YearMonth, limits: BudgetLimits) BudgetStatus
-        +getBudgetStatus(month: YearMonth) BudgetStatus
-        +getRecurringPayments() List~RecurringPayment~
-        +getSafeToSpend(today: LocalDate) SafeToSpendResult
-        +getHabitInsights(month: YearMonth) List~Insight~
-        +getHealthScore(month: YearMonth) HealthScore
-        +checkAffordability(item: String, price: Money) AgentResult
-        +planGoal(request: GoalRequest) AgentResult
-        +replanGoal(goalId: String) AgentResult
-        +runWhatIf(description: String) AgentResult
-        +generateMonthlyReview(month: YearMonth) MonthlyReview
-        +ask(question: String) AgentResult
-        +getTrace(traceId: String) AgentTrace
-        +createProposals(drafts: List~ProposalDraft~, traceId: String) List~Proposal~
-        +listPendingProposals() List~Proposal~
-        +decideProposal(proposalId: String, approve: boolean) Proposal
-        +exportReport(month: YearMonth, fmt: ExportFormat, out: Path) Path
-        +setProtectedCategory(category: Category, protected: boolean)
-        +addAlertListener(listener: AlertListener)
-    }
+![Fig 3.1 — Presentation layer and Facade](diagrams/png/Fig_3_1_Presentation_and_Facade.png)
 
-    MainWindow "1" *-- "1" TransactionsView
-    MainWindow "1" *-- "1" DashboardView
-    MainWindow "1" *-- "1" GoalsView
-    MainWindow "1" *-- "1" AssistantView
-    MainWindow "1" *-- "1" ReportView
-    MainWindow "1" *-- "1" ProposalView
-    AlertListener <|.. DashboardView
-    AlertListener <|.. CliApp
-    TransactionsView --> WealthSeiFacade
-    DashboardView --> WealthSeiFacade
-    GoalsView --> WealthSeiFacade
-    AssistantView --> WealthSeiFacade
-    ReportView --> WealthSeiFacade
-    ProposalView --> WealthSeiFacade
-    CliApp --> WealthSeiFacade
-    WealthSeiFacade --> TransactionService
-    WealthSeiFacade --> BudgetService
-    WealthSeiFacade --> AnalyticsService
-    WealthSeiFacade --> ExplanationService
-    WealthSeiFacade --> GoalService
-    WealthSeiFacade --> ProposalService
-    WealthSeiFacade --> ReviewService
-    WealthSeiFacade --> ReportService
-    WealthSeiFacade --> AgentController
-    WealthSeiFacade --> CommandHistory
-    WealthSeiFacade --> TraceRepository
-    WealthSeiFacade ..> AlertMonitor : registers listeners
-```
+*Image:* [`Fig_3_1_Presentation_and_Facade.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_1_Presentation_and_Facade.png) · *Editable UMLet source:* [`Fig_3_1_Presentation_and_Facade.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_1_Presentation_and_Facade.uxf)
 
-### Fig 3.2 — Import, categorization, budgets and alerts
+### Fig 3.2 — Import, categorization, plan, budgets and alerts
 
-```mermaid
-classDiagram
-    direction TB
-    class TransactionService {
-        -repo: TransactionRepository
-        -importer: CsvImporter
-        -categorizer: Categorizer
-        +importFile(path: Path) ImportResult
-        +query(filter: TxFilter) List~Transaction~
-        +updateCategory(txId: String, category: Category) Transaction
-        -removeDuplicates(txs: List~Transaction~) List~Transaction~
-    }
-    class CsvImporter {
-        -adapterTypes: List~Class~
-        +parse(path: Path) ParseResult
-        +detectAdapter(header: List~String~, parser: CSVParser) BankCsvAdapter
-    }
-    class BankCsvAdapter {
-        <<interface>>
-        #parser: CSVParser
-        +canHandle(header: List~String~) boolean
-        +readTransactions() ParseResult
-        #toTransaction(row: CSVRecord) Transaction
-    }
-    class SignedAmountCsvAdapter
-    class DebitCreditCsvAdapter
-    class Categorizer {
-        -strategies: List~CategorizationStrategy~
-        +categorize(tx: Transaction) Category
-    }
-    class CategorizationStrategy {
-        <<interface>>
-        +categorize(tx: Transaction) Optional~Category~*
-    }
-    class LearnedRuleStrategy {
-        -rules: RuleRepository
-        +categorize(tx: Transaction) Optional~Category~
-        +learn(merchant: String, category: Category)
-        +forget(merchant: String)
-    }
-    class KeywordRuleStrategy {
-        -keywords: Map~String, Category~
-        +categorize(tx: Transaction) Optional~Category~
-    }
-    class LLMCategorizationStrategy {
-        -llm: LLMProvider
-        -allowed: List~Category~
-        +categorize(tx: Transaction) Optional~Category~
-    }
-    class TransactionRepository {
-        <<interface>>
-        +saveAll(txs: List~Transaction~)
-        +query(filter: TxFilter) List~Transaction~
-        +updateCategory(txId: String, category: Category)
-        +findById(txId: String) Transaction
-    }
-    class RuleRepository {
-        <<interface>>
-        +save(merchant: String, category: Category)
-        +delete(merchant: String)
-        +findAll() List~LearnedRule~
-    }
-    class BudgetService {
-        -repo: BudgetRepository
-        -txRepo: TransactionRepository
-        -monitor: AlertMonitor
-        +setBudget(month: YearMonth, limits: BudgetLimits) BudgetStatus
-        +setLimit(month: YearMonth, category: Category, limit: Money) BudgetStatus
-        +getStatus(month: YearMonth) BudgetStatus
-        +refreshAlerts(months: Set~YearMonth~)
-        -validate(limits: BudgetLimits)
-    }
-    class BudgetRepository {
-        <<interface>>
-        +save(budget: Budget)
-        +find(month: YearMonth) Budget
-    }
-    class AlertMonitor {
-        <<subject>>
-        -listeners: List~AlertListener~
-        +attach(listener: AlertListener)
-        +detach(listener: AlertListener)
-        +evaluate(status: BudgetStatus)
-        +publish(alert: Alert)
-        -notifyListeners(alert: Alert)
-    }
-    class AlertListener {
-        <<interface>>
-        +onAlert(alert: Alert)*
-    }
-    class CSVParser {
-        <<Apache Commons CSV - adaptee>>
-    }
+![Fig 3.2 — Import, categorization, plan, budgets and alerts](diagrams/png/Fig_3_2_Import_Categorization_Plan_Budgets.png)
 
-    TransactionService "1" --> "1" CsvImporter
-    TransactionService "1" --> "1" Categorizer
-    TransactionService --> TransactionRepository
-    CsvImporter "1" o-- "1..*" BankCsvAdapter : chooses one
-    BankCsvAdapter <|.. SignedAmountCsvAdapter
-    BankCsvAdapter <|.. DebitCreditCsvAdapter
-    BankCsvAdapter "1" --> "1" CSVParser : wraps
-    Categorizer "1" o-- "1..*" CategorizationStrategy : ordered chain
-    CategorizationStrategy <|.. LearnedRuleStrategy
-    CategorizationStrategy <|.. KeywordRuleStrategy
-    CategorizationStrategy <|.. LLMCategorizationStrategy
-    LearnedRuleStrategy --> RuleRepository
-    LLMCategorizationStrategy ..> LLMProvider
-    BudgetService --> BudgetRepository
-    BudgetService --> TransactionRepository
-    BudgetService --> AlertMonitor
-    AlertMonitor "1" o-- "0..*" AlertListener : notifies
-```
+*Image:* [`Fig_3_2_Import_Categorization_Plan_Budgets.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_2_Import_Categorization_Plan_Budgets.png) · *Editable UMLet source:* [`Fig_3_2_Import_Categorization_Plan_Budgets.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_2_Import_Categorization_Plan_Budgets.uxf)
 
 ### Fig 3.3 — Analytics, goals and scenario simulation (all deterministic)
 
-```mermaid
-classDiagram
-    direction TB
-    class AnalyticsService {
-        -txRepo: TransactionRepository
-        -goalRepo: GoalRepository
-        -recurringRepo: RecurringRepository
-        -budgets: BudgetService
-        -monitor: AlertMonitor
-        +detectRecurring() List~RecurringPayment~
-        +flagRecurring(merchant: String, flagged: boolean)
-        +forecast(days: int) Forecast
-        +safeToSpend(today: LocalDate) SafeToSpendResult
-        +habits(month: YearMonth) List~Insight~
-        +healthScore(month: YearMonth) HealthScore
-    }
-    class RecurringDetector {
-        +detect(txs: List~Transaction~) List~RecurringPayment~
-    }
-    class ForecastEngine {
-        +project(inputs: ForecastInputs, days: int) Forecast
-        +monthlySurplus(inputs: ForecastInputs) Money
-    }
-    class ForecastInputs {
-        -transactions: List~Transaction~
-        -recurring: List~RecurringPayment~
-        -openingBalance: Money
-        +deepCopy() ForecastInputs
-    }
-    class SafeToSpendCalculator {
-        -buffer: Money
-        +calculate(forecast: Forecast, goals: List~SavingsGoal~, buffer: Money) SafeToSpendResult
-    }
-    class HabitAnalyzer {
-        +analyze(txs: List~Transaction~) List~Insight~
-    }
-    class HealthScoreCalculator {
-        +calculate(status: BudgetStatus, forecast: Forecast, goals: List~SavingsGoal~) HealthScore
-    }
-    class ExplanationService {
-        -llm: LLMProvider
-        +explain(facts: AnalysisFacts) String
-        -fallbackText(facts: AnalysisFacts) String
-    }
-    class GoalService {
-        -repo: GoalRepository
-        -txRepo: TransactionRepository
-        -planner: GoalPlanner
-        -forecastEngine: ForecastEngine
-        -monitor: AlertMonitor
-        +createGoal(request: GoalRequest) SavingsGoal
-        +evaluate(goal: SavingsGoal) GoalStatus
-        +evaluateAll() List~SavingsGoal~
-        +feasibility(goal: SavingsGoal) FeasibilityReport
-        +updateContribution(goalId: String, amount: Money)
-    }
-    class GoalPlanner {
-        +requiredMonthly(goal: SavingsGoal, today: LocalDate) Money
-        +projectedCompletion(goal: SavingsGoal, monthlySurplus: Money) LocalDate
-        +buildOptions(goal: SavingsGoal, monthlySurplus: Money) List~GoalOption~
-    }
-    class ScenarioSimulator {
-        -forecastEngine: ForecastEngine
-        -txRepo: TransactionRepository
-        +simulate(scenario: Scenario) ScenarioResult
-    }
-    class ScenarioChange {
-        <<interface>>
-        +applyTo(inputs: ForecastInputs) ForecastInputs*
-        +describe() String*
-    }
-    class CancelRecurringChange {
-        -merchant: String
-    }
-    class CapCategoryChange {
-        -category: Category
-        -monthlyCap: Money
-    }
-    class IncomeChange {
-        -monthlyDelta: Money
-    }
-    class OneTimeExpenseChange {
-        -amount: Money
-        -onDate: LocalDate
-    }
-    class GoalRepository {
-        <<interface>>
-        +save(goal: SavingsGoal)
-        +findAll() List~SavingsGoal~
-        +findById(goalId: String) SavingsGoal
-    }
-    class RecurringRepository {
-        <<interface>>
-        +saveFlag(merchant: String, flagged: boolean)
-        +flaggedMerchants() List~String~
-    }
+![Fig 3.3 — Analytics, goals and scenario simulation (all deterministic)](diagrams/png/Fig_3_3_Analytics_Goals_Scenario.png)
 
-    AnalyticsService *-- RecurringDetector
-    AnalyticsService *-- ForecastEngine
-    AnalyticsService *-- SafeToSpendCalculator
-    AnalyticsService *-- HabitAnalyzer
-    AnalyticsService *-- HealthScoreCalculator
-    AnalyticsService --> GoalRepository
-    AnalyticsService --> RecurringRepository
-    GoalService *-- GoalPlanner
-    GoalService --> ForecastEngine
-    GoalService --> GoalRepository
-    ForecastEngine ..> ForecastInputs
-    ScenarioSimulator --> ForecastEngine
-    ScenarioSimulator ..> ForecastInputs : clones baseline
-    ScenarioSimulator ..> Scenario
-    ScenarioChange <|.. CancelRecurringChange
-    ScenarioChange <|.. CapCategoryChange
-    ScenarioChange <|.. IncomeChange
-    ScenarioChange <|.. OneTimeExpenseChange
-    ExplanationService ..> LLMProvider
-```
+*Image:* [`Fig_3_3_Analytics_Goals_Scenario.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_3_Analytics_Goals_Scenario.png) · *Editable UMLet source:* [`Fig_3_3_Analytics_Goals_Scenario.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_3_Analytics_Goals_Scenario.uxf)
 
 ### Fig 3.4 — Agent subsystem
 
-```mermaid
-classDiagram
-    direction TB
-    class AgentController {
-        -planner: Planner
-        -tools: ToolManager
-        -memory: MemoryManager
-        -grounding: GroundingChecker
-        -traces: TraceRepository
-        -maxSteps: int
-        +handle(task: AgentTask) AgentResult
-    }
-    class AgentTask {
-        -type: TaskType
-        -userInput: String
-        -params: TaskParams
-    }
-    class TaskType {
-        <<enumeration>>
-        AFFORDABILITY
-        GOAL_PLAN
-        WHAT_IF
-        MONTHLY_REVIEW
-        CHAT
-    }
-    class AgentContext {
-        -task: AgentTask
-        -history: List~Message~
-        -protectedCategories: List~Category~
-        -lastReviewSummary: String
-        -toolSpecs: List~ToolSpec~
-        -observations: List~ToolResult~
-        +addObservation(result: ToolResult)
-        +setToolSpecs(specs: List~ToolSpec~)
-    }
-    class AgentResult {
-        -answer: String
-        -drafts: List~ProposalDraft~
-        -status: AgentStatus
-        -grounding: GroundingReport
-        -traceId: String
-    }
-    class AgentStatus {
-        <<enumeration>>
-        COMPLETED
-        TOOL_FAILURE
-        STEP_LIMIT
-        MODEL_UNAVAILABLE
-        UNGROUNDED
-    }
-    class Planner {
-        -promptBuilder: PromptBuilder
-        -parser: ResponseParser
-        -llm: LLMProvider
-        +nextStep(ctx: AgentContext) AgentStep
-        +revise(ctx: AgentContext, report: GroundingReport) AgentStep
-    }
-    class PromptBuilder {
-        +build(ctx: AgentContext) LLMRequest
-        +buildRepairPrompt(rawText: String) LLMRequest
-    }
-    class ResponseParser {
-        +parse(response: LLMResponse) AgentStep
-    }
-    class AgentStep {
-        <<abstract>>
-    }
-    class ToolCallStep {
-        -call: ToolCall
-    }
-    class FinalAnswerStep {
-        -answer: String
-        -drafts: List~ProposalDraft~
-    }
-    class ToolManager {
-        -tools: List~Tool~
-        +register(tool: Tool)
-        +listSpecs() List~ToolSpec~
-        +execute(call: ToolCall) ToolResult
-    }
-    class Tool {
-        <<interface>>
-        +spec() ToolSpec*
-        +run(args: ToolArgs) ToolResult*
-    }
-    class ToolSpec {
-        -name: String
-        -description: String
-        -params: List~ParamSpec~
-        +validate(args: ToolArgs)
-    }
-    class ToolCall {
-        -toolName: String
-        -args: ToolArgs
-    }
-    class ToolResult {
-        -success: boolean
-        -dataJson: String
-        -error: String
-    }
-    class TransactionQueryTool
-    class BudgetStatusTool
-    class ForecastTool
-    class InsightTool
-    class GoalTool
-    class ScenarioTool
-    class MemoryManager {
-        -shortTerm: ConversationMemory
-        -longTerm: UserProfileMemory
-        -repo: MemoryRepository
-        +buildContext(task: AgentTask) AgentContext
-        +remember(task: AgentTask, result: AgentResult)
-        +setProtectedCategory(category: Category, protected: boolean)
-    }
-    class ConversationMemory {
-        -windowSize: int
-        -chatMemory: ChatMemory
-        +append(message: Message)
-        +recent() List~Message~
-    }
-    class UserProfileMemory {
-        -protectedCategories: List~Category~
-        -pastReviewSummaries: List~String~
-        +getProtectedCategories() List~Category~
-    }
-    class GroundingChecker {
-        +verify(answer: String, observations: List~ToolResult~) GroundingReport
-    }
-    class GroundingReport {
-        -grounded: boolean
-        -ungroundedFigures: List~String~
-    }
-    class AgentTrace {
-        -id: String
-        -taskType: TaskType
-        -steps: List~TraceStep~
-        +addStep(step: TraceStep)
-    }
-    class TraceStep {
-        -index: int
-        -kind: String
-        -toolName: String
-        -argsJson: String
-        -resultSummary: String
-    }
-    class TraceRepository {
-        <<interface>>
-        +save(trace: AgentTrace)
-        +load(traceId: String) AgentTrace
-    }
-    class MemoryRepository {
-        <<interface>>
-        +savePreferences(profile: UserProfileMemory)
-        +loadPreferences() UserProfileMemory
-    }
+![Fig 3.4 — Agent subsystem](diagrams/png/Fig_3_4_Agent_Subsystem.png)
 
-    AgentController --> Planner
-    AgentController --> ToolManager
-    AgentController --> MemoryManager
-    AgentController --> GroundingChecker
-    AgentController --> TraceRepository
-    AgentController ..> AgentTask
-    AgentController ..> AgentResult
-    AgentController ..> AgentContext : creates per run
-    AgentController ..> AgentTrace : creates per run
-    AgentTask --> TaskType
-    AgentResult --> AgentStatus
-    AgentTrace "1" *-- "0..*" TraceStep
-    Planner --> PromptBuilder
-    Planner --> ResponseParser
-    Planner ..> LLMProvider
-    ResponseParser ..> AgentStep
-    AgentStep <|-- ToolCallStep
-    AgentStep <|-- FinalAnswerStep
-    ToolManager "1" o-- "1..*" Tool
-    Tool <|.. TransactionQueryTool
-    Tool <|.. BudgetStatusTool
-    Tool <|.. ForecastTool
-    Tool <|.. InsightTool
-    Tool <|.. GoalTool
-    Tool <|.. ScenarioTool
-    Tool ..> ToolSpec
-    ToolManager ..> ToolResult
-    TransactionQueryTool ..> TransactionService
-    BudgetStatusTool ..> BudgetService
-    ForecastTool ..> AnalyticsService
-    InsightTool ..> AnalyticsService
-    GoalTool ..> GoalService
-    ScenarioTool ..> ScenarioSimulator
-    MemoryManager "1" *-- "1" ConversationMemory
-    MemoryManager "1" *-- "1" UserProfileMemory
-    MemoryManager --> MemoryRepository
-    GroundingChecker ..> GroundingReport
-```
+*Image:* [`Fig_3_4_Agent_Subsystem.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_4_Agent_Subsystem.png) · *Editable UMLet source:* [`Fig_3_4_Agent_Subsystem.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_4_Agent_Subsystem.uxf)
 
 ### Fig 3.5 — LLM provider layer (Adapter + Decorator)
 
-```mermaid
-classDiagram
-    direction TB
-    class LLMProvider {
-        <<interface>>
-        +complete(request: LLMRequest) LLMResponse*
-    }
-    class ClaudeProvider {
-        -chatModel: ChatModel
-        -model: String
-        +complete(request: LLMRequest) LLMResponse
-        -toChatRequest(request: LLMRequest) ChatRequest
-        -toLlmResponse(response: ChatResponse) LLMResponse
-    }
-    class ChatModel {
-        <<LangChain4j interface - adaptee>>
-        +chat(request: ChatRequest) ChatResponse
-    }
-    class AnthropicChatModel {
-        <<LangChain4j>>
-    }
-    class MockLLMProvider {
-        -scriptedReplies: List~String~
-        +complete(request: LLMRequest) LLMResponse
-    }
-    class LLMProviderDecorator {
-        <<abstract>>
-        #inner: LLMProvider
-        +complete(request: LLMRequest) LLMResponse
-    }
-    class RetryingLLMProvider {
-        -maxRetries: int
-        -backoffSeconds: double
-        +complete(request: LLMRequest) LLMResponse
-    }
-    class LoggingLLMProvider {
-        -logger: Logger
-        +complete(request: LLMRequest) LLMResponse
-    }
-    class LLMRequest {
-        -systemPrompt: String
-        -messages: List~Message~
-        -toolSpecs: List~ToolSpec~
-        -model: String
-    }
-    class LLMResponse {
-        -text: String
-        -toolCalls: List~ToolCall~
-        -tokensUsed: int
-    }
+![Fig 3.5 — LLM provider layer (Adapter + Decorator)](diagrams/png/Fig_3_5_LLM_Provider_Layer.png)
 
-    LLMProvider <|.. ClaudeProvider
-    LLMProvider <|.. MockLLMProvider
-    LLMProvider <|.. LLMProviderDecorator
-    LLMProviderDecorator <|-- RetryingLLMProvider
-    LLMProviderDecorator <|-- LoggingLLMProvider
-    LLMProviderDecorator "1" o-- "1" LLMProvider : wraps
-    ClaudeProvider "1" --> "1" ChatModel : wraps
-    ChatModel <|.. AnthropicChatModel
-    LLMProvider ..> LLMRequest
-    LLMProvider ..> LLMResponse
-    Planner ..> LLMProvider
-    LLMCategorizationStrategy ..> LLMProvider
-    ExplanationService ..> LLMProvider
-```
+*Image:* [`Fig_3_5_LLM_Provider_Layer.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_5_LLM_Provider_Layer.png) · *Editable UMLet source:* [`Fig_3_5_LLM_Provider_Layer.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_5_LLM_Provider_Layer.uxf)
 
 _Runtime composition (lecture style, `vc = new 3D(vc)`):_ `LLMProvider provider = new LoggingLLMProvider(new RetryingLLMProvider(new ClaudeProvider(chatModel, model)))`.
 
 ### Fig 3.6 — Proposals, commands, reviews and reports
 
-```mermaid
-classDiagram
-    direction TB
-    class ProposalService {
-        -repo: ProposalRepository
-        -factory: CommandFactory
-        -history: CommandHistory
-        -memory: MemoryManager
-        +createFromDrafts(drafts: List~ProposalDraft~, traceId: String) List~Proposal~
-        +listPending() List~Proposal~
-        +decide(proposalId: String, approve: boolean) Proposal
-        +expireOld(month: YearMonth)
-        -passesGuardrails(draft: ProposalDraft) boolean
-    }
-    class ProposalDraft {
-        -type: ProposalType
-        -title: String
-        -rationale: String
-        -params: ParamSet
-    }
-    class Proposal {
-        -id: String
-        -type: ProposalType
-        -title: String
-        -rationale: String
-        -command: Command
-        -state: ProposalState
-        -traceId: String
-        -createdAt: Instant
-        +approve(history: CommandHistory)
-        +reject()
-        +expire()
-        +setState(state: ProposalState)
-        +statusName() String
-    }
-    class ProposalState {
-        <<interface>>
-        +approve(proposal: Proposal, history: CommandHistory)*
-        +reject(proposal: Proposal)*
-        +expire(proposal: Proposal)*
-        +name() String*
-    }
-    class PendingState
-    class AppliedState
-    class RejectedState
-    class ExpiredState
-    class ProposalRepository {
-        <<interface>>
-        +save(proposal: Proposal)
-        +findById(proposalId: String) Proposal
-        +findPending() List~Proposal~
-    }
-    class CommandFactory {
-        <<factory>>
-        -budgets: BudgetService
-        -goals: GoalService
-        -analytics: AnalyticsService
-        +create(draft: ProposalDraft) Command
-    }
-    class Command {
-        <<interface>>
-        +execute()*
-        +undo()*
-        +describe() String*
-    }
-    class CommandHistory {
-        -undoStack: Deque~Command~
-        -redoStack: Deque~Command~
-        +execute(command: Command)
-        +undo()
-        +redo()
-        +canUndo() boolean
-    }
-    class RecategorizeCommand {
-        -txId: String
-        -oldCategory: Category
-        -newCategory: Category
-    }
-    class SetBudgetLimitCommand {
-        -month: YearMonth
-        -category: Category
-        -oldLimit: Money
-        -newLimit: Money
-    }
-    class UpdateGoalContributionCommand {
-        -goalId: String
-        -oldAmount: Money
-        -newAmount: Money
-    }
-    class FlagSubscriptionCommand {
-        -merchant: String
-    }
-    class ReviewService {
-        -analytics: AnalyticsService
-        -budgets: BudgetService
-        -goals: GoalService
-        -agent: AgentController
-        -proposals: ProposalService
-        -repo: ReviewRepository
-        +generate(month: YearMonth) MonthlyReview
-    }
-    class ReviewRepository {
-        <<interface>>
-        +save(review: MonthlyReview)
-        +findByMonth(month: YearMonth) MonthlyReview
-    }
-    class ReportService {
-        <<factory>>
-        -reviews: ReviewRepository
-        -budgets: BudgetService
-        +buildReportData(month: YearMonth) ReportData
-        +export(month: YearMonth, fmt: ExportFormat, out: Path) Path
-        -exporterFor(fmt: ExportFormat) ReportExporter
-    }
-    class ReportData {
-        -month: YearMonth
-        -status: BudgetStatus
-        -review: Optional~MonthlyReview~
-    }
-    class ReportExporter {
-        <<abstract>>
-        +export(data: ReportData, out: Path) Path
-        #writeHeader(data: ReportData)* String
-        #writeSummary(data: ReportData)* String
-        #writeCategoryTable(data: ReportData)* String
-        #writeReviewSection(data: ReportData)* String
-        #writeFooter(data: ReportData)* String
-    }
-    class MarkdownExporter
-    class CsvExporter
-    class TextExporter
+![Fig 3.6 — Proposals, commands, reviews and reports](diagrams/png/Fig_3_6_Proposals_Commands_Reviews_Reports.png)
 
-    ProposalService --> ProposalRepository
-    ProposalService --> CommandFactory
-    ProposalService --> CommandHistory
-    ProposalService ..> ProposalDraft
-    ProposalService ..> Proposal : creates
-    Proposal "1" --> "1" Command
-    Proposal "1" o-- "1" ProposalState
-    ProposalState <|.. PendingState
-    ProposalState <|.. AppliedState
-    ProposalState <|.. RejectedState
-    ProposalState <|.. ExpiredState
-    CommandFactory ..> Command : creates
-    CommandHistory "1" o-- "0..*" Command
-    Command <|.. RecategorizeCommand
-    Command <|.. SetBudgetLimitCommand
-    Command <|.. UpdateGoalContributionCommand
-    Command <|.. FlagSubscriptionCommand
-    RecategorizeCommand ..> TransactionService : receiver
-    RecategorizeCommand ..> LearnedRuleStrategy : receiver
-    SetBudgetLimitCommand ..> BudgetService : receiver
-    UpdateGoalContributionCommand ..> GoalService : receiver
-    FlagSubscriptionCommand ..> AnalyticsService : receiver
-    ReviewService --> AnalyticsService
-    ReviewService --> GoalService
-    ReviewService --> AgentController
-    ReviewService --> ProposalService
-    ReviewService --> ReviewRepository
-    ReportService --> ReviewRepository
-    ReportService ..> ReportData
-    ReportService ..> ReportExporter : creates
-    ReportExporter <|-- MarkdownExporter
-    ReportExporter <|-- CsvExporter
-    ReportExporter <|-- TextExporter
-```
+*Image:* [`Fig_3_6_Proposals_Commands_Reviews_Reports.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_6_Proposals_Commands_Reviews_Reports.png) · *Editable UMLet source:* [`Fig_3_6_Proposals_Commands_Reviews_Reports.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_6_Proposals_Commands_Reviews_Reports.uxf)
 
 ### Fig 3.7 — Domain model (conceptual)
 
-```mermaid
-classDiagram
-    direction LR
-    class Money {
-        -amount: BigDecimal
-        +add(other: Money) Money
-        +subtract(other: Money) Money
-        +multiply(factor: BigDecimal) Money
-        +compareTo(other: Money) int
-    }
-    class Category {
-        -id: String
-        -name: String
-        -essential: boolean
-    }
-    class Account {
-        -id: String
-        -name: String
-        -openingBalance: Money
-    }
-    class Transaction {
-        -id: String
-        -date: LocalDate
-        -amount: Money
-        -merchant: String
-        -description: String
-        -income: boolean
-    }
-    class Budget {
-        -month: YearMonth
-    }
-    class BudgetLine {
-        -limit: Money
-    }
-    class BudgetStatus {
-        -month: YearMonth
-        -totalSpent: Money
-    }
-    class BudgetLineStatus {
-        -spent: Money
-        -limit: Money
-        /ratio: double
-        -level: AlertSeverity
-    }
-    class Alert {
-        -type: AlertType
-        -severity: AlertSeverity
-        -message: String
-        -createdAt: Instant
-    }
-    class RecurringPayment {
-        -merchant: String
-        -amount: Money
-        -frequency: Frequency
-        -nextDue: LocalDate
-        -confidence: double
-        -flaggedForReview: boolean
-    }
-    class SavingsGoal {
-        -id: String
-        -name: String
-        -target: Money
-        -deadline: LocalDate
-        -saved: Money
-        -monthlyContribution: Money
-        -status: GoalStatus
-    }
-    class GoalStatus {
-        <<enumeration>>
-        ON_TRACK
-        AT_RISK
-        BEHIND
-        ACHIEVED
-    }
-    class Forecast {
-        -days: List~DailyBalance~
-        /lowestBalance: Money
-    }
-    class DailyBalance {
-        -date: LocalDate
-        -balance: Money
-    }
-    class SafeToSpendResult {
-        -dailyAllowance: Money
-        -remainingThisMonth: Money
-        -upcomingBills: Money
-        -goalReserve: Money
-        -explanation: String
-    }
-    class Insight {
-        -type: InsightType
-        -title: String
-        -evidence: String
-        -severity: AlertSeverity
-        -explanation: String
-    }
-    class HealthScore {
-        -total: int
-        -explanation: String
-    }
-    class ScoreComponent {
-        -name: String
-        -points: int
-        -maxPoints: int
-    }
-    class Scenario {
-        -id: String
-        -name: String
-        -changes: List~ScenarioChange~
-    }
-    class ScenarioResult {
-        -baselineEndBalance: Money
-        -scenarioEndBalance: Money
-        -monthlySavingsDelta: Money
-    }
-    class MonthlyReview {
-        -month: YearMonth
-        -narrative: String
-        -proposalIds: List~String~
-        -traceId: String
-        -generatedAt: Instant
-    }
+![Fig 3.7 — Domain model (conceptual)](diagrams/png/Fig_3_7_Domain_Model.png)
 
-    Account "1" --> "0..*" Transaction : holds
-    Transaction "*" --> "1" Category : categorized as
-    Transaction *-- Money
-    Budget "1" *-- "1..*" BudgetLine
-    BudgetLine "*" --> "1" Category
-    BudgetStatus "1" *-- "0..*" BudgetLineStatus
-    Forecast "1" *-- "1..*" DailyBalance
-    HealthScore "1" *-- "1..4" ScoreComponent
-    SavingsGoal --> GoalStatus
-    RecurringPayment ..> Transaction : derived from
-    Scenario "1" *-- "1..*" ScenarioChange
-    Scenario ..> ScenarioResult : simulated into
-    MonthlyReview "1" o-- "1" HealthScore
-    MonthlyReview "1" --> "0..*" Proposal
-    Insight ..> Transaction : evidence
-```
+*Image:* [`Fig_3_7_Domain_Model.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_7_Domain_Model.png) · *Editable UMLet source:* [`Fig_3_7_Domain_Model.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_7_Domain_Model.uxf)
 
 **Supporting value objects and enums** (Java `record` or `enum`; not drawn to keep the figures readable). `YearMonth`, `LocalDate` and `Instant` are the standard `java.time` classes:
 
 | Name | Kind | Fields / values |
 |---|---|---|
 | `ImportResult` | record | `imported: int`, `duplicates: int`, `rejected: List<String>` |
+| `NewTransaction` | record | `date: LocalDate`, `amount: Money`, `merchant: String`, `description: String`, `category: Optional<Category>`, `income: boolean` |
 | `ParseResult` | record | `transactions: List<Transaction>`, `rejectedRows: List<String>` |
 | `TxFilter` | record | `start: LocalDate`, `end: LocalDate`, `category: Optional<Category>`, `merchant: Optional<String>` |
 | `BudgetLimits` | record | `limits: Map<Category, Money>` |
@@ -1284,7 +400,7 @@ classDiagram
 | `ExportFormat` | Enum | `MARKDOWN`, `CSV`, `TEXT` |
 | `ProposalType` | Enum | `BUDGET_ADJUSTMENT`, `GOAL_ADJUSTMENT`, `FLAG_SUBSCRIPTION`, `RECATEGORIZE` |
 | `AlertType` / `AlertSeverity` | Enum | `BUDGET`, `LOW_BALANCE`, `GOAL_RISK` / `INFO`, `WARNING`, `OVER` |
-| `Frequency` / `InsightType` | Enum | `WEEKLY`, `MONTHLY`, `YEARLY` / `WEEKEND_SPIKE`, `PAYDAY_SPLURGE`, `MONTH_END_CRUNCH`, `SMALL_PURCHASE_LEAK`, `UNUSUAL_EXPENSE` |
+| `Frequency` / `InsightType` | Enum | `WEEKLY`, `BIWEEKLY`, `MONTHLY`, `YEARLY` / `WEEKEND_SPIKE`, `PAYDAY_SPLURGE`, `MONTH_END_CRUNCH`, `SMALL_PURCHASE_LEAK`, `UNUSUAL_EXPENSE` |
 
 ### 3.8 Design principles applied
 
@@ -1406,64 +522,9 @@ Nine patterns are used. Each is described with the four elements from the lectur
 - **«include»**: the arrow goes from the *base* use case to the *included* one. The included behaviour is required, and the base is not complete without it. UC01 includes UC02 (categorization); UC10 includes UC06 (habits and score); UC08 and UC10 include UC14 (creating proposals).
 - **«extend»**: the arrow goes from the *extending* use case to the *base*. The behaviour is optional and the base can stand on its own. UC14 extends UC07 and UC09; the extension point is *after result displayed* (the user chooses to save the suggestions as proposals).
 
-_The diagram is drawn in Mermaid, which cannot draw stick figures or true ellipses, so actors are hexagons and use cases are rounded shapes. As the lecture's UML Tools slide says, consistent notation matters more than the tool._
+![Fig 5 — Use-case diagram](diagrams/png/Fig_5_Use_Case_Diagram.png)
 
-```mermaid
-flowchart LR
-    User{{"User (primary actor)"}}
-    LLM{{"LLM Service (Claude API)"}}
-    FS{{"File System (CSV and reports)"}}
-
-    subgraph SYS["WealthSei - system boundary (GUI and CLI)"]
-        UC01(["UC01 Import Transactions"])
-        UC02(["UC02 Categorize and Correct Transactions"])
-        UC03(["UC03 Manage Budget and View Alerts"])
-        UC04(["UC04 View Recurring Payments"])
-        UC05(["UC05 View Safe-to-Spend and Forecast"])
-        UC06(["UC06 Explore Habits and Health Score"])
-        UC07(["UC07 Check Purchase Affordability"])
-        UC08(["UC08 Plan and Replan Savings Goal"])
-        UC09(["UC09 Run What-If Scenario"])
-        UC10(["UC10 Generate Monthly Review"])
-        UC11(["UC11 Ask Finance Question"])
-        UC12(["UC12 Review Agent Proposals"])
-        UC13(["UC13 Export Report"])
-        UC14(["UC14 Create Proposals from Agent Suggestions"])
-    end
-
-    User --- UC01
-    User --- UC02
-    User --- UC03
-    User --- UC04
-    User --- UC05
-    User --- UC06
-    User --- UC07
-    User --- UC08
-    User --- UC09
-    User --- UC10
-    User --- UC11
-    User --- UC12
-    User --- UC13
-
-    UC01 -.->|"«include»"| UC02
-    UC10 -.->|"«include»"| UC06
-    UC08 -.->|"«include»"| UC14
-    UC10 -.->|"«include»"| UC14
-    UC14 -.->|"«extend»"| UC07
-    UC14 -.->|"«extend»"| UC09
-
-    UC01 --- FS
-    UC13 --- FS
-    UC02 --- LLM
-    UC04 --- LLM
-    UC05 --- LLM
-    UC06 --- LLM
-    UC07 --- LLM
-    UC08 --- LLM
-    UC09 --- LLM
-    UC10 --- LLM
-    UC11 --- LLM
-```
+*Image:* [`Fig_5_Use_Case_Diagram.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_5_Use_Case_Diagram.png) · *Editable UMLet source:* [`Fig_5_Use_Case_Diagram.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_5_Use_Case_Diagram.uxf)
 
 **Coverage:** F01→UC01 · F02→UC02 · F03→UC03 · F04→UC04 · F05→UC05 · F06, F07→UC06 · F08→UC07 · F09→UC08 · F10→UC09 · F11→UC10 · F12→UC11 · F13→UC12, UC14 · F14→UC13.
 
@@ -1473,17 +534,17 @@ flowchart LR
 
 Every use case can be performed from the GUI or from the CLI (Appendix B); steps below say "the UI" for either.
 
-### UC01 — Import Transactions
+### UC01 — Import or Add Transactions
 
 | Field | Description |
 |---|---|
-| **ID / Name** | UC01 — Import Transactions |
+| **ID / Name** | UC01 — Import or Add Transactions |
 | **Actors** | User (primary); File System |
-| **Goal** | Load bank transactions into WealthSei, categorized and de-duplicated. |
-| **Preconditions** | Application is running; user has a CSV export. |
-| **Trigger** | User chooses **Import CSV** (or runs `import <file>`). |
-| **Main success scenario** | 1. User selects a CSV file.<br>2. System reads the header and selects a matching adapter.<br>3. System converts each row to a `Transaction`.<br>4. System removes duplicates.<br>5. System categorizes new transactions (UC02).<br>6. System saves them.<br>7. System refreshes budget alerts and goal status.<br>8. System shows an import summary. |
-| **Alternative / exception flows** | 2a. Unknown layout or unreadable file: show error, save nothing.<br>3a. Invalid row: skip it and list it in the summary.<br>4a. All rows are duplicates: report "0 new transactions". |
+| **Goal** | Get transactions into WealthSei, categorized and de-duplicated, from a bank CSV or by adding one by hand. |
+| **Preconditions** | Application is running; the user has a CSV export or a transaction to enter. |
+| **Trigger** | User chooses **Import CSV** (or runs `import <file>`), or chooses **Add Transaction** (or runs `add-tx`). |
+| **Main success scenario** | 1. User selects a CSV file.<br>2. System reads the header and selects a matching adapter.<br>3. System converts each record to a `Transaction`.<br>4. System removes duplicates.<br>5. System categorizes new transactions (UC02).<br>6. System saves them.<br>7. System refreshes budget alerts and goal status.<br>8. System shows an import summary. |
+| **Alternative / exception flows** | 2a. Unknown layout or unreadable file: show error, save nothing.<br>3a. Invalid record: skip it and list it in the summary.<br>4a. All rows are duplicates: report "0 new transactions".<br>*Alternative flow B (manual entry):* B1. User fills in date, amount, merchant, optional category and income or expense.<br>B2. System validates the entry.<br>B3. System categorizes it if no category was chosen (UC02).<br>B4. System saves it and refreshes alerts and goal status.<br>B2a. Invalid entry (zero amount, empty merchant, future date): show the error and save nothing. |
 | **Postconditions** | New transactions are stored and categorized; alerts and goal statuses are up to date. |
 | **Related features** | F01 (includes F02) |
 
@@ -1501,18 +562,18 @@ Every use case can be performed from the GUI or from the CLI (Appendix B); steps
 | **Postconditions** | Categories are updated; learned rules reflect the latest correction. |
 | **Related features** | F02 |
 
-### UC03 — Manage Budget and View Alerts
+### UC03 — Manage Budget and Plan, and View Alerts
 
 | Field | Description |
 |---|---|
-| **ID / Name** | UC03 — Manage Budget and View Alerts |
+| **ID / Name** | UC03 — Manage Budget and Plan, and View Alerts |
 | **Actors** | User (primary) |
-| **Goal** | Set spending limits and be warned when approaching or exceeding them. |
+| **Goal** | Describe income, balance, bills and planned expenses, set spending limits, and be warned when approaching or exceeding them. |
 | **Preconditions** | At least one category exists. |
-| **Trigger** | User edits budget limits, or new transactions arrive. |
-| **Main success scenario** | 1. User enters limits for a month.<br>2. System validates and saves them.<br>3. System computes spent/limit/percentage per category.<br>4. System publishes alerts for categories at 80% or over 100%.<br>5. UI shows progress bars and alerts. |
-| **Alternative / exception flows** | 2a. Negative or non-numeric limit: reject with message.<br>3a. Spending in a category without a budget: show as "unbudgeted". |
-| **Postconditions** | Budget saved; alerts delivered to all registered listeners. |
+| **Trigger** | User edits the plan or budget limits, or new transactions arrive. |
+| **Main success scenario** | 1. User enters or updates the plan: income sources, current balance, fixed bills, planned expenses and the safety buffer.<br>2. System validates and saves the plan.<br>3. User enters limits for a month.<br>4. System validates and saves them.<br>5. System computes spent, limit and percentage per category.<br>6. System publishes alerts for categories at 80% or over 100%.<br>7. UI shows the plan, progress bars and alerts. |
+| **Alternative / exception flows** | 2a. Negative or non-numeric amount, missing pay date, unknown frequency, or balance date in the future: reject with a message.<br>4a. Negative or non-numeric limit: reject with a message.<br>5a. Spending in a category without a budget: show as "unbudgeted". |
+| **Postconditions** | Plan and budget are saved; alerts are delivered to all registered listeners; forecasts use the new plan. |
 | **Related features** | F03 |
 
 ### UC04 — View Recurring Payments
@@ -1536,10 +597,10 @@ Every use case can be performed from the GUI or from the CLI (Appendix B); steps
 | **ID / Name** | UC05 — View Safe-to-Spend and Forecast |
 | **Actors** | User (primary); LLM Service (explanation text) |
 | **Goal** | Know how much can be spent today and whether the balance will dip too low. |
-| **Preconditions** | Transactions and opening balance exist. |
+| **Preconditions** | A plan (income and current balance) or imported transactions exist. |
 | **Trigger** | User opens the dashboard or runs `safe`. |
-| **Main success scenario** | 1. System detects recurring payments.<br>2. System projects 30 days of balance.<br>3. System calculates the daily allowance.<br>4. If the projection falls below the buffer, system raises a low-balance alert.<br>5. System adds an explanation.<br>6. UI shows the allowance card and chart. |
-| **Alternative / exception flows** | 1a. No data: prompt to import.<br>3a. Negative result: show $0 and the over-commitment amount.<br>5a. LLM unavailable: template text. |
+| **Main success scenario** | 1. System loads the plan and the transactions.<br>2. System detects recurring payments for items the plan does not cover.<br>3. System projects 30 days of balance from income, bills, planned expenses and everyday spending.<br>4. System calculates the daily allowance.<br>5. If the projection falls below the buffer, system raises a low-balance alert.<br>6. System adds an explanation.<br>7. UI shows the allowance card and chart. |
+| **Alternative / exception flows** | 1a. No plan and no data: prompt to set up a plan or import.<br>4a. Negative result: show $0 and the over-commitment amount.<br>4b. Transactions do not reach today: show a "data may be out of date" notice.<br>6a. LLM unavailable: template text. |
 | **Postconditions** | Allowance and forecast displayed; alert published if needed. |
 | **Related features** | F05 |
 
@@ -1673,13 +734,13 @@ Every use case can be performed from the GUI or from the CLI (Appendix B); steps
 
 ## 7. Sequence Diagrams
 
-Eleven diagrams cover all fourteen use cases (UC14 is shown inside SD06, SD07 and SD08). Following the lecture notation, solid arrows are messages (method calls), dashed arrows are return messages, self-arrows are reflexive messages, `loop` and `alt`/`opt` frames show iteration and conditions, and `create participant` marks object creation. Class and method names match Section 3. Every diagram works identically from the CLI: replace the view (e.g., `TransactionsView`) with `CliApp`; everything from `WealthSeiFacade` onward is unchanged.
+Eleven diagrams cover all fourteen use cases (UC14 is shown inside SD06, SD07 and SD08). Following the lecture notation, solid arrows are messages (method calls), dashed arrows are return messages, self-arrows are reflexive messages, `loop` and `alt`/`opt` frames show iteration and conditions, and an arrow that ends on a box starting lower down marks object creation. Class and method names match Section 3. Every diagram works identically from the CLI: replace the view (e.g., `TransactionsView`) with `CliApp`; everything from `WealthSeiFacade` onward is unchanged.
 
 | Diagram | Use case | Features |
 |---|---|---|
-| SD01 | UC01 Import Transactions | F01 |
+| SD01 | UC01 Import or Add Transactions | F01 |
 | SD02 | UC02 Categorize and Correct | F02 |
-| SD03 | UC03 Budget and Alerts | F03 |
+| SD03 | UC03 Budget and Plan Setup, Alerts | F03 |
 | SD04 | UC04, UC05, UC06 Analytics with explanation | F04, F05, F06, F07 |
 | SD05 | UC07 Affordability (full agent loop) | F08 |
 | SD06 | UC08 Goal Planning and Replanning (also shows UC14 Create Proposals) | F09, F13 |
@@ -1689,611 +750,73 @@ Eleven diagrams cover all fourteen use cases (UC14 is shown inside SD06, SD07 an
 | SD10 | UC12 Proposal Approval | F13 |
 | SD11 | UC13 Export Report | F14 |
 
-### SD01 — Import Transactions (UC01, F01)
+### SD01 — Import or Add Transactions (UC01, F01)
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant TV as TransactionsView
-    participant F as WealthSeiFacade
-    participant TS as TransactionService
-    participant CI as CsvImporter
-    participant AD as BankCsvAdapter
-    participant CAT as Categorizer
-    participant TR as TransactionRepository
-    participant BS as BudgetService
-    participant GS as GoalService
+![SD01 — Import or Add Transactions (UC01, F01)](diagrams/png/SD01_Import_or_Add_Transactions.png)
 
-    User->>TV: choose CSV file, click Import
-    TV->>F: importTransactions(file)
-    F->>TS: importFile(file)
-    TS->>CI: parse(file)
-    CI->>CI: detectAdapter(header)
-    alt no adapter recognises the header, or file unreadable
-        CI-->>TS: throw UnsupportedFormatException
-        TS-->>F: throw TransactionImportException
-        F-->>TV: error message
-        TV-->>User: show supported layouts, nothing saved
-    else adapter found
-        CI->>AD: readTransactions()
-        loop each record read from the CSVParser (adaptee)
-            AD->>AD: toTransaction(row)
-        end
-        Note over AD: an InvalidRowException rejects only that row
-        AD-->>CI: ParseResult (transactions, rejected rows)
-        CI-->>TS: ParseResult
-        TS->>TS: removeDuplicates(transactions)
-        loop each new transaction
-            TS->>CAT: categorize(tx)
-            CAT-->>TS: Category (see SD02)
-        end
-        TS->>TR: saveAll(transactions)
-        TS-->>F: ImportResult (imported, duplicates, rejected)
-        F->>BS: refreshAlerts(affected months)
-        F->>GS: evaluateAll()
-        F-->>TV: ImportResult
-        TV-->>User: import summary
-    end
-```
+*Image:* [`SD01_Import_or_Add_Transactions.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD01_Import_or_Add_Transactions.png) · *Editable UMLet source:* [`SD01_Import_or_Add_Transactions.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD01_Import_or_Add_Transactions.uxf)
 
 ### SD02 — Categorize and Correct Transactions (UC02, F02)
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant TV as TransactionsView
-    participant F as WealthSeiFacade
-    participant CH as CommandHistory
-    participant RC as RecategorizeCommand
-    participant TS as TransactionService
-    participant CAT as Categorizer
-    participant LR as LearnedRuleStrategy
-    participant KR as KeywordRuleStrategy
-    participant LS as LLMCategorizationStrategy
-    participant LLM as LLMProvider
+![SD02 — Categorize and Correct Transactions (UC02, F02)](diagrams/png/SD02_Categorize_and_Correct_Transactions.png)
 
-    Note over TS,LLM: Part A - automatic categorization (called from SD01)
-    TS->>CAT: categorize(tx)
-    CAT->>LR: categorize(tx)
-    alt learned rule found
-        LR-->>CAT: category
-    else no learned rule
-        CAT->>KR: categorize(tx)
-        alt keyword matches
-            KR-->>CAT: category
-        else no keyword match
-            CAT->>LS: categorize(tx)
-            LS->>LLM: complete(request listing allowed categories)
-            alt LLM error, or category not in allowed list
-                LS-->>CAT: empty
-                CAT-->>TS: UNCATEGORIZED (flagged for manual review)
-            else valid category
-                LS-->>CAT: category
-            end
-        end
-    end
-    CAT-->>TS: Category
+*Image:* [`SD02_Categorize_and_Correct_Transactions.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD02_Categorize_and_Correct_Transactions.png) · *Editable UMLet source:* [`SD02_Categorize_and_Correct_Transactions.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD02_Categorize_and_Correct_Transactions.uxf)
 
-    Note over User,CH: Part B - manual correction and undo
-    User->>TV: change category of a transaction
-    TV->>F: correctCategory(txId, newCategory)
-    F->>CH: execute(RecategorizeCommand)
-    CH->>RC: execute()
-    RC->>TS: updateCategory(txId, newCategory)
-    RC->>LR: learn(merchant, newCategory)
-    CH-->>F: done
-    F-->>TV: updated Transaction
-    TV-->>User: row updated
-    User->>TV: click Undo
-    TV->>F: undo()
-    F->>CH: undo()
-    alt history is empty
-        CH-->>F: nothing to undo
-    else a command is available
-        CH->>RC: undo()
-        RC->>TS: updateCategory(txId, oldCategory)
-        RC->>LR: forget(merchant)
-        CH-->>F: done
-    end
-    F-->>TV: refreshed view
-```
+### SD03 — Budget and Plan Setup, Tracking and Alerts (UC03, F03)
 
-### SD03 — Budget Setup, Tracking and Alerts (UC03, F03)
+![SD03 — Budget and Plan Setup, Tracking and Alerts (UC03, F03)](diagrams/png/SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.png)
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant DV as DashboardView
-    participant F as WealthSeiFacade
-    participant BS as BudgetService
-    participant BR as BudgetRepository
-    participant TR as TransactionRepository
-    participant AM as AlertMonitor
-    participant L as AlertListener
-
-    Note over DV,L: DashboardView and CliApp registered earlier via addAlertListener(), which calls AlertMonitor.attach()
-    User->>DV: edit category limits, click Save
-    DV->>F: setBudget(month, limits)
-    F->>BS: setBudget(month, limits)
-    BS->>BS: validate(limits)
-    alt a limit is negative or invalid
-        BS-->>F: throw InvalidBudgetException
-        F-->>DV: error message
-        DV-->>User: show validation error
-    else limits valid
-        BS->>BR: save(budget)
-        BS->>TR: query(month filter)
-        TR-->>BS: transactions
-        BS->>BS: build BudgetStatus
-        BS->>AM: evaluate(status)
-        loop each category at 80 percent or more of its limit
-            AM->>AM: create Alert (WARNING or OVER)
-            AM->>L: onAlert(alert)
-            L-->>User: toast in GUI or line in CLI
-        end
-        BS-->>F: BudgetStatus
-        F-->>DV: BudgetStatus
-        DV-->>User: progress bars updated
-    end
-```
+*Image:* [`SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.png) · *Editable UMLet source:* [`SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.uxf)
 
 ### SD04 — Analytics with Explanation: Recurring, Safe-to-Spend, Habits, Score (UC04–UC06, F04–F07)
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant DV as DashboardView
-    participant F as WealthSeiFacade
-    participant AS as AnalyticsService
-    participant TR as TransactionRepository
-    participant RD as RecurringDetector
-    participant FE as ForecastEngine
-    participant SC as SafeToSpendCalculator
-    participant HA as HabitAnalyzer
-    participant HS as HealthScoreCalculator
-    participant BS as BudgetService
-    participant AM as AlertMonitor
-    participant EX as ExplanationService
-    participant LLM as LLMProvider
+![SD04 — Analytics with Explanation: Recurring, Safe-to-Spend, Habits, Score (UC04–UC06, F04–F07)](diagrams/png/SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.png)
 
-    User->>DV: open Recurring, Safe-to-Spend, Habits or Score panel
-    alt Recurring payments (F04)
-        DV->>F: getRecurringPayments()
-        F->>AS: detectRecurring()
-        AS->>TR: query(all history)
-        TR-->>AS: transactions
-        AS->>RD: detect(transactions)
-        RD-->>AS: List of RecurringPayment
-        AS-->>F: recurring payments
-    else Safe-to-spend (F05)
-        DV->>F: getSafeToSpend(today)
-        F->>AS: safeToSpend(today)
-        AS->>AS: detectRecurring()
-        AS->>FE: project(inputs, 30)
-        FE-->>AS: Forecast
-        AS->>SC: calculate(forecast, goals, buffer)
-        SC-->>AS: SafeToSpendResult
-        opt lowest projected balance is below the buffer
-            AS->>AM: publish(LOW_BALANCE alert)
-        end
-        AS-->>F: SafeToSpendResult
-    else Habits (F06)
-        DV->>F: getHabitInsights(month)
-        F->>AS: habits(month)
-        AS->>TR: query(month filter)
-        TR-->>AS: transactions
-        AS->>HA: analyze(transactions)
-        HA-->>AS: List of Insight
-        AS-->>F: insights
-    else Health score (F07)
-        DV->>F: getHealthScore(month)
-        F->>AS: healthScore(month)
-        AS->>BS: getStatus(month)
-        BS-->>AS: BudgetStatus
-        AS->>HS: calculate(status, forecast, goals)
-        HS-->>AS: HealthScore
-        AS-->>F: HealthScore
-    end
-    F->>EX: explain(facts)
-    EX->>LLM: complete(request containing computed facts only)
-    alt LLM unavailable
-        LLM-->>EX: error
-        EX-->>F: fallbackText (template)
-    else response received
-        LLM-->>EX: response
-        EX-->>F: explanation text
-    end
-    F-->>DV: result with explanation
-    DV-->>User: cards, chart or gauge
-```
+*Image:* [`SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.png) · *Editable UMLet source:* [`SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.uxf)
 
 ### SD05 — Purchase Affordability: the full agent loop (UC07, F08)
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant AV as AssistantView
-    participant F as WealthSeiFacade
-    participant AC as AgentController
-    participant MM as MemoryManager
-    participant TM as ToolManager
-    participant PL as Planner
-    participant PB as PromptBuilder
-    participant RP as ResponseParser
-    participant LLM as LLMProvider
-    participant T as Tool
-    participant GC as GroundingChecker
-    participant TR as TraceRepository
+![SD05 — Purchase Affordability: the full agent loop (UC07, F08)](diagrams/png/SD05_Purchase_Affordability_the_full_agent_loop.png)
 
-    User->>AV: enter item and price, click Check
-    AV->>F: checkAffordability(item, price)
-    alt price missing or not positive
-        F-->>AV: ValidationException
-        AV-->>User: ask for a valid price
-    else input valid
-        F->>AC: handle(AgentTask AFFORDABILITY)
-        AC->>MM: buildContext(task)
-        MM-->>AC: AgentContext (recent messages, preferences)
-        AC->>TM: listSpecs()
-        TM-->>AC: List of ToolSpec
-        create participant TRC as AgentTrace
-        AC->>TRC: new AgentTrace(taskType)
-        loop until FinalAnswerStep or maxSteps reached
-            AC->>PL: nextStep(ctx)
-            PL->>PB: build(ctx)
-            PB-->>PL: LLMRequest
-            PL->>LLM: complete(request)
-            LLM-->>PL: LLMResponse (text or tool calls)
-            PL->>RP: parse(response)
-            alt malformed response
-                RP-->>PL: throw MalformedResponseException
-                PL->>PB: buildRepairPrompt(rawText)
-                PL->>LLM: complete(repair request)
-                Note over PL: still malformed leads to AgentStatus MODEL_UNAVAILABLE
-            else parsed
-                RP-->>PL: AgentStep
-            end
-            PL-->>AC: AgentStep
-            opt step is a ToolCallStep
-                AC->>TM: execute(toolCall)
-                TM->>TM: spec.validate(args)
-                alt invalid arguments
-                    TM-->>AC: ToolResult failure (tool not run)
-                else valid arguments
-                    TM->>T: run(args)
-                    T-->>TM: ToolResult (data)
-                    TM-->>AC: ToolResult
-                end
-                AC->>AC: ctx.addObservation(result)
-                AC->>TRC: addStep(step)
-            end
-        end
-        Note over AC: reaching maxSteps gives AgentStatus STEP_LIMIT with a partial answer
-        AC->>GC: verify(answer, observations)
-        GC-->>AC: GroundingReport
-        opt figures not grounded in tool results
-            AC->>PL: revise(ctx, report)
-            PL-->>AC: corrected FinalAnswerStep
-        end
-        AC->>TR: save(trace)
-        AC->>MM: remember(task, result)
-        AC-->>F: AgentResult
-        F-->>AV: AgentResult
-        AV-->>User: verdict, reasoning, Why link
-    end
-```
+*Image:* [`SD05_Purchase_Affordability_the_full_agent_loop.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD05_Purchase_Affordability_the_full_agent_loop.png) · *Editable UMLet source:* [`SD05_Purchase_Affordability_the_full_agent_loop.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD05_Purchase_Affordability_the_full_agent_loop.uxf)
 
 _Tools used in this scenario:_ `BudgetStatusTool`, `ForecastTool`, `GoalTool`, `TransactionQueryTool`. Saving a suggested plan calls `WealthSeiFacade.createProposals(drafts, traceId)`.
 
 ### SD06 — Savings Goal Planning and Replanning (UC08, F09)
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant GV as GoalsView
-    participant F as WealthSeiFacade
-    participant GS as GoalService
-    participant GP as GoalPlanner
-    participant FE as ForecastEngine
-    participant AC as AgentController
-    participant TM as ToolManager
-    participant GT as GoalTool
-    participant PS as ProposalService
-    participant CF as CommandFactory
-    participant PR as ProposalRepository
-    participant AM as AlertMonitor
+![SD06 — Savings Goal Planning and Replanning (UC08, F09)](diagrams/png/SD06_Savings_Goal_Planning_and_Replanning.png)
 
-    Note over F,AM: After each import F calls GoalService.evaluateAll() and an AT_RISK or BEHIND goal makes GoalService call AlertMonitor.publish(alert)
-    User->>GV: fill goal form, click Plan
-    GV->>F: planGoal(request)
-    F->>GS: createGoal(request)
-    alt deadline in the past or target not positive
-        GS-->>F: throw ValidationException
-        F-->>GV: error message
-    else goal valid
-        GS-->>F: SavingsGoal
-        F->>AC: handle(AgentTask GOAL_PLAN)
-        loop agent loop (see SD05)
-            AC->>TM: execute(toolCall GoalTool)
-            TM->>GT: run(args)
-            GT->>GS: feasibility(goal)
-            GS->>GP: requiredMonthly(goal, today)
-            GS->>FE: monthlySurplus(inputs)
-            GS->>GP: buildOptions(goal, surplus)
-            GS-->>GT: FeasibilityReport
-            GT-->>TM: ToolResult
-            TM-->>AC: ToolResult
-        end
-        AC-->>F: AgentResult (plan text, ProposalDrafts)
-        F->>PS: createFromDrafts(drafts, traceId)
-        loop each draft
-            PS->>PS: passesGuardrails(draft)
-            PS->>CF: create(draft)
-            CF-->>PS: Command
-            create participant P as Proposal
-            PS->>P: new Proposal(draft, command, new PendingState())
-            PS->>PR: save(proposal)
-        end
-        PS-->>F: List of Proposal
-        F-->>GV: goal, plan, proposals
-        GV-->>User: plan and pending proposals
-    end
-    Note over User,GV: Replan: onReplan(goalId) calls replanGoal(goalId) which enters the flow at AgentController.handle()
-```
+*Image:* [`SD06_Savings_Goal_Planning_and_Replanning.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD06_Savings_Goal_Planning_and_Replanning.png) · *Editable UMLet source:* [`SD06_Savings_Goal_Planning_and_Replanning.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD06_Savings_Goal_Planning_and_Replanning.uxf)
 
 ### SD07 — What-If Scenario (UC09, F10)
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant AV as AssistantView
-    participant F as WealthSeiFacade
-    participant AC as AgentController
-    participant PL as Planner
-    participant TM as ToolManager
-    participant ST as ScenarioTool
-    participant SS as ScenarioSimulator
-    participant SCH as ScenarioChange
-    participant FE as ForecastEngine
-    participant GC as GroundingChecker
+![SD07 — What-If Scenario (UC09, F10)](diagrams/png/SD07_What_If_Scenario.png)
 
-    User->>AV: type what-if text
-    AV->>F: runWhatIf(description)
-    F->>AC: handle(AgentTask WHAT_IF)
-    loop agent loop (see SD05)
-        AC->>PL: nextStep(ctx)
-        PL-->>AC: ToolCallStep (ScenarioTool with structured changes)
-        AC->>TM: execute(toolCall)
-        TM->>TM: spec.validate(args)
-        alt invalid or unknown change (bad category, negative value, more than 5 changes)
-            TM-->>AC: ToolResult failure
-            AC->>PL: nextStep(ctx)
-            PL-->>AC: FinalAnswerStep (clarifying question)
-        else valid
-            TM->>ST: run(args)
-            ST->>SS: simulate(scenario)
-            SS->>FE: project(baselineInputs, 180)
-            FE-->>SS: baseline Forecast
-            SS->>SS: baselineInputs.deepCopy() (deep copy)
-            loop each change
-                SS->>SCH: applyTo(inputs)
-                SCH-->>SS: modified inputs
-            end
-            SS->>FE: project(modifiedInputs, 180)
-            FE-->>SS: scenario Forecast
-            SS-->>ST: ScenarioResult
-            ST-->>TM: ToolResult
-            TM-->>AC: ToolResult
-        end
-    end
-    AC->>GC: verify(answer, observations)
-    GC-->>AC: GroundingReport
-    AC-->>F: AgentResult
-    F-->>AV: AgentResult
-    AV-->>User: comparison table, chart, or clarifying question
-    opt user clicks Turn into proposals
-        AV->>F: createProposals(drafts, traceId)
-        F-->>AV: List of Proposal
-    end
-```
+*Image:* [`SD07_What_If_Scenario.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD07_What_If_Scenario.png) · *Editable UMLet source:* [`SD07_What_If_Scenario.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD07_What_If_Scenario.uxf)
 
 ### SD08 — Monthly AI Review (UC10, F11)
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant RV as ReportView
-    participant F as WealthSeiFacade
-    participant RS as ReviewService
-    participant AS as AnalyticsService
-    participant BS as BudgetService
-    participant GS as GoalService
-    participant AC as AgentController
-    participant MM as MemoryManager
-    participant PS as ProposalService
-    participant RR as ReviewRepository
+![SD08 — Monthly AI Review (UC10, F11)](diagrams/png/SD08_Monthly_AI_Review.png)
 
-    User->>RV: choose month, click Generate Review
-    RV->>F: generateMonthlyReview(month)
-    F->>RS: generate(month)
-    RS->>BS: getStatus(month)
-    RS->>AS: healthScore(month)
-    RS->>AS: habits(month)
-    RS->>GS: evaluateAll()
-    alt no transactions in the month
-        RS-->>F: throw NoDataException
-        F-->>RV: error message
-    else data available
-        RS->>AC: handle(AgentTask MONTHLY_REVIEW)
-        AC->>MM: buildContext(task)
-        MM-->>AC: AgentContext (includes lastReviewSummary)
-        loop agent loop (see SD05) using BudgetStatusTool, InsightTool, TransactionQueryTool
-            AC->>AC: Planner.nextStep(ctx) and ToolManager.execute(call)
-        end
-        AC-->>RS: AgentResult (narrative, up to 3 ProposalDrafts)
-        opt agent failed or figures ungrounded
-            RS->>RS: build metrics-only narrative
-        end
-        RS->>PS: createFromDrafts(drafts, traceId)
-        PS-->>RS: List of Proposal (protected categories filtered out)
-        RS->>RR: save(review)
-        RS-->>F: MonthlyReview
-        F-->>RV: MonthlyReview
-        RV-->>User: review text and number of pending proposals
-    end
-```
+*Image:* [`SD08_Monthly_AI_Review.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD08_Monthly_AI_Review.png) · *Editable UMLet source:* [`SD08_Monthly_AI_Review.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD08_Monthly_AI_Review.uxf)
 
 ### SD09 — Finance Chat with Memory and Trace (UC11, F12)
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant AV as AssistantView
-    participant F as WealthSeiFacade
-    participant AC as AgentController
-    participant MM as MemoryManager
-    participant CM as ConversationMemory
-    participant UM as UserProfileMemory
-    participant PL as Planner
-    participant TM as ToolManager
-    participant T as Tool
-    participant GC as GroundingChecker
-    participant TRP as TraceRepository
+![SD09 — Finance Chat with Memory and Trace (UC11, F12)](diagrams/png/SD09_Finance_Chat_with_Memory_and_Trace.png)
 
-    User->>AV: type a question
-    AV->>F: ask(question)
-    F->>AC: handle(AgentTask CHAT)
-    AC->>MM: buildContext(task)
-    MM->>CM: recent()
-    CM-->>MM: recent messages
-    MM->>UM: getProtectedCategories()
-    UM-->>MM: preferences
-    MM-->>AC: AgentContext
-    loop until FinalAnswerStep or maxSteps reached
-        AC->>PL: nextStep(ctx)
-        alt question is outside finance scope
-            PL-->>AC: FinalAnswerStep (polite redirect, no tools)
-        else tool needed
-            PL-->>AC: ToolCallStep
-            AC->>TM: execute(toolCall)
-            TM->>T: run(args)
-            T-->>TM: ToolResult
-            TM-->>AC: ToolResult
-        end
-    end
-    alt LLM unavailable
-        AC-->>F: AgentResult (status MODEL_UNAVAILABLE, offline message)
-    else answer produced
-        AC->>GC: verify(answer, observations)
-        GC-->>AC: GroundingReport
-        AC->>TRP: save(trace)
-        AC->>MM: remember(task, result)
-        MM->>CM: append(message)
-        AC-->>F: AgentResult
-    end
-    F-->>AV: AgentResult
-    AV-->>User: answer
-    User->>AV: click How did you get this?
-    AV->>F: getTrace(traceId)
-    F->>TRP: load(traceId)
-    TRP-->>F: AgentTrace
-    F-->>AV: AgentTrace
-    AV-->>User: tool calls and data used
-```
+*Image:* [`SD09_Finance_Chat_with_Memory_and_Trace.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD09_Finance_Chat_with_Memory_and_Trace.png) · *Editable UMLet source:* [`SD09_Finance_Chat_with_Memory_and_Trace.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD09_Finance_Chat_with_Memory_and_Trace.uxf)
 
 ### SD10 — Proposal Approval (UC12, F13)
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant PV as ProposalView
-    participant F as WealthSeiFacade
-    participant PS as ProposalService
-    participant PR as ProposalRepository
-    participant P as Proposal
-    participant ST as ProposalState
-    participant CH as CommandHistory
-    participant CMD as Command
-    participant RCV as Receiver service
+![SD10 — Proposal Approval (UC12, F13)](diagrams/png/SD10_Proposal_Approval.png)
 
-    User->>PV: select a proposal, click Approve
-    PV->>F: decideProposal(id, true)
-    F->>PS: decide(id, true)
-    PS->>PR: findById(id)
-    PR-->>PS: Proposal
-    PS->>P: approve(history)
-    P->>ST: approve(proposal, history)
-    alt current state is PendingState
-        ST->>CH: execute(command)
-        CH->>CMD: execute()
-        CMD->>RCV: apply change (for example BudgetService.setLimit)
-        alt command succeeds
-            RCV-->>CMD: ok
-            CMD-->>CH: ok
-            CH-->>ST: ok
-            ST->>P: setState(AppliedState)
-        else command fails
-            CMD-->>CH: throw CommandFailedException
-            CH-->>ST: exception
-            ST-->>PS: exception (state stays Pending)
-        end
-    else state is Applied, Rejected or Expired
-        ST-->>PS: throw IllegalStateTransitionException
-    end
-    PS->>PR: save(proposal)
-    PS-->>F: Proposal or error
-    F-->>PV: Proposal or error message
-    PV-->>User: status shown, affected views refreshed
-    Note over User,PV: Reject follows the same path with reject(): PendingState moves to RejectedState without running the command
-```
+*Image:* [`SD10_Proposal_Approval.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD10_Proposal_Approval.png) · *Editable UMLet source:* [`SD10_Proposal_Approval.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD10_Proposal_Approval.uxf)
 
 ### SD11 — Export Report (UC13, F14)
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant RV as ReportView
-    participant F as WealthSeiFacade
-    participant RS as ReportService
-    participant BS as BudgetService
-    participant RR as ReviewRepository
-    participant EX as ReportExporter
-    participant FS as File System
+![SD11 — Export Report (UC13, F14)](diagrams/png/SD11_Export_Report.png)
 
-    User->>RV: choose month, format, path, click Export
-    RV->>F: exportReport(month, fmt, path)
-    F->>RS: export(month, fmt, path)
-    RS->>RS: buildReportData(month)
-    RS->>BS: getStatus(month)
-    BS-->>RS: BudgetStatus
-    RS->>RR: findByMonth(month)
-    RR-->>RS: MonthlyReview or none
-    alt no data for the month
-        RS-->>F: throw NoDataException
-        F-->>RV: error message
-    else data available
-        RS->>RS: exporterFor(fmt)
-        RS->>EX: export(reportData, path)
-        EX->>EX: writeHeader(data)
-        EX->>EX: writeSummary(data)
-        EX->>EX: writeCategoryTable(data)
-        EX->>EX: writeReviewSection(data)
-        EX->>EX: writeFooter(data)
-        EX->>FS: write file
-        alt path not writable
-            FS-->>EX: IOException
-            EX-->>RS: throw ExportException
-            RS-->>F: error
-            F-->>RV: error message
-        else file written
-            FS-->>EX: ok
-            EX-->>RS: Path
-            RS-->>F: Path
-            F-->>RV: Path
-            RV-->>User: confirmation with file location
-        end
-    end
-```
+*Image:* [`SD11_Export_Report.png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD11_Export_Report.png) · *Editable UMLet source:* [`SD11_Export_Report.uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD11_Export_Report.uxf)
 
 ---
 
@@ -2301,11 +824,11 @@ sequenceDiagram
 
 | Feature | Description | Type | Related Use Case | Classes | Key Methods | Sequence Diagram | Design Pattern(s) |
 |---|---|---|---|---|---|---|---|
-| F01 | Import CSV, auto-detect layout, skip duplicates | Deterministic | UC01 | `TransactionsView`, `WealthSeiFacade`, `TransactionService`, `CsvImporter`, `BankCsvAdapter`, `SignedAmountCsvAdapter`, `DebitCreditCsvAdapter`, `TransactionRepository` | `onImportClicked()`, `importTransactions()`, `importFile()`, `parse()`, `detectAdapter()`, `readTransactions()`, `toTransaction()`, `removeDuplicates()`, `saveAll()` | SD01 | Adapter, Facade |
+| F01 | Import a CSV or add a transaction by hand; auto-detect layout, skip duplicates | Deterministic | UC01 | `TransactionsView`, `WealthSeiFacade`, `TransactionService`, `CsvImporter`, `BankCsvAdapter`, `SignedAmountCsvAdapter`, `DebitCreditCsvAdapter`, `TransactionRepository`, `Categorizer` | `onImportClicked()`, `onAddClicked()`, `importTransactions()`, `addTransaction()`, `importFile()`, `parse()`, `detectAdapter()`, `readTransactions()`, `toTransaction()`, `removeDuplicates()`, `validate()`, `saveAll()` | SD01 | Adapter, Facade |
 | F02 | Categorize (rules → LLM) and correct with undo | Hybrid | UC02 | `TransactionsView`, `Categorizer`, `CategorizationStrategy`, `LearnedRuleStrategy`, `KeywordRuleStrategy`, `LLMCategorizationStrategy`, `LLMProvider`, `CommandHistory`, `RecategorizeCommand`, `TransactionService` | `categorize()`, `correctCategory()`, `execute()`, `undo()`, `learn()`, `forget()`, `updateCategory()` | SD02 | Strategy, Command, Decorator |
-| F03 | Budget limits, tracking, alerts | Deterministic | UC03 | `DashboardView`, `BudgetService`, `BudgetRepository`, `AlertMonitor`, `AlertListener`, `CliApp` | `setBudget()`, `getStatus()`, `refreshAlerts()`, `evaluate()`, `attach()`, `onAlert()` | SD03 | Observer, Facade |
+| F03 | Plan (income, balance, bills, planned expenses), budget limits, tracking, alerts | Deterministic | UC03 | `DashboardView`, `PlanService`, `PlanRepository`, `BudgetService`, `BudgetRepository`, `AlertMonitor`, `AlertListener`, `CliApp` | `onPlanSaved()`, `onBudgetSaved()`, `getPlan()`, `savePlan()`, `setBudget()`, `getStatus()`, `refreshAlerts()`, `evaluate()`, `attach()`, `onAlert()` | SD03 | Observer, Facade |
 | F04 | Recurring payment and subscription detection | Hybrid | UC04 | `DashboardView`, `AnalyticsService`, `RecurringDetector`, `ExplanationService` | `getRecurringPayments()`, `detectRecurring()`, `detect()`, `explain()` | SD04 | Facade, Decorator |
-| F05 | Safe-to-Spend Coach and 30-day forecast | Hybrid | UC05 | `DashboardView`, `AnalyticsService`, `ForecastEngine`, `SafeToSpendCalculator`, `AlertMonitor`, `ExplanationService` | `getSafeToSpend()`, `safeToSpend()`, `project()`, `calculate()`, `publish()`, `explain()` | SD04 | Observer, Facade, Decorator |
+| F05 | Safe-to-Spend Coach and 30-day forecast from the plan | Hybrid | UC05 | `DashboardView`, `AnalyticsService`, `PlanRepository`, `ForecastEngine`, `SafeToSpendCalculator`, `AlertMonitor`, `ExplanationService` | `getSafeToSpend()`, `safeToSpend()`, `find()`, `project()`, `calculate()`, `publish()`, `explain()` | SD04 | Observer, Facade, Decorator |
 | F06 | Spending Habit Detective | Hybrid | UC06 | `DashboardView`, `AnalyticsService`, `HabitAnalyzer`, `ExplanationService` | `getHabitInsights()`, `habits()`, `analyze()`, `explain()` | SD04 | Facade, Decorator |
 | F07 | Financial Health Score | Hybrid | UC06 | `DashboardView`, `AnalyticsService`, `HealthScoreCalculator`, `BudgetService`, `ExplanationService` | `getHealthScore()`, `healthScore()`, `calculate()`, `getStatus()`, `explain()` | SD04 | Facade, Decorator |
 | F08 | Purchase affordability verdict via tool-using agent | AI (agent) | UC07 | `AssistantView`, `WealthSeiFacade`, `AgentController`, `MemoryManager`, `Planner`, `PromptBuilder`, `ResponseParser`, `ToolManager`, `BudgetStatusTool`, `ForecastTool`, `GoalTool`, `TransactionQueryTool`, `GroundingChecker`, `AgentTrace` | `checkAffordability()`, `handle()`, `buildContext()`, `nextStep()`, `execute()`, `run()`, `verify()`, `remember()` | SD05 | Facade, Decorator, Adapter |
@@ -2324,11 +847,11 @@ sequenceDiagram
 
 ## 9. Feature Implementation Explanations
 
-### F01 — Import Transactions
+### F01 — Import or Add Transactions
 **Use case:** UC01 · **Sequence diagram:** SD01
-**Classes:** `TransactionsView` (file chooser, shows summary); `WealthSeiFacade` (entry point, refreshes alerts and goals after import); `TransactionService` (orchestrates import, removes duplicates); `CsvImporter` (reads header, chooses adapter); `BankCsvAdapter` with `SignedAmountCsvAdapter` / `DebitCreditCsvAdapter` (object adapters: each wraps a Commons CSV `CSVParser` and converts its records to `Transaction`); `Categorizer` (assigns categories); `TransactionRepository` (persists).
-**Important methods:** `TransactionsView.onImportClicked()`, `WealthSeiFacade.importTransactions()`, `TransactionService.importFile()`, `CsvImporter.parse()`, `CsvImporter.detectAdapter()`, `BankCsvAdapter.readTransactions()`, `BankCsvAdapter.toTransaction()`.
-**Execution:** When the user clicks Import, the view calls the facade, which calls `importFile()`. `parse()` opens a Commons CSV `CSVParser`, builds one candidate adapter per registered layout around it, asks each `canHandle(header)`, and keeps the first match; `readTransactions()` converts every row with `toTransaction()`, and bad rows are collected as rejected. `removeDuplicates()` drops rows that match an existing date+amount+merchant. Each remaining transaction is categorized (F02), all are saved with `saveAll()`, and the facade then calls `BudgetService.refreshAlerts()` and `GoalService.evaluateAll()` before returning an `ImportResult` to the view.
+**Classes:** `TransactionsView` (file chooser and Add Transaction form, shows results); `WealthSeiFacade` (entry point, refreshes alerts and goals afterwards); `TransactionService` (orchestrates import and manual add, validates, removes duplicates); `CsvImporter` (reads the header, chooses the adapter); `BankCsvAdapter` with `SignedAmountCsvAdapter` / `DebitCreditCsvAdapter` (object adapters: each wraps a Commons CSV `CSVParser` and converts its records to `Transaction`); `Categorizer` (assigns categories); `TransactionRepository` (persists).
+**Important methods:** `TransactionsView.onImportClicked()`, `TransactionsView.onAddClicked()`, `WealthSeiFacade.importTransactions()`, `WealthSeiFacade.addTransaction()`, `TransactionService.importFile()`, `TransactionService.addTransaction()`, `CsvImporter.parse()`, `CsvImporter.detectAdapter()`, `BankCsvAdapter.readTransactions()`.
+**Execution:** *Import:* when the user clicks Import, the view calls the facade, which calls `importFile()`. `parse()` opens a Commons CSV `CSVParser`, builds one candidate adapter per registered layout around it, asks each `canHandle(header)`, and keeps the first match; `readTransactions()` converts every record with `toTransaction()`, and bad records are collected as rejected. `removeDuplicates()` drops rows that match an existing date, amount and merchant. Each remaining transaction is categorized (F02), all are saved with `saveAll()`, and the facade then calls `BudgetService.refreshAlerts()` and `GoalService.evaluateAll()` before returning an `ImportResult`. *Manual add:* the form builds a `NewTransaction`; the facade calls `addTransaction()`, which validates it (non-zero amount, merchant present, date not in the future), asks `Categorizer` for a category if none was chosen, saves the row, and lets the facade refresh alerts and goal status.
 
 ### F02 — Smart Categorization and Correction
 **Use case:** UC02 · **Sequence diagram:** SD02
@@ -2336,11 +859,11 @@ sequenceDiagram
 **Important methods:** `Categorizer.categorize()`, `CategorizationStrategy.categorize()`, `WealthSeiFacade.correctCategory()`, `CommandHistory.execute()/undo()`, `RecategorizeCommand.execute()/undo()`, `LearnedRuleStrategy.learn()/forget()`.
 **Execution:** `categorize()` calls each strategy in priority order until one returns a category. If the LLM strategy answers with an unknown category or fails, the result is `UNCATEGORIZED`. When the user corrects a row, the facade wraps the change in a `RecategorizeCommand`; `execute()` updates the transaction and calls `learn(merchant, category)`. `undo()` restores the old category and calls `forget(merchant)`.
 
-### F03 — Budget Setup, Tracking and Alerts
+### F03 — Budget and Plan Setup, Tracking and Alerts
 **Use case:** UC03 · **Sequence diagram:** SD03
-**Classes:** `DashboardView` (edit limits, show progress, receives alerts); `BudgetService` (validates, saves, computes `BudgetStatus`); `BudgetRepository` (persistence); `AlertMonitor` (Subject); `AlertListener` (Observer, implemented by `DashboardView` and `CliApp`).
-**Important methods:** `BudgetService.setBudget()`, `BudgetService.getStatus()`, `BudgetService.refreshAlerts()`, `AlertMonitor.evaluate()`, `AlertMonitor.attach()`, `AlertListener.onAlert()`.
-**Execution:** `setBudget()` validates limits, saves the `Budget`, builds a `BudgetStatus` from transactions, and passes it to `AlertMonitor.evaluate()`. For each category at 80% or more the monitor creates an `Alert` and notifies every attached listener, so GUI and CLI both show it.
+**Classes:** `DashboardView` (plan panel, limits, progress and alert display); `PlanService` (validates and saves the `FinancialPlan`); `PlanRepository` (persistence); `BudgetService` (validates limits, saves the `Budget`, computes `BudgetStatus`); `BudgetRepository`; `AlertMonitor` (Subject); `AlertListener` (Observer, implemented by `DashboardView` and `CliApp`).
+**Important methods:** `WealthSeiFacade.savePlan()`, `PlanService.savePlan()`, `BudgetService.setBudget()`, `BudgetService.getStatus()`, `BudgetService.refreshAlerts()`, `AlertMonitor.evaluate()`, `AlertMonitor.attach()`, `AlertListener.onAlert()`.
+**Execution:** `savePlan()` validates the plan (amounts not negative, dates and frequencies present, balance date not in the future) and saves it; forecasts read the plan the next time they run. `setBudget()` validates limits, saves the `Budget`, builds a `BudgetStatus` from transactions, and passes it to `AlertMonitor.evaluate()`. For each category at 80% or more the monitor creates an `Alert` and notifies every attached listener, so the GUI and the CLI both show it.
 
 ### F04 — Recurring Payment and Subscription Detector
 **Use case:** UC04 · **Sequence diagram:** SD04
@@ -2350,9 +873,9 @@ sequenceDiagram
 
 ### F05 — Safe-to-Spend Coach
 **Use case:** UC05 · **Sequence diagram:** SD04
-**Classes:** `DashboardView`; `AnalyticsService`; `ForecastEngine` (30-day projection); `SafeToSpendCalculator` (allowance formula); `AlertMonitor` (low-balance alert); `ExplanationService`.
-**Important methods:** `AnalyticsService.safeToSpend()`, `ForecastEngine.project()`, `SafeToSpendCalculator.calculate()`, `AlertMonitor.publish()`.
-**Execution:** `safeToSpend(date)` builds `ForecastInputs` (transactions, recurring payments), calls `project(inputs, 30)`, then `calculate()` applies *(balance + expected income − upcoming bills − goal reserve − buffer) ÷ days left*, floored at zero. If the lowest projected balance is below the buffer, the service publishes a `LOW_BALANCE` alert. The facade adds an explanation.
+**Classes:** `DashboardView`; `AnalyticsService`; `PlanRepository` (supplies the plan); `ForecastEngine` (30-day projection); `SafeToSpendCalculator` (allowance formula); `AlertMonitor` (low-balance alert); `ExplanationService`.
+**Important methods:** `AnalyticsService.safeToSpend()`, `PlanRepository.find()`, `ForecastEngine.project()`, `SafeToSpendCalculator.calculate()`, `AlertMonitor.publish()`.
+**Execution:** `safeToSpend(date)` loads the plan and builds `ForecastInputs` (the plan, the transactions, and recurring payments the plan does not cover). The balance now is the plan's current balance plus all transactions dated after the balance date. `project(inputs, 30)` walks day by day: it adds income on pay dates, subtracts fixed bills and planned expenses on their dates, and subtracts expected everyday spending (the recent average, or the budget limits when history is short). `calculate()` then applies *(balance now + income still due − bills still due − planned expenses still due − goal reserve − buffer) ÷ days left*, floored at zero. If the lowest projected balance is below the buffer, the service publishes a `LOW_BALANCE` alert. The facade adds an explanation.
 
 ### F06 — Spending Habit Detective
 **Use case:** UC06 · **Sequence diagram:** SD04
@@ -2409,3 +932,95 @@ sequenceDiagram
 **Execution:** `buildReportData()` combines `BudgetStatus` and the saved `MonthlyReview` (if any). `exporterFor(fmt)` (a Factory) returns the right subclass; its inherited `export()` calls the five `write…` steps in fixed order and writes the file. If no review exists, the report contains metrics only, with a note.
 
 ---
+
+## 10. Appendices
+
+### Appendix A — Testing map (preparing for Stage 3)
+
+WealthSei keeps plain code and agent code apart because they are tested differently.
+
+| Group | Classes | Stage 3 method |
+|---|---|---|
+| Deterministic | `Money`, `CsvImporter` and the adapters, `Categorizer` and the rule strategies, `PlanService`, `BudgetService`, `AlertMonitor`, `RecurringDetector`, `ForecastEngine`, `SafeToSpendCalculator`, `HabitAnalyzer`, `HealthScoreCalculator`, `GoalPlanner`, `ScenarioSimulator` (including `ForecastInputs.deepCopy()`), `CommandHistory` and the commands, the proposal states, `ProposalService` guardrails, `ToolManager` and `ToolSpec` argument checks, `ResponseParser`, `GroundingChecker`, the report exporters | JUnit 5 unit and integration tests: normal, boundary and invalid inputs |
+| Agent / LLM | `AgentController`, `Planner`, `PromptBuilder`, tool selection, memory use, failure recovery | Behavioural tests with KUMA |
+
+**Planned behavioural requirements** (to be refined in Stage 3):
+- **BR-01 Tool selection:** an affordability question calls the budget and forecast tools before answering.
+- **BR-02 Grounded numbers:** every monetary figure in an answer appears in a tool result.
+- **BR-03 Invalid tool input:** the agent never runs a tool with invalid arguments.
+- **BR-04 Failure recovery:** when a tool or the model fails, the agent says what is unavailable and does not guess.
+- **BR-05 Guardrails:** suggestions never touch protected categories, and nothing changes without the user's approval.
+- **BR-06 Clarification:** an ambiguous what-if request gets a question, not a guess.
+
+**KUMA and Java:** KUMA is a Python SDK, and WealthSei is written in Java. The plan is a small Python harness that calls the WealthSei CLI with `--json` (Appendix B) and passes the result to KUMA. This approach is to be confirmed with the course staff.
+
+### Appendix B — CLI command map (GUI/CLI parity)
+
+| CLI command | Facade method | Feature |
+|---|---|---|
+| `wealthsei import <file>` · `add-tx --date <d> --amount <a> --merchant <m> [--category <c>] [--income]` | `importTransactions()`, `addTransaction()` | F01 |
+| `wealthsei categorize <txId> <category>` · `undo` · `redo` | `correctCategory()`, `undo()`, `redo()` | F02 |
+| `wealthsei plan show` · `plan set-income <name> <amount> <frequency> <nextPayDate>` · `plan add-bill <name> <amount> <frequency> <nextDueDate>` · `plan add-expense <description> <amount> <date>` · `plan set-balance <amount> <asOfDate>` · `budget set <month> <category> <amount>` · `budget status <month>` | `getPlan()`, `savePlan()`, `setBudget()`, `getBudgetStatus()` | F03 |
+| `wealthsei recurring` | `getRecurringPayments()` | F04 |
+| `wealthsei safe [date]` | `getSafeToSpend()` | F05 |
+| `wealthsei habits <month>` | `getHabitInsights()` | F06 |
+| `wealthsei score <month>` | `getHealthScore()` | F07 |
+| `wealthsei afford "<item>" <price>` | `checkAffordability()` | F08 |
+| `wealthsei goal add "<name>" <target> <deadline>` · `goal replan <id>` | `planGoal()`, `replanGoal()` | F09 |
+| `wealthsei whatif "<text>"` | `runWhatIf()` | F10 |
+| `wealthsei review <month>` | `generateMonthlyReview()` | F11 |
+| `wealthsei ask "<question>"` · `trace <id>` | `ask()`, `getTrace()` | F12 |
+| `wealthsei proposals list` · `approve <id>` · `reject <id>` | `listPendingProposals()`, `decideProposal()` | F13 |
+| `wealthsei export <month> --format md --out <file>` | `exportReport()` | F14 |
+| `wealthsei prefs protect <category>` | `setProtectedCategory()` | supports F09, F11, F13 |
+
+**`--json`:** every agent command (`afford`, `goal`, `whatif`, `review`, `ask`) accepts `--json` to print the `AgentResult` and its `AgentTrace` as JSON, for automated testing. It only changes the output format; it is not a separate feature.
+
+### Appendix C — Diagram files and repository layout
+
+Every diagram is drawn in UMLet. The PNG is what appears in this report, and the `.uxf` is UMLet's own file: open it at [umletino.com](https://www.umletino.com/umletino.html) (File → Open) to edit.
+
+```
+EECS-3311-Project---WealthSei/
+└── docs/
+    ├── WealthSei_Stage1_Report.md
+    └── diagrams/
+        ├── png/   20 images
+        └── uxf/   20 UMLet files
+```
+
+Folders: [`docs/diagrams/png`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/tree/main/docs/diagrams/png) · [`docs/diagrams/uxf`](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/tree/main/docs/diagrams/uxf)
+
+| ID | Diagram | Image | UMLet file |
+|---|---|---|---|
+| Fig 1 | Layered architecture | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_1_Layered_Architecture.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_1_Layered_Architecture.uxf) |
+| Fig 3.1 | Presentation layer and Facade | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_1_Presentation_and_Facade.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_1_Presentation_and_Facade.uxf) |
+| Fig 3.2 | Import, categorization, plan, budgets and alerts | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_2_Import_Categorization_Plan_Budgets.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_2_Import_Categorization_Plan_Budgets.uxf) |
+| Fig 3.3 | Analytics, goals and scenario simulation | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_3_Analytics_Goals_Scenario.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_3_Analytics_Goals_Scenario.uxf) |
+| Fig 3.4 | Agent subsystem | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_4_Agent_Subsystem.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_4_Agent_Subsystem.uxf) |
+| Fig 3.5 | LLM provider layer | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_5_LLM_Provider_Layer.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_5_LLM_Provider_Layer.uxf) |
+| Fig 3.6 | Proposals, commands, reviews and reports | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_6_Proposals_Commands_Reviews_Reports.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_6_Proposals_Commands_Reviews_Reports.uxf) |
+| Fig 3.7 | Domain model | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_3_7_Domain_Model.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_3_7_Domain_Model.uxf) |
+| Fig 5 | Use-case diagram | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/Fig_5_Use_Case_Diagram.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/Fig_5_Use_Case_Diagram.uxf) |
+| SD01 | Import or add transactions | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD01_Import_or_Add_Transactions.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD01_Import_or_Add_Transactions.uxf) |
+| SD02 | Categorize and correct | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD02_Categorize_and_Correct_Transactions.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD02_Categorize_and_Correct_Transactions.uxf) |
+| SD03 | Budget and plan setup, alerts | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD03_Budget_and_Plan_Setup_Tracking_and_Alerts.uxf) |
+| SD04 | Recurring, safe-to-spend, habits, score | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD04_Analytics_with_Explanation_Recurring_Safe_to_Spend_Habits_Score.uxf) |
+| SD05 | Purchase affordability (agent loop) | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD05_Purchase_Affordability_the_full_agent_loop.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD05_Purchase_Affordability_the_full_agent_loop.uxf) |
+| SD06 | Savings goal planning and replanning | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD06_Savings_Goal_Planning_and_Replanning.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD06_Savings_Goal_Planning_and_Replanning.uxf) |
+| SD07 | What-if scenario | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD07_What_If_Scenario.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD07_What_If_Scenario.uxf) |
+| SD08 | Monthly AI review | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD08_Monthly_AI_Review.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD08_Monthly_AI_Review.uxf) |
+| SD09 | Finance chat with memory and trace | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD09_Finance_Chat_with_Memory_and_Trace.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD09_Finance_Chat_with_Memory_and_Trace.uxf) |
+| SD10 | Proposal approval | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD10_Proposal_Approval.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD10_Proposal_Approval.uxf) |
+| SD11 | Export report | [png](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/png/SD11_Export_Report.png) | [uxf](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/blob/main/docs/diagrams/uxf/SD11_Export_Report.uxf) |
+
+### Appendix D — Requirements checklist
+
+| Requirement | Where it is met |
+|---|---|
+| GUI | JavaFX `MainWindow` and six views: Fig 3.1, Section 2 (user interaction of each feature) |
+| CLI | `CliApp` calls the same `WealthSeiFacade` operations: Fig 3.1, Appendix B |
+| At least 10 features | 14 features, F01 to F14: Section 2 |
+| At least 5 design patterns | 9 patterns: Section 4 |
+| AI/LLM model | Claude Sonnet and Claude Haiku through LangChain4j: Section 1.5, Fig 3.5 |
+| Agent behaviour | Planning, tool use, memory, multi-step execution, grounding check, human approval: Fig 3.4, SD05 to SD09 |
