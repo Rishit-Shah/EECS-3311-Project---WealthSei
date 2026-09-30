@@ -11,7 +11,7 @@ simulations and monthly reviews. It has a GUI and a CLI.
 | Stage | Description | Status |
 |---|---|---|
 | 1 | Design (features, UML, patterns, traceability) | [Stage 1 report](docs/WealthSei_Stage1_Report.md) |
-| 2 | AI-assisted implementation (Python) | Not started |
-| 3 | Testing (pytest and KUMA agent testing) | Not started |
+| 2 | AI-assisted implementation |
+| 3 | Testing (pytest and KUMA agent testing) |
 
 **Student:** Rishit Shah 
