@@ -930,6 +930,7 @@ _Tools used in this scenario:_ `BudgetStatusTool`, `ForecastTool`, `GoalTool`, `
 **Execution:** `buildReportData()` combines `BudgetStatus` and the saved `MonthlyReview` (if any). `exporterFor(fmt)` (a Factory) returns the right subclass; its inherited `export()` calls the five `write…` steps in fixed order and writes the file. If no review exists, the report contains metrics only, with a note.
 
 ---
+> **Note: All diagrams have uxf equivalent files uploaded as well inside a folder "docs/uxf_files_for_diagrams_relevant" to run on UMLnet**.
 
 ## 10. Appendices
 
