@@ -96,7 +96,7 @@ All models sit behind one interface, `LLMProvider`, and are reached through **La
 
 ### 1.7 Overall architecture
 
-**Planned stack:** Java 17; **Maven**; **JavaFX** for the GUI; **picocli** for the CLI; **SQLite** via JDBC; **LangChain4j** (`langchain4j-anthropic`) for LLM access; **Apache Commons CSV** for CSV parsing; **Jackson** for JSON; `java.math.BigDecimal` for money; Java `record`s for value objects; **JUnit 5** for tests.
+**Planned stack:** Java; **Maven**; **JavaFX** for the GUI; **picocli** for the CLI; **SQLite** via JDBC; **LangChain4j** (`langchain4j-anthropic`) for LLM access; **Apache Commons CSV** for CSV parsing; **Jackson** for JSON; `java.math.BigDecimal` for money; Java `record`s for value objects; **JUnit** for tests.
 
 **Fig 1 — Layered architecture**
 
