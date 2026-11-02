@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import wealthsei.domain.Category;
@@ -63,6 +64,10 @@ public class TransactionService {
 
     public List<Transaction> query(TxFilter filter) {
         return repo.query(filter);
+    }
+
+    public Optional<Transaction> findById(String txId) {
+        return repo.findById(txId);
     }
 
     /** Changes one transaction's category. Throws if the id is unknown. */
