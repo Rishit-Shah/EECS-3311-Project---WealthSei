@@ -2,11 +2,14 @@ package wealthsei.service;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import wealthsei.domain.Category;
 import wealthsei.domain.ImportResult;
 import wealthsei.domain.Money;
@@ -51,8 +54,11 @@ public class TransactionService {
                 .map(tx -> tx.withCategory(categorizer.categorize(tx)))
                 .toList();
         repo.saveAll(categorized);
+        Set<YearMonth> months = categorized.stream()
+                .map(tx -> YearMonth.from(tx.date()))
+                .collect(Collectors.toSet());
         return new ImportResult(categorized.size(), parsed.transactions().size() - fresh.size(),
-                parsed.rejectedRows());
+                parsed.rejectedRows(), months);
     }
 
     public List<Transaction> query(TxFilter filter) {
