@@ -6,6 +6,7 @@ import java.time.YearMonth;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import wealthsei.command.CategoryCorrector;
 import wealthsei.domain.BudgetLimits;
 import wealthsei.domain.BudgetStatus;
 import wealthsei.domain.Category;
@@ -36,13 +37,15 @@ public class WealthSeiFacade {
     private final BudgetService budgets;
     private final PlanService plans;
     private final AlertMonitor alerts;
+    private final CategoryCorrector corrector;
 
     public WealthSeiFacade(TransactionService transactions, BudgetService budgets, PlanService plans,
-                           AlertMonitor alerts) {
+                           AlertMonitor alerts, CategoryCorrector corrector) {
         this.transactions = Objects.requireNonNull(transactions, "transactions");
         this.budgets = Objects.requireNonNull(budgets, "budgets");
         this.plans = Objects.requireNonNull(plans, "plans");
         this.alerts = Objects.requireNonNull(alerts, "alerts");
+        this.corrector = Objects.requireNonNull(corrector, "corrector");
     }
 
     // ---- F01 import ----
@@ -58,10 +61,32 @@ public class WealthSeiFacade {
         return transactions.query(filter);
     }
 
+    /** Changes a category, remembers the merchant for future imports, and refreshes alerts. */
     public Transaction correctCategory(String txId, Category category) {
-        Transaction changed = transactions.updateCategory(txId, category);
-        budgets.refreshAlerts(java.util.Set.of(YearMonth.from(changed.date())));
+        Transaction changed = corrector.correct(txId, category);
+        refreshMonthOf(changed);
         return changed;
+    }
+
+    /** Reverses the latest category correction; empty when there is nothing to undo. */
+    public Optional<Transaction> undoCorrection() {
+        Optional<Transaction> restored = corrector.undo();
+        restored.ifPresent(this::refreshMonthOf);
+        return restored;
+    }
+
+    public Optional<Transaction> redoCorrection() {
+        Optional<Transaction> redone = corrector.redo();
+        redone.ifPresent(this::refreshMonthOf);
+        return redone;
+    }
+
+    public boolean canUndoCorrection() {
+        return corrector.canUndo();
+    }
+
+    private void refreshMonthOf(Transaction tx) {
+        budgets.refreshAlerts(java.util.Set.of(YearMonth.from(tx.date())));
     }
 
     // ---- F03 plan and budget ----

@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
+import wealthsei.command.CategoryCorrector;
 import wealthsei.domain.Alert;
 import wealthsei.domain.AlertSeverity;
 import wealthsei.domain.BudgetLimits;
@@ -26,12 +27,14 @@ import wealthsei.domain.Transaction;
 import wealthsei.domain.TxFilter;
 import wealthsei.importing.CsvImporter;
 import wealthsei.repository.InMemoryBudgetRepository;
+import wealthsei.repository.InMemoryLearnedRuleRepository;
 import wealthsei.repository.InMemoryPlanRepository;
 import wealthsei.repository.InMemoryTransactionRepository;
 import wealthsei.service.AlertMonitor;
 import wealthsei.service.BudgetService;
 import wealthsei.service.Categorizer;
 import wealthsei.service.KeywordRuleStrategy;
+import wealthsei.service.LearnedRuleStrategy;
 import wealthsei.service.PlanService;
 import wealthsei.service.TransactionImportException;
 import wealthsei.service.TransactionService;
@@ -47,14 +50,15 @@ class WealthSeiFacadeTest {
     private final WealthSeiFacade facade;
 
     WealthSeiFacadeTest() {
+        InMemoryLearnedRuleRepository rules = new InMemoryLearnedRuleRepository();
         InMemoryTransactionRepository txRepo = new InMemoryTransactionRepository();
         AlertMonitor monitor = new AlertMonitor(() -> Instant.parse("2026-11-02T12:00:00Z"));
         TransactionService transactions = new TransactionService(txRepo,
                 new CsvImporter(() -> "t" + ids.incrementAndGet()),
-                new Categorizer(List.of(KeywordRuleStrategy.withDefaults())));
+                new Categorizer(List.of(new LearnedRuleStrategy(rules), KeywordRuleStrategy.withDefaults())));
         BudgetService budgets = new BudgetService(new InMemoryBudgetRepository(), txRepo, monitor);
         PlanService plans = new PlanService(new InMemoryPlanRepository(), () -> TODAY);
-        facade = new WealthSeiFacade(transactions, budgets, plans, monitor);
+        facade = new WealthSeiFacade(transactions, budgets, plans, monitor, new CategoryCorrector(transactions, rules));
         facade.addAlertListener(alerts::add);
     }
 
@@ -131,5 +135,29 @@ class WealthSeiFacadeTest {
         facade.setBudget(OCT, limits(Categories.GROCERIES, "100"));
         BudgetStatus s = facade.setBudgetLimit(OCT, Categories.DINING, Money.of("50"));
         assertEquals(2, s.lines().size());
+    }
+
+    @Test
+    void undoRestoresCategoryAndSpending() throws IOException {
+        facade.setBudget(OCT, limits(Categories.GROCERIES, "100"));
+        facade.importTransactions(csv("Date,Description,Amount\n2026-10-02,ZXQV WIDGETS,-95\n"));
+        String id = facade.listTransactions(TxFilter.all()).get(0).id();
+        facade.correctCategory(id, Categories.GROCERIES);
+        assertTrue(facade.canUndoCorrection());
+        Transaction restored = facade.undoCorrection().orElseThrow();
+        assertEquals(Category.UNCATEGORIZED, restored.category());
+        assertEquals(Money.ZERO, facade.getBudgetStatus(OCT).totalSpent());
+        assertTrue(facade.undoCorrection().isEmpty());
+    }
+
+    @Test
+    void aCorrectionIsAppliedToLaterImportsOfTheSameMerchant() throws IOException {
+        facade.importTransactions(csv("Date,Description,Amount\n2026-10-02,ZXQV WIDGETS,-5\n"));
+        String id = facade.listTransactions(TxFilter.all()).get(0).id();
+        facade.correctCategory(id, Categories.ENTERTAINMENT);
+        facade.importTransactions(csv("Date,Description,Amount\n2026-10-09,ZXQV WIDGETS,-7\n"));
+        List<Transaction> all = facade.listTransactions(TxFilter.all());
+        assertEquals(2, all.size());
+        assertTrue(all.stream().allMatch(t -> t.category().equals(Categories.ENTERTAINMENT)));
     }
 }
