@@ -37,6 +37,8 @@ import wealthsei.repository.InMemoryGoalRepository;
 import wealthsei.repository.InMemoryPlanRepository;
 import wealthsei.repository.InMemoryTransactionRepository;
 import wealthsei.service.AlertMonitor;
+import wealthsei.service.GoalPlanner;
+import wealthsei.service.GoalService;
 import wealthsei.service.BudgetService;
 import wealthsei.service.Categorizer;
 import wealthsei.service.KeywordRuleStrategy;
@@ -66,9 +68,11 @@ class WealthSeiFacadeTest {
         BudgetService budgets = new BudgetService(new InMemoryBudgetRepository(), txRepo, monitor);
         InMemoryPlanRepository planRepo = new InMemoryPlanRepository();
         PlanService plans = new PlanService(planRepo, () -> TODAY);
+        InMemoryGoalRepository goalRepo = new InMemoryGoalRepository();
+        AnalyticsService analytics = new AnalyticsService(txRepo, goalRepo, new InMemoryRecurringRepository(), planRepo,
+                monitor, new RecurringDetector(), new ForecastEngine(), new SafeToSpendCalculator());
         facade = new WealthSeiFacade(transactions, budgets, plans, monitor, new CategoryCorrector(transactions, learned),
-                new AnalyticsService(txRepo, new InMemoryGoalRepository(), new InMemoryRecurringRepository(), planRepo,
-                        monitor, new RecurringDetector(), new ForecastEngine(), new SafeToSpendCalculator()));
+                analytics, new GoalService(goalRepo, new GoalPlanner(), analytics, monitor));
         facade.addAlertListener(alerts::add);
     }
 

@@ -154,6 +154,19 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - "Change from last month" is not computed yet (there is no stored history of past scores); the field exists and the explanation uses it once known.
 - **My verification:** (fill in after running `mvn test`, expected 329 tests, and trying `habits 2026-10` and `score` in the CLI.)
 
+### 2026-11-04: F09 savings goals
+
+- **My direction:** finish F09 before the language-model work because it is plain arithmetic and F08 needs goals as a tool.
+- **AI contribution:** `GoalService`, `GoalPlanner`, `GoalRequest`, `FeasibilityReport`, `GoalOption`, a goal alert in `AlertMonitor`, saved goals (`PersistentGoalRepository`), `goal add/list/replan/save/monthly` commands, goals re-checked after every import, `sample-habits.csv`, and 32 new tests (361 in the AI's stand-in runner).
+- **Defects found while testing:** three of the AI's own test expectations were wrong (month arithmetic), and the first month-counting rule (days divided by 30.4) made "one year away" count as 13 months, so it was changed to calendar months.
+- **Design decisions to list in "changes from Stage 1":**
+  - Methods take today's date as a parameter (`createGoal(request, today)`, `projectedCompletion(goal, surplus, today)`), like `asOf` earlier, so tests control the date.
+  - Part of a month counts as a whole month; one year away is 12 months.
+  - The surplus available to a goal is the plan surplus minus what the other open goals already take each month.
+  - Status rules: achieved when saved reaches the target; on track when the monthly contribution covers the requirement; at risk when it does not but the surplus could; behind otherwise. Behind or at risk raises a GOAL_RISK alert only when it gets worse.
+  - `GoalOptionKind` enum added; `MonthlySurplusProvider` interface lets the goal service ask the analytics layer for the surplus; goals now persist in `goals.tsv`.
+- **My verification:** (fill in after running `mvn test`, expected 361 tests, and trying `goal add`, `goal list` and `goal replan` in the CLI.)
+
 ## 4. Weekly commit summary (fill in with links)
 
 | Period | Dates (Toronto time) | Required | Commits (links) |

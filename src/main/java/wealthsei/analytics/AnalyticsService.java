@@ -20,13 +20,14 @@ import wealthsei.repository.PlanRepository;
 import wealthsei.repository.RecurringRepository;
 import wealthsei.repository.TransactionRepository;
 import wealthsei.service.AlertMonitor;
+import wealthsei.service.MonthlySurplusProvider;
 import wealthsei.service.ValidationException;
 
 /**
  * Looks at the stored history and the user's plan and answers questions about them. Everything
  * here is computed by ordinary code; a language model, when added, only phrases the result.
  */
-public class AnalyticsService {
+public class AnalyticsService implements MonthlySurplusProvider {
 
     /** How many days ahead the safe-to-spend forecast looks. */
     public static final int FORECAST_DAYS = 30;
@@ -171,6 +172,12 @@ public class AnalyticsService {
         Forecast forecast = planRepo.find().map(p -> engine.project(inputsFor(p, today), FORECAST_DAYS)).orElse(null);
         HealthScore score = scoreCalculator.calculate(status, forecast, goalRepo.findAll());
         return score.withExplanation(HealthScoreSummaryTemplate.write(score));
+    }
+
+    /** Income minus bills and uncovered recurring payments per month; zero when there is no plan. */
+    @Override
+    public Money monthlySurplus(LocalDate today) {
+        return planRepo.find().map(p -> engine.monthlySurplus(inputsFor(p, today))).orElse(Money.ZERO);
     }
 
     private FinancialPlan requirePlan() {

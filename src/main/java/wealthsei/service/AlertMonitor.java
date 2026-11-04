@@ -14,7 +14,9 @@ import wealthsei.domain.AlertType;
 import wealthsei.domain.BudgetLineStatus;
 import wealthsei.domain.BudgetStatus;
 import wealthsei.domain.DailyBalance;
+import wealthsei.domain.GoalStatus;
 import wealthsei.domain.Money;
+import wealthsei.domain.SavingsGoal;
 
 /**
  * The subject in the Observer pattern: keeps the list of {@link AlertListener}s and tells all
@@ -64,7 +66,6 @@ public class AlertMonitor {
         }
     }
 
-    /** Sends an alert to every listener (also used for low-balance and goal alerts later). */
     /**
      * Raises a LOW_BALANCE alert when the projected balance falls below the safety buffer. Like
      * budget alerts, it is raised when the situation first appears or gets worse (WARNING to
@@ -89,6 +90,32 @@ public class AlertMonitor {
             LocalDate on = lowest.date();
             publish(new Alert(AlertType.LOW_BALANCE, level, "Balance is projected to drop to $"
                     + lowest.balance() + " on " + on + ", below your $" + buffer + " safety buffer", clock.get()));
+        }
+    }
+
+    /**
+     * Raises a GOAL_RISK alert when a goal newly becomes AT_RISK (WARNING) or BEHIND (OVER), or gets worse.
+     * Goals that are on track or achieved reset it.
+     *
+     * @param requiredMonthly what the goal needs per month, used in the message
+     */
+    public void evaluateGoal(SavingsGoal goal, Money requiredMonthly) {
+        Objects.requireNonNull(goal, "goal");
+        Objects.requireNonNull(requiredMonthly, "requiredMonthly");
+        String key = "goal/" + goal.id();
+        GoalStatus status = goal.status();
+        if (status == GoalStatus.ON_TRACK || status == GoalStatus.ACHIEVED) {
+            lastRaised.remove(key);
+            return;
+        }
+        AlertSeverity level = status == GoalStatus.BEHIND ? AlertSeverity.OVER : AlertSeverity.WARNING;
+        AlertSeverity previous = lastRaised.get(key);
+        lastRaised.put(key, level);
+        if (previous == null || level.compareTo(previous) > 0) {
+            String how = status == GoalStatus.BEHIND ? "is behind" : "is at risk";
+            publish(new Alert(AlertType.GOAL_RISK, level, "Goal '" + goal.name() + "' " + how + ": it needs $"
+                    + requiredMonthly + " per month to reach $" + goal.target() + " by " + goal.deadline()
+                    + " (you are putting aside $" + goal.monthlyContribution() + ")", clock.get()));
         }
     }
 

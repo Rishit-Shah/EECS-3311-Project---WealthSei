@@ -11,6 +11,9 @@ import wealthsei.analytics.RecurringReport;
 import wealthsei.command.CategoryCorrector;
 import wealthsei.domain.BudgetLimits;
 import wealthsei.domain.BudgetStatus;
+import wealthsei.domain.FeasibilityReport;
+import wealthsei.domain.GoalRequest;
+import wealthsei.domain.SavingsGoal;
 import wealthsei.domain.Category;
 import wealthsei.domain.FinancialPlan;
 import wealthsei.domain.FixedBill;
@@ -24,6 +27,8 @@ import wealthsei.domain.Transaction;
 import wealthsei.domain.TxFilter;
 import wealthsei.service.AlertListener;
 import wealthsei.service.AlertMonitor;
+import wealthsei.service.GoalService;
+import wealthsei.service.ValidationException;
 import wealthsei.service.BudgetService;
 import wealthsei.service.PlanService;
 import wealthsei.service.TransactionService;
@@ -43,23 +48,31 @@ public class WealthSeiFacade {
     private final AlertMonitor alerts;
     private final CategoryCorrector corrector;
     private final AnalyticsService analytics;
+    private final GoalService goals;
 
     public WealthSeiFacade(TransactionService transactions, BudgetService budgets, PlanService plans,
-                           AlertMonitor alerts, CategoryCorrector corrector, AnalyticsService analytics) {
+                           AlertMonitor alerts, CategoryCorrector corrector, AnalyticsService analytics,
+                           GoalService goals) {
         this.transactions = Objects.requireNonNull(transactions, "transactions");
         this.budgets = Objects.requireNonNull(budgets, "budgets");
         this.plans = Objects.requireNonNull(plans, "plans");
         this.alerts = Objects.requireNonNull(alerts, "alerts");
         this.corrector = Objects.requireNonNull(corrector, "corrector");
         this.analytics = Objects.requireNonNull(analytics, "analytics");
+        this.goals = Objects.requireNonNull(goals, "goals");
     }
 
     // ---- F01 import ----
 
-    /** Imports a bank CSV, then refreshes budget alerts for the affected months. */
+    /** Imports a bank CSV, then refreshes budget alerts for the affected months and re-checks the goals. */
     public ImportResult importTransactions(Path file) {
+        return importTransactions(file, LocalDate.now());
+    }
+
+    public ImportResult importTransactions(Path file, LocalDate today) {
         ImportResult result = transactions.importFile(file);
         budgets.refreshAlerts(result.affectedMonths());
+        goals.evaluateAll(today);
         return result;
     }
 
@@ -170,8 +183,44 @@ public class WealthSeiFacade {
 
     /** The health score for the month; parts without data (no budget, plan or goals) are left out. */
     public wealthsei.domain.HealthScore getHealthScore(YearMonth month, LocalDate today) {
+        goals.evaluateAll(today);
         BudgetStatus status = budgets.hasBudget(month) ? budgets.getStatus(month) : null;
         return analytics.healthScore(status, today);
+    }
+
+    // ---- F09 goals ----
+
+    /** Creates a goal and works out whether it is on track. */
+    public SavingsGoal addGoal(GoalRequest request, LocalDate today) {
+        return goals.createGoal(request, today);
+    }
+
+    public List<SavingsGoal> getGoals() {
+        return goals.goals();
+    }
+
+    /** Can the goal be reached on time, and what to change if not. Accepts a full id or a unique prefix. */
+    public FeasibilityReport getGoalFeasibility(String idOrPrefix, LocalDate today) {
+        return goals.feasibility(resolveGoalId(idOrPrefix), today);
+    }
+
+    public SavingsGoal setGoalMonthlyContribution(String idOrPrefix, Money monthly, LocalDate today) {
+        return goals.updateContribution(resolveGoalId(idOrPrefix), monthly, today);
+    }
+
+    public SavingsGoal addToGoal(String idOrPrefix, Money amount, LocalDate today) {
+        return goals.addSaved(resolveGoalId(idOrPrefix), amount, today);
+    }
+
+    private String resolveGoalId(String typed) {
+        List<String> matches = goals.goals().stream().map(SavingsGoal::id).filter(id -> id.startsWith(typed)).toList();
+        if (matches.size() == 1) {
+            return matches.get(0);
+        }
+        if (matches.isEmpty()) {
+            throw new ValidationException("No goal with id '" + typed + "'. Type 'goal list' to see ids.");
+        }
+        throw new ValidationException("'" + typed + "' matches " + matches.size() + " goals; type more characters.");
     }
 
     // ---- alerts ----

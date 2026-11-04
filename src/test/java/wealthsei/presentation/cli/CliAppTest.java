@@ -336,4 +336,48 @@ class CliAppTest {
         assertTrue(out.contains("Budget adherence"), out);
         assertTrue(out.contains("(left out)"), out);
     }
+
+    @Test
+    void goalAddListAndReplan() {
+        run("plan income Job 1000 monthly 2026-11-15");
+        String added = run("goal add \"Laptop\" 1200 2027-11-02");
+        assertTrue(added.contains("Goal added"), added);
+        assertTrue(added.contains("ALERT [WARNING]"), added);
+        String list = run("goal list");
+        assertTrue(list.contains("Laptop"), list);
+        assertTrue(list.contains("AT_RISK"), list);
+        String id = list.lines().filter(l -> l.contains("Laptop")).findFirst().orElseThrow().split("\\s+")[0];
+        String replan = run("goal replan " + id);
+        assertTrue(replan.contains("Needs 100.00 per month"), replan);
+        assertTrue(replan.contains("can be reached on time"), replan);
+    }
+
+    @Test
+    void goalReplanSuggestsChangesWhenItCannotBeReached() {
+        run("plan income Job 1000 monthly 2026-11-15");
+        run("plan bill Rent 940 monthly 2026-11-01");
+        run("goal add \"Laptop\" 1200 2027-11-02");
+        String id = run("goal list").lines().filter(l -> l.contains("Laptop")).findFirst().orElseThrow().split("\\s+")[0];
+        String replan = run("goal replan " + id);
+        assertTrue(replan.contains("will not be reached on time"), replan);
+        assertTrue(replan.contains("Move the deadline"), replan);
+    }
+
+    @Test
+    void goalMonthlyAndSaveChangeTheStatus() {
+        run("plan income Job 1000 monthly 2026-11-15");
+        run("goal add \"Laptop\" 1200 2027-11-02");
+        String id = run("goal list").lines().filter(l -> l.contains("Laptop")).findFirst().orElseThrow().split("\\s+")[0];
+        assertTrue(run("goal monthly " + id + " 100").contains("ON_TRACK"));
+        assertTrue(run("goal save " + id + " 1200").contains("ACHIEVED"));
+    }
+
+    @Test
+    void goalCommandsReportMistakes() {
+        assertTrue(run("goal").startsWith("Usage:"));
+        assertTrue(run("goal add Laptop").startsWith("Usage:"));
+        assertTrue(run("goal add \"X\" 100 2020-01-01").startsWith("Error:"));
+        assertTrue(run("goal replan nope").startsWith("Error:"));
+        assertTrue(run("goal list").contains("No goals yet"));
+    }
 }

@@ -106,6 +106,7 @@ public class CliApp {
                 case "safe" -> safe(rest);
                 case "forecast" -> forecast(rest);
                 case "habits" -> habits(rest);
+                case "goal" -> goal(rest);
                 case "score" -> score(rest);
                 default -> out.println("Unknown command '" + command + "'. Type 'help'.");
             }
@@ -141,6 +142,11 @@ public class CliApp {
                   safe [YYYY-MM-DD]                         how much you can spend per day this month
                   forecast [days]                           projected balance for the next days (default 30)
                   habits <YYYY-MM>                          spending habits found in a month
+                  goal add "<name>" <target> <YYYY-MM-DD> [saved]   create a savings goal
+                  goal list                                 your goals and how they are doing
+                  goal replan <id>                          can it be reached? what to change if not
+                  goal save <id> <amount>                   record money set aside for a goal
+                  goal monthly <id> <amount>                set what you put aside each month
                   score [YYYY-MM]                           financial health score out of 100
                   exit
                 Frequency is one of: weekly, biweekly, monthly, yearly. Quote names with spaces.""");
@@ -148,7 +154,7 @@ public class CliApp {
 
     private void importFile(List<String> args) {
         need(args.size() == 1, "import <file.csv>");
-        ImportResult r = facade.importTransactions(Path.of(args.get(0)));
+        ImportResult r = facade.importTransactions(Path.of(args.get(0)), today.get());
         out.println("Imported " + r.imported() + " transactions, skipped " + r.duplicates()
                 + " duplicates, rejected " + r.rejected().size() + " rows.");
         r.rejected().forEach(reason -> out.println("  rejected: " + reason));
@@ -309,6 +315,55 @@ public class CliApp {
         out.println("  balance " + r.balance() + " + income " + r.expectedIncome() + " - bills " + r.upcomingBills()
                 + " - goals " + r.goalReserve() + " - buffer " + r.safetyBuffer());
         out.println(r.explanation());
+    }
+
+    private void goal(List<String> args) {
+        need(!args.isEmpty(), "goal add|list|replan|save|monthly ...");
+        String action = args.get(0).toLowerCase();
+        switch (action) {
+            case "add" -> {
+                need(args.size() == 4 || args.size() == 5, "goal add \"<name>\" <target> <YYYY-MM-DD> [saved]");
+                Money saved = args.size() == 5 ? Money.of(args.get(4)) : Money.ZERO;
+                wealthsei.domain.SavingsGoal g = facade.addGoal(new wealthsei.domain.GoalRequest(args.get(1),
+                        Money.of(args.get(2)), LocalDate.parse(args.get(3)), saved), today.get());
+                out.println("Goal added (" + shortId(g.id()) + "): " + g.name() + ", " + g.status());
+            }
+            case "list" -> {
+                java.util.List<wealthsei.domain.SavingsGoal> all = facade.getGoals();
+                if (all.isEmpty()) {
+                    out.println("No goals yet. Add one: goal add \"Laptop\" 1500 2027-06-01");
+                    return;
+                }
+                out.printf("%-8s %-18s %10s %10s %-10s %9s  %s%n", "Id", "Goal", "Target", "Saved", "Deadline",
+                        "Monthly", "Status");
+                for (wealthsei.domain.SavingsGoal g : all) {
+                    out.printf("%-8s %-18s %10s %10s %-10s %9s  %s%n", shortId(g.id()), g.name(), g.target(),
+                            g.saved(), g.deadline(), g.monthlyContribution(), g.status());
+                }
+            }
+            case "replan" -> {
+                need(args.size() == 2, "goal replan <id>");
+                wealthsei.domain.FeasibilityReport r = facade.getGoalFeasibility(args.get(1), today.get());
+                out.println("Needs " + r.requiredMonthly() + " per month; available after bills and other goals: "
+                        + r.monthlySurplus() + ".");
+                out.println(r.feasible() ? "This goal can be reached on time." : "This goal will not be reached on time.");
+                for (wealthsei.domain.GoalOption o : r.options()) {
+                    out.println("  - " + o.description() + " -> " + o.impact());
+                }
+            }
+            case "save" -> {
+                need(args.size() == 3, "goal save <id> <amount>");
+                wealthsei.domain.SavingsGoal g = facade.addToGoal(args.get(1), Money.of(args.get(2)), today.get());
+                out.println(g.name() + ": " + g.saved() + " of " + g.target() + " saved (" + g.status() + ")");
+            }
+            case "monthly" -> {
+                need(args.size() == 3, "goal monthly <id> <amount>");
+                wealthsei.domain.SavingsGoal g = facade.setGoalMonthlyContribution(args.get(1),
+                        Money.of(args.get(2)), today.get());
+                out.println(g.name() + ": putting aside " + g.monthlyContribution() + " per month (" + g.status() + ")");
+            }
+            default -> need(false, "goal add|list|replan|save|monthly ...");
+        }
     }
 
     private void habits(List<String> args) {
