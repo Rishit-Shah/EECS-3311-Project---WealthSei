@@ -2,19 +2,24 @@ package wealthsei.facade;
 
 import java.nio.file.Path;
 import java.util.List;
+import wealthsei.analytics.AnalyticsService;
+import wealthsei.analytics.RecurringDetector;
 import wealthsei.command.CategoryCorrector;
 import wealthsei.importing.CsvImporter;
 import wealthsei.repository.BudgetRepository;
 import wealthsei.repository.InMemoryBudgetRepository;
-import wealthsei.repository.InMemoryLearnedRuleRepository;
+import wealthsei.repository.InMemoryRuleRepository;
 import wealthsei.repository.InMemoryPlanRepository;
 import wealthsei.repository.InMemoryTransactionRepository;
-import wealthsei.repository.LearnedRuleRepository;
+import wealthsei.repository.RuleRepository;
+import wealthsei.repository.InMemoryRecurringRepository;
 import wealthsei.repository.PlanRepository;
+import wealthsei.repository.RecurringRepository;
 import wealthsei.repository.TransactionRepository;
 import wealthsei.repository.file.PersistentBudgetRepository;
-import wealthsei.repository.file.PersistentLearnedRuleRepository;
+import wealthsei.repository.file.PersistentRuleRepository;
 import wealthsei.repository.file.PersistentPlanRepository;
+import wealthsei.repository.file.PersistentRecurringRepository;
 import wealthsei.repository.file.PersistentTransactionRepository;
 import wealthsei.service.AlertMonitor;
 import wealthsei.service.BudgetService;
@@ -36,7 +41,7 @@ public final class WealthSeiFactory {
     /** Everything kept in memory: data is lost when the program exits. */
     public static WealthSeiFacade inMemory() {
         return build(new InMemoryTransactionRepository(), new InMemoryBudgetRepository(),
-                new InMemoryPlanRepository(), new InMemoryLearnedRuleRepository());
+                new InMemoryPlanRepository(), new InMemoryRuleRepository(), new InMemoryRecurringRepository());
     }
 
     /**
@@ -50,18 +55,21 @@ public final class WealthSeiFactory {
                 new PersistentTransactionRepository(new InMemoryTransactionRepository(), dataDir.resolve("transactions.tsv")),
                 new PersistentBudgetRepository(new InMemoryBudgetRepository(), dataDir.resolve("budgets.tsv")),
                 new PersistentPlanRepository(new InMemoryPlanRepository(), dataDir.resolve("plan.tsv")),
-                new PersistentLearnedRuleRepository(new InMemoryLearnedRuleRepository(), dataDir.resolve("rules.tsv")));
+                new PersistentRuleRepository(new InMemoryRuleRepository(), dataDir.resolve("rules.tsv")),
+                new PersistentRecurringRepository(new InMemoryRecurringRepository(), dataDir.resolve("recurring.tsv")));
     }
 
     private static WealthSeiFacade build(TransactionRepository txRepo, BudgetRepository budgetRepo,
-                                         PlanRepository planRepo, LearnedRuleRepository rules) {
+                                         PlanRepository planRepo, RuleRepository rules,
+                                         RecurringRepository recurring) {
         AlertMonitor monitor = new AlertMonitor();
-        Categorizer categorizer = new Categorizer(
-                List.of(new LearnedRuleStrategy(rules), KeywordRuleStrategy.withDefaults()));
+        LearnedRuleStrategy learned = new LearnedRuleStrategy(rules);
+        Categorizer categorizer = new Categorizer(List.of(learned, KeywordRuleStrategy.withDefaults()));
         TransactionService transactions = new TransactionService(txRepo, new CsvImporter(), categorizer);
         BudgetService budgets = new BudgetService(budgetRepo, txRepo, monitor);
         PlanService plans = new PlanService(planRepo);
+        AnalyticsService analytics = new AnalyticsService(txRepo, recurring, new RecurringDetector());
         return new WealthSeiFacade(transactions, budgets, plans, monitor,
-                new CategoryCorrector(transactions, rules));
+                new CategoryCorrector(transactions, learned), analytics);
     }
 }

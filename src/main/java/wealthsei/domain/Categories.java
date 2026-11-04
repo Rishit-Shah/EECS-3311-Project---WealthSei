@@ -1,6 +1,8 @@
 package wealthsei.domain;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 /** The built-in spending categories. {@link Category#UNCATEGORIZED} is separate on purpose. */
 public final class Categories {
@@ -24,5 +26,11 @@ public final class Categories {
 
     public static List<Category> defaults() {
         return DEFAULTS;
+    }
+
+    /** Finds a default category by its id, ignoring case. */
+    public static Optional<Category> find(String id) {
+        String wanted = id.trim().toLowerCase(Locale.ROOT);
+        return DEFAULTS.stream().filter(c -> c.id().equals(wanted)).findFirst();
     }
 }

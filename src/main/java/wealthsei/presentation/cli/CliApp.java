@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
+import wealthsei.analytics.RecurringReport;
 import wealthsei.domain.Alert;
 import wealthsei.domain.BudgetLimits;
 import wealthsei.domain.BudgetLineStatus;
@@ -26,6 +27,7 @@ import wealthsei.domain.ImportResult;
 import wealthsei.domain.IncomeSource;
 import wealthsei.domain.Money;
 import wealthsei.domain.PlannedExpense;
+import wealthsei.domain.RecurringPayment;
 import wealthsei.domain.Transaction;
 import wealthsei.domain.TxFilter;
 import wealthsei.facade.WealthSeiFacade;
@@ -97,6 +99,7 @@ public class CliApp {
                 case "redo" -> redo();
                 case "budget" -> budget(rest);
                 case "plan" -> plan(rest);
+                case "recurring" -> recurring(rest);
                 default -> out.println("Unknown command '" + command + "'. Type 'help'.");
             }
         } catch (UsageException e) {
@@ -126,6 +129,8 @@ public class CliApp {
                   plan income <name> <amount> <frequency> <nextPayDate>
                   plan bill <name> <amount> <frequency> <nextDueDate> [categoryId]
                   plan expense <description> <amount> <date> [categoryId]
+                  recurring                                 find subscriptions and other repeating payments
+                  recurring flag|unflag <merchant>          mark a recurring payment for review
                   exit
                 Frequency is one of: weekly, biweekly, monthly, yearly. Quote names with spaces.""");
     }
@@ -265,6 +270,42 @@ public class CliApp {
             }
             default -> throw new UsageException("plan show|balance|buffer|income|bill|expense ...");
         }
+    }
+
+    private void recurring(List<String> args) {
+        if (args.isEmpty()) {
+            printRecurring(facade.recurringPayments(today.get()));
+            return;
+        }
+        String action = args.get(0).toLowerCase();
+        need((action.equals("flag") || action.equals("unflag")) && args.size() == 2,
+                "recurring [flag|unflag <merchant>]");
+        boolean flag = action.equals("flag");
+        facade.flagRecurring(args.get(1), flag, today.get());
+        out.println(args.get(1) + (flag ? " flagged for review." : " is no longer flagged."));
+    }
+
+    private void printRecurring(RecurringReport report) {
+        if (!report.payments().isEmpty()) {
+            out.printf("%-24s %9s %-9s %-10s %10s  %s%n", "Merchant", "Amount", "Every", "Next due", "Confidence", "Notes");
+            for (RecurringPayment p : report.payments()) {
+                List<String> notes = new java.util.ArrayList<>();
+                if (p.hasPriceIncrease()) {
+                    notes.add("price up " + p.priceIncrease());
+                }
+                if (p.isPossible()) {
+                    notes.add("possible");
+                }
+                if (p.flaggedForReview()) {
+                    notes.add("FLAGGED");
+                }
+                out.printf("%-24s %9s %-9s %-10s %9.0f%%  %s%n", cut(p.merchant(), 24), p.amount(),
+                        p.frequency().name().toLowerCase(), p.nextDue(), p.confidence() * 100,
+                        String.join(", ", notes));
+            }
+            out.println("About " + report.monthlyTotal() + " per month.");
+        }
+        out.println(report.summary());
     }
 
     private void printPlan() {

@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
+import wealthsei.analytics.AnalyticsService;
+import wealthsei.analytics.RecurringDetector;
 import wealthsei.command.CategoryCorrector;
 import wealthsei.domain.Alert;
 import wealthsei.domain.AlertSeverity;
@@ -27,7 +29,8 @@ import wealthsei.domain.Transaction;
 import wealthsei.domain.TxFilter;
 import wealthsei.importing.CsvImporter;
 import wealthsei.repository.InMemoryBudgetRepository;
-import wealthsei.repository.InMemoryLearnedRuleRepository;
+import wealthsei.repository.InMemoryRuleRepository;
+import wealthsei.repository.InMemoryRecurringRepository;
 import wealthsei.repository.InMemoryPlanRepository;
 import wealthsei.repository.InMemoryTransactionRepository;
 import wealthsei.service.AlertMonitor;
@@ -50,15 +53,17 @@ class WealthSeiFacadeTest {
     private final WealthSeiFacade facade;
 
     WealthSeiFacadeTest() {
-        InMemoryLearnedRuleRepository rules = new InMemoryLearnedRuleRepository();
+        InMemoryRuleRepository rules = new InMemoryRuleRepository();
+        LearnedRuleStrategy learned = new LearnedRuleStrategy(rules);
         InMemoryTransactionRepository txRepo = new InMemoryTransactionRepository();
         AlertMonitor monitor = new AlertMonitor(() -> Instant.parse("2026-11-02T12:00:00Z"));
         TransactionService transactions = new TransactionService(txRepo,
                 new CsvImporter(() -> "t" + ids.incrementAndGet()),
-                new Categorizer(List.of(new LearnedRuleStrategy(rules), KeywordRuleStrategy.withDefaults())));
+                new Categorizer(List.of(learned, KeywordRuleStrategy.withDefaults())));
         BudgetService budgets = new BudgetService(new InMemoryBudgetRepository(), txRepo, monitor);
         PlanService plans = new PlanService(new InMemoryPlanRepository(), () -> TODAY);
-        facade = new WealthSeiFacade(transactions, budgets, plans, monitor, new CategoryCorrector(transactions, rules));
+        facade = new WealthSeiFacade(transactions, budgets, plans, monitor, new CategoryCorrector(transactions, learned),
+                new AnalyticsService(txRepo, new InMemoryRecurringRepository(), new RecurringDetector()));
         facade.addAlertListener(alerts::add);
     }
 

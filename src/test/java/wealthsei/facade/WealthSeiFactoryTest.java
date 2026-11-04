@@ -82,4 +82,16 @@ class WealthSeiFactoryTest {
         Files.writeString(dir.resolve("transactions.tsv"), "garbage\n");
         assertThrows(StorageException.class, () -> WealthSeiFactory.persistent(dir));
     }
+
+    @Test
+    void recurringFlagsSurviveARestart() throws IOException {
+        Path dir = tempDir().resolve("data");
+        LocalDate today = LocalDate.of(2026, 11, 4);
+        WealthSeiFacade first = WealthSeiFactory.persistent(dir);
+        first.importTransactions(csv("2026-08-05,NETFLIX.COM,-16.49\n2026-09-05,NETFLIX.COM,-16.49\n2026-10-05,NETFLIX.COM,-16.49\n"));
+        first.flagRecurring("netflix.com", true, today);
+        wealthsei.analytics.RecurringReport report = WealthSeiFactory.persistent(dir).recurringPayments(today);
+        assertEquals(1, report.payments().size());
+        assertTrue(report.payments().get(0).flaggedForReview());
+    }
 }

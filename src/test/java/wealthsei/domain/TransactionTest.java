@@ -50,5 +50,4 @@ class TransactionTest {
         assertThrows(NullPointerException.class, () -> new Transaction("t",
                 LocalDate.of(2026, 1, 1), Money.of("1"), "m", "d", false, null));
     }
-    
 }

@@ -6,6 +6,8 @@ import java.time.YearMonth;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import wealthsei.analytics.AnalyticsService;
+import wealthsei.analytics.RecurringReport;
 import wealthsei.command.CategoryCorrector;
 import wealthsei.domain.BudgetLimits;
 import wealthsei.domain.BudgetStatus;
@@ -38,14 +40,16 @@ public class WealthSeiFacade {
     private final PlanService plans;
     private final AlertMonitor alerts;
     private final CategoryCorrector corrector;
+    private final AnalyticsService analytics;
 
     public WealthSeiFacade(TransactionService transactions, BudgetService budgets, PlanService plans,
-                           AlertMonitor alerts, CategoryCorrector corrector) {
+                           AlertMonitor alerts, CategoryCorrector corrector, AnalyticsService analytics) {
         this.transactions = Objects.requireNonNull(transactions, "transactions");
         this.budgets = Objects.requireNonNull(budgets, "budgets");
         this.plans = Objects.requireNonNull(plans, "plans");
         this.alerts = Objects.requireNonNull(alerts, "alerts");
         this.corrector = Objects.requireNonNull(corrector, "corrector");
+        this.analytics = Objects.requireNonNull(analytics, "analytics");
     }
 
     // ---- F01 import ----
@@ -129,6 +133,18 @@ public class WealthSeiFacade {
 
     public BudgetStatus getBudgetStatus(YearMonth month) {
         return budgets.getStatus(month);
+    }
+
+    // ---- F04 recurring payments ----
+
+    /** Recurring payments as of {@code asOf}, their monthly cost and a plain-language summary. */
+    public RecurringReport recurringPayments(LocalDate asOf) {
+        return analytics.recurringReport(asOf);
+    }
+
+    /** Marks a recurring payment for review (or clears the mark). */
+    public void flagRecurring(String merchant, boolean flagged, LocalDate asOf) {
+        analytics.flagRecurring(merchant, flagged, asOf);
     }
 
     // ---- alerts ----
