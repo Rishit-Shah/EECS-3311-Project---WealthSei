@@ -1,7 +1,9 @@
 package wealthsei.repository;
 
 import java.time.YearMonth;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -21,5 +23,10 @@ public class InMemoryBudgetRepository implements BudgetRepository {
     @Override
     public Optional<Budget> find(YearMonth month) {
         return Optional.ofNullable(byMonth.get(month));
+    }
+
+    @Override
+    public List<Budget> findAll() {
+        return byMonth.values().stream().sorted(Comparator.comparing(Budget::month)).toList();
     }
 }

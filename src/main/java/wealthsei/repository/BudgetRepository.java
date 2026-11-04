@@ -1,6 +1,7 @@
 package wealthsei.repository;
 
 import java.time.YearMonth;
+import java.util.List;
 import java.util.Optional;
 import wealthsei.domain.Budget;
 
@@ -10,4 +11,7 @@ public interface BudgetRepository {
     void save(Budget budget);
 
     Optional<Budget> find(YearMonth month);
+
+    /** Every saved budget, oldest month first. */
+    List<Budget> findAll();
 }
