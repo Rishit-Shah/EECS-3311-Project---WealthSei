@@ -14,15 +14,15 @@ class CommandHistoryTest {
         return new Command() {
             @Override public void execute() { log.add("do " + name); }
             @Override public void undo() { log.add("undo " + name); }
-            @Override public String description() { return name; }
+            @Override public String describe() { return name; }
         };
     }
 
     @Test
     void undoReversesInLastInFirstOutOrder() {
         CommandHistory<Command> h = new CommandHistory<>();
-        h.run(cmd("a"));
-        h.run(cmd("b"));
+        h.execute(cmd("a"));
+        h.execute(cmd("b"));
         h.undo();
         h.undo();
         assertEquals(List.of("do a", "do b", "undo b", "undo a"), log);
@@ -32,19 +32,19 @@ class CommandHistoryTest {
     @Test
     void redoRunsTheUndoneCommandAgain() {
         CommandHistory<Command> h = new CommandHistory<>();
-        h.run(cmd("a"));
+        h.execute(cmd("a"));
         h.undo();
         assertTrue(h.canRedo());
-        assertEquals("a", h.redo().orElseThrow().description());
+        assertEquals("a", h.redo().orElseThrow().describe());
         assertEquals(List.of("do a", "undo a", "do a"), log);
     }
 
     @Test
     void aNewCommandClearsRedo() {
         CommandHistory<Command> h = new CommandHistory<>();
-        h.run(cmd("a"));
+        h.execute(cmd("a"));
         h.undo();
-        h.run(cmd("b"));
+        h.execute(cmd("b"));
         assertFalse(h.canRedo());
         assertTrue(h.redo().isEmpty());
     }
@@ -60,9 +60,9 @@ class CommandHistoryTest {
         Command bad = new Command() {
             @Override public void execute() { throw new IllegalStateException("boom"); }
             @Override public void undo() { }
-            @Override public String description() { return "bad"; }
+            @Override public String describe() { return "bad"; }
         };
-        assertThrows(IllegalStateException.class, () -> h.run(bad));
+        assertThrows(IllegalStateException.class, () -> h.execute(bad));
         assertFalse(h.canUndo());
     }
 }

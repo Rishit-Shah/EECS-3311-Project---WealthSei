@@ -14,7 +14,7 @@ public class CommandHistory<C extends Command> {
     private final Deque<C> done = new ArrayDeque<>();
     private final Deque<C> undone = new ArrayDeque<>();
 
-    public void run(C command) {
+    public void execute(C command) {
         Objects.requireNonNull(command, "command");
         command.execute();
         done.push(command);

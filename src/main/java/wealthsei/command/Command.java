@@ -8,5 +8,5 @@ public interface Command {
     void undo();
 
     /** Short text for the user, e.g. "Set Netflix to Subscriptions". */
-    String description();
+    String describe();
 }

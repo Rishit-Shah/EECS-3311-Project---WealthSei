@@ -13,7 +13,7 @@ import wealthsei.domain.Category;
 import wealthsei.domain.Transaction;
 import wealthsei.domain.TxFilter;
 import wealthsei.importing.CsvImporter;
-import wealthsei.repository.InMemoryLearnedRuleRepository;
+import wealthsei.repository.InMemoryRuleRepository;
 import wealthsei.repository.InMemoryTransactionRepository;
 import wealthsei.service.Categorizer;
 import wealthsei.service.KeywordRuleStrategy;
@@ -24,12 +24,13 @@ import wealthsei.service.ValidationException;
 class CategoryCorrectorTest {
 
     private final AtomicInteger ids = new AtomicInteger();
-    private final InMemoryLearnedRuleRepository rules = new InMemoryLearnedRuleRepository();
+    private final InMemoryRuleRepository rules = new InMemoryRuleRepository();
+    private final LearnedRuleStrategy learned = new LearnedRuleStrategy(rules);
     private final TransactionService service = new TransactionService(
             new InMemoryTransactionRepository(),
             new CsvImporter(() -> "t" + ids.incrementAndGet()),
-            new Categorizer(List.of(new LearnedRuleStrategy(rules), KeywordRuleStrategy.withDefaults())));
-    private final CategoryCorrector corrector = new CategoryCorrector(service, rules);
+            new Categorizer(List.of(learned, KeywordRuleStrategy.withDefaults())));
+    private final CategoryCorrector corrector = new CategoryCorrector(service, learned);
 
     private void importCsv(String body) throws IOException {
         Path p = Files.createTempFile("wealthsei-corr", ".csv");
@@ -109,6 +110,6 @@ class CategoryCorrectorTest {
         Transaction expense = service.query(TxFilter.all()).stream().filter(t -> !t.income()).findFirst().orElseThrow();
         corrector.correct(income.id(), Categories.SHOPPING);
         corrector.correct(expense.id(), Category.UNCATEGORIZED);
-        assertTrue(rules.all().isEmpty());
+        assertTrue(rules.findAll().isEmpty());
     }
 }

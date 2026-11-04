@@ -9,11 +9,11 @@ import wealthsei.domain.Categories;
 import wealthsei.domain.Category;
 import wealthsei.domain.Money;
 import wealthsei.domain.Transaction;
-import wealthsei.repository.InMemoryLearnedRuleRepository;
+import wealthsei.repository.InMemoryRuleRepository;
 
 class LearnedRuleStrategyTest {
 
-    private final InMemoryLearnedRuleRepository rules = new InMemoryLearnedRuleRepository();
+    private final InMemoryRuleRepository rules = new InMemoryRuleRepository();
     private final LearnedRuleStrategy strategy = new LearnedRuleStrategy(rules);
 
     private static Transaction tx(String merchant, boolean income) {
@@ -41,5 +41,15 @@ class LearnedRuleStrategyTest {
         assertEquals(Categories.ENTERTAINMENT, categorizer.categorize(tx("Starbucks", false)));
         assertEquals(Categories.DINING, new Categorizer(List.of(KeywordRuleStrategy.withDefaults()))
                 .categorize(tx("Starbucks", false)));
+    }
+
+    @Test
+    void learnThenForgetChangesFutureAnswers() {
+        strategy.learn("Cafe X", Categories.DINING);
+        assertEquals(Categories.DINING, strategy.categorize(tx("cafe x", false)).orElseThrow());
+        assertEquals(Categories.DINING, strategy.ruleFor("CAFE X").orElseThrow());
+        strategy.forget("CAFE X");
+        assertTrue(strategy.categorize(tx("cafe x", false)).isEmpty());
+        assertTrue(strategy.ruleFor("cafe x").isEmpty());
     }
 }

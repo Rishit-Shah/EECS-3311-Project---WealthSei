@@ -22,8 +22,9 @@ import wealthsei.domain.PlannedExpense;
 import wealthsei.domain.Transaction;
 import wealthsei.domain.TxFilter;
 import wealthsei.repository.InMemoryBudgetRepository;
-import wealthsei.repository.InMemoryLearnedRuleRepository;
+import wealthsei.repository.InMemoryRuleRepository;
 import wealthsei.repository.InMemoryPlanRepository;
+import wealthsei.repository.InMemoryRecurringRepository;
 import wealthsei.repository.InMemoryTransactionRepository;
 
 class PersistentRepositoriesTest {
@@ -193,13 +194,28 @@ class PersistentRepositoriesTest {
     @Test
     void learnedRulesSurviveARestartAndRemovalIsSaved() throws IOException {
         Path file = tempDir().resolve("r.tsv");
-        PersistentLearnedRuleRepository a = new PersistentLearnedRuleRepository(new InMemoryLearnedRuleRepository(), file);
+        PersistentRuleRepository a = new PersistentRuleRepository(new InMemoryRuleRepository(), file);
         a.save("Zxqv Widgets", Categories.SHOPPING);
         a.save("Cafe X", Categories.DINING);
-        a.remove("cafe x");
-        PersistentLearnedRuleRepository b = new PersistentLearnedRuleRepository(new InMemoryLearnedRuleRepository(), file);
+        a.delete("cafe x");
+        PersistentRuleRepository b = new PersistentRuleRepository(new InMemoryRuleRepository(), file);
         assertEquals(Categories.SHOPPING, b.find("ZXQV WIDGETS").orElseThrow());
         assertTrue(b.find("cafe x").isEmpty());
-        assertEquals(1, b.all().size());
+        assertEquals(1, b.findAll().size());
+    }
+
+    // ---- recurring flags ----
+
+    @Test
+    void recurringFlagsSurviveARestartAndClearingIsSaved() throws IOException {
+        Path file = tempDir().resolve("f.tsv");
+        PersistentRecurringRepository a = new PersistentRecurringRepository(new InMemoryRecurringRepository(), file);
+        a.setFlagged("Netflix", true);
+        a.setFlagged("Spotify", true);
+        a.setFlagged("netflix", false);
+        PersistentRecurringRepository b = new PersistentRecurringRepository(new InMemoryRecurringRepository(), file);
+        assertTrue(b.isFlagged("SPOTIFY"));
+        assertFalse(b.isFlagged("Netflix"));
+        assertEquals(1, b.flagged().size());
     }
 }
