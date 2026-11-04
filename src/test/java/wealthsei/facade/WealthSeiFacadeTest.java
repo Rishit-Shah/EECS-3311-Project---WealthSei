@@ -15,7 +15,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import wealthsei.analytics.AnalyticsService;
+import wealthsei.analytics.ForecastEngine;
 import wealthsei.analytics.RecurringDetector;
+import wealthsei.analytics.SafeToSpendCalculator;
 import wealthsei.command.CategoryCorrector;
 import wealthsei.domain.Alert;
 import wealthsei.domain.AlertSeverity;
@@ -31,6 +33,7 @@ import wealthsei.importing.CsvImporter;
 import wealthsei.repository.InMemoryBudgetRepository;
 import wealthsei.repository.InMemoryRuleRepository;
 import wealthsei.repository.InMemoryRecurringRepository;
+import wealthsei.repository.InMemoryGoalRepository;
 import wealthsei.repository.InMemoryPlanRepository;
 import wealthsei.repository.InMemoryTransactionRepository;
 import wealthsei.service.AlertMonitor;
@@ -61,9 +64,11 @@ class WealthSeiFacadeTest {
                 new CsvImporter(() -> "t" + ids.incrementAndGet()),
                 new Categorizer(List.of(learned, KeywordRuleStrategy.withDefaults())));
         BudgetService budgets = new BudgetService(new InMemoryBudgetRepository(), txRepo, monitor);
-        PlanService plans = new PlanService(new InMemoryPlanRepository(), () -> TODAY);
+        InMemoryPlanRepository planRepo = new InMemoryPlanRepository();
+        PlanService plans = new PlanService(planRepo, () -> TODAY);
         facade = new WealthSeiFacade(transactions, budgets, plans, monitor, new CategoryCorrector(transactions, learned),
-                new AnalyticsService(txRepo, new InMemoryRecurringRepository(), new RecurringDetector()));
+                new AnalyticsService(txRepo, new InMemoryGoalRepository(), new InMemoryRecurringRepository(), planRepo,
+                        monitor, new RecurringDetector(), new ForecastEngine(), new SafeToSpendCalculator()));
         facade.addAlertListener(alerts::add);
     }
 

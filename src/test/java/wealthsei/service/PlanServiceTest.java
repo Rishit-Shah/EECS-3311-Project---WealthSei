@@ -72,4 +72,10 @@ class PlanServiceTest {
         service.savePlan(FinancialPlan.starting(Money.of("99"), TODAY));
         assertEquals(Money.of("99"), service.getPlan().orElseThrow().currentBalance());
     }
+
+    @Test
+    void aNewPlanStartsWithTheDefaultSafetyBuffer() {
+        assertEquals(PlanService.DEFAULT_SAFETY_BUFFER, service.setBalance(Money.of("10"), TODAY).safetyBuffer());
+        assertEquals(Money.of("200"), PlanService.DEFAULT_SAFETY_BUFFER);
+    }
 }

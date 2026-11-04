@@ -18,6 +18,9 @@ import wealthsei.repository.PlanRepository;
  */
 public class PlanService {
 
+    /** The safety buffer a new plan starts with. */
+    public static final Money DEFAULT_SAFETY_BUFFER = Money.of("200");
+
     private final PlanRepository repo;
     private final Supplier<LocalDate> today;
 
@@ -71,7 +74,7 @@ public class PlanService {
     }
 
     private FinancialPlan current() {
-        return repo.find().orElseGet(() -> FinancialPlan.starting(Money.ZERO, today.get()));
+        return repo.find().orElseGet(() -> FinancialPlan.starting(Money.ZERO, today.get()).withSafetyBuffer(DEFAULT_SAFETY_BUFFER));
     }
 
     private void validate(FinancialPlan plan) {

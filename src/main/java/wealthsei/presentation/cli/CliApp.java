@@ -19,6 +19,9 @@ import wealthsei.domain.BudgetLimits;
 import wealthsei.domain.BudgetLineStatus;
 import wealthsei.domain.BudgetStatus;
 import wealthsei.domain.Categories;
+import wealthsei.domain.DailyBalance;
+import wealthsei.domain.Forecast;
+import wealthsei.domain.SafeToSpendResult;
 import wealthsei.domain.Category;
 import wealthsei.domain.FinancialPlan;
 import wealthsei.domain.FixedBill;
@@ -100,6 +103,8 @@ public class CliApp {
                 case "budget" -> budget(rest);
                 case "plan" -> plan(rest);
                 case "recurring" -> recurring(rest);
+                case "safe" -> safe(rest);
+                case "forecast" -> forecast(rest);
                 default -> out.println("Unknown command '" + command + "'. Type 'help'.");
             }
         } catch (UsageException e) {
@@ -131,6 +136,8 @@ public class CliApp {
                   plan expense <description> <amount> <date> [categoryId]
                   recurring                                 find subscriptions and other repeating payments
                   recurring flag|unflag <merchant>          mark a recurring payment for review
+                  safe [YYYY-MM-DD]                         how much you can spend per day this month
+                  forecast [days]                           projected balance for the next days (default 30)
                   exit
                 Frequency is one of: weekly, biweekly, monthly, yearly. Quote names with spaces.""");
     }
@@ -283,6 +290,36 @@ public class CliApp {
         boolean flag = action.equals("flag");
         facade.flagRecurring(args.get(1), flag, today.get());
         out.println(args.get(1) + (flag ? " flagged for review." : " is no longer flagged."));
+    }
+
+    private void safe(List<String> args) {
+        need(args.size() <= 1, "safe [YYYY-MM-DD]");
+        LocalDate date = args.isEmpty() ? today.get() : LocalDate.parse(args.get(0));
+        SafeToSpendResult r = facade.getSafeToSpend(date);
+        if (r.isOverCommitted()) {
+            out.println("Safe to spend on " + date + ": 0.00 per day (over-committed by " + r.overCommittedBy() + ")");
+        } else {
+            out.println("Safe to spend on " + date + ": " + r.dailyAllowance() + " per day");
+        }
+        out.println("  " + r.remainingThisMonth() + " left this month over " + r.daysLeft() + " days");
+        out.println("  balance " + r.balance() + " + income " + r.expectedIncome() + " - bills " + r.upcomingBills()
+                + " - goals " + r.goalReserve() + " - buffer " + r.safetyBuffer());
+        out.println(r.explanation());
+    }
+
+    private void forecast(List<String> args) {
+        need(args.size() <= 1, "forecast [days]");
+        int days = args.isEmpty() ? 30 : Integer.parseInt(args.get(0));
+        need(days >= 1 && days <= 365, "forecast [days from 1 to 365]");
+        Forecast f = facade.getForecast(days, today.get());
+        out.printf("%-10s %10s %10s %10s%n", "Date", "Balance", "In", "Out");
+        for (DailyBalance d : f.days()) {
+            if (d.hasActivity() || d == f.days().get(0)) {
+                out.printf("%-10s %10s %10s %10s%n", d.date(), d.balance(), d.income(), d.outgoing());
+            }
+        }
+        DailyBalance low = f.lowest();
+        out.println("Lowest balance " + low.balance() + " on " + low.date() + ".");
     }
 
     private void printRecurring(RecurringReport report) {

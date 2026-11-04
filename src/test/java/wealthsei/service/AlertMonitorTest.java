@@ -3,6 +3,7 @@ package wealthsei.service;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ import wealthsei.domain.AlertType;
 import wealthsei.domain.BudgetLineStatus;
 import wealthsei.domain.BudgetStatus;
 import wealthsei.domain.Categories;
+import wealthsei.domain.DailyBalance;
 import wealthsei.domain.Money;
 
 class AlertMonitorTest {
@@ -124,5 +126,43 @@ class AlertMonitorTest {
         monitor.attach(received::add);
         monitor.evaluate(groceries("255"));
         assertEquals(1, received.size());
+    }
+
+    private static DailyBalance low(String balance) {
+        return new DailyBalance(LocalDate.of(2026, 11, 20), Money.of(balance), Money.ZERO, Money.ZERO);
+    }
+
+    @Test
+    void lowBalanceAboveTheBufferRaisesNothing() {
+        monitor.attach(received::add);
+        monitor.evaluateLowBalance(low("200"), Money.of("200"));
+        monitor.evaluateLowBalance(low("500"), Money.of("200"));
+        assertTrue(received.isEmpty());
+    }
+
+    @Test
+    void lowBalanceBelowTheBufferWarnsOnceWithTheDateAndAmounts() {
+        monitor.attach(received::add);
+        monitor.evaluateLowBalance(low("150"), Money.of("200"));
+        monitor.evaluateLowBalance(low("120"), Money.of("200"));
+        assertEquals(1, received.size());
+        Alert a = received.get(0);
+        assertEquals(AlertType.LOW_BALANCE, a.type());
+        assertEquals(AlertSeverity.WARNING, a.severity());
+        assertEquals(NOW, a.createdAt());
+        assertTrue(a.message().contains("$150.00") && a.message().contains("2026-11-20") && a.message().contains("$200.00"),
+                a.message());
+    }
+
+    @Test
+    void lowBalanceEscalatesToOverBelowZeroAndResetsWhenBackAboveTheBuffer() {
+        monitor.attach(received::add);
+        monitor.evaluateLowBalance(low("100"), Money.of("200"));
+        monitor.evaluateLowBalance(low("-50"), Money.of("200"));
+        assertEquals(2, received.size());
+        assertEquals(AlertSeverity.OVER, received.get(1).severity());
+        monitor.evaluateLowBalance(low("900"), Money.of("200"));
+        monitor.evaluateLowBalance(low("100"), Money.of("200"));
+        assertEquals(3, received.size());
     }
 }

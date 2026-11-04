@@ -1,6 +1,7 @@
 package wealthsei.service;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +13,8 @@ import wealthsei.domain.AlertSeverity;
 import wealthsei.domain.AlertType;
 import wealthsei.domain.BudgetLineStatus;
 import wealthsei.domain.BudgetStatus;
+import wealthsei.domain.DailyBalance;
+import wealthsei.domain.Money;
 
 /**
  * The subject in the Observer pattern: keeps the list of {@link AlertListener}s and tells all
@@ -62,6 +65,33 @@ public class AlertMonitor {
     }
 
     /** Sends an alert to every listener (also used for low-balance and goal alerts later). */
+    /**
+     * Raises a LOW_BALANCE alert when the projected balance falls below the safety buffer. Like
+     * budget alerts, it is raised when the situation first appears or gets worse (WARNING to
+     * OVER, when the balance would go below zero), and again only after the balance has been
+     * back above the buffer.
+     *
+     * @param lowest the day with the lowest projected balance
+     * @param buffer the safety buffer
+     */
+    public void evaluateLowBalance(DailyBalance lowest, Money buffer) {
+        Objects.requireNonNull(lowest, "lowest");
+        Objects.requireNonNull(buffer, "buffer");
+        String key = "low-balance";
+        if (!lowest.balance().isLessThan(buffer)) {
+            lastRaised.remove(key);
+            return;
+        }
+        AlertSeverity level = lowest.balance().isNegative() ? AlertSeverity.OVER : AlertSeverity.WARNING;
+        AlertSeverity previous = lastRaised.get(key);
+        lastRaised.put(key, level);
+        if (previous == null || level.compareTo(previous) > 0) {
+            LocalDate on = lowest.date();
+            publish(new Alert(AlertType.LOW_BALANCE, level, "Balance is projected to drop to $"
+                    + lowest.balance() + " on " + on + ", below your $" + buffer + " safety buffer", clock.get()));
+        }
+    }
+
     public void publish(Alert alert) {
         notifyListeners(Objects.requireNonNull(alert, "alert"));
     }

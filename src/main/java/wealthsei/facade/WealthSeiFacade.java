@@ -14,10 +14,12 @@ import wealthsei.domain.BudgetStatus;
 import wealthsei.domain.Category;
 import wealthsei.domain.FinancialPlan;
 import wealthsei.domain.FixedBill;
+import wealthsei.domain.Forecast;
 import wealthsei.domain.ImportResult;
 import wealthsei.domain.IncomeSource;
 import wealthsei.domain.Money;
 import wealthsei.domain.PlannedExpense;
+import wealthsei.domain.SafeToSpendResult;
 import wealthsei.domain.Transaction;
 import wealthsei.domain.TxFilter;
 import wealthsei.service.AlertListener;
@@ -145,6 +147,18 @@ public class WealthSeiFacade {
     /** Marks a recurring payment for review (or clears the mark). */
     public void flagRecurring(String merchant, boolean flagged, LocalDate asOf) {
         analytics.flagRecurring(merchant, flagged, asOf);
+    }
+
+    // ---- F05 safe-to-spend ----
+
+    /** What can be spent per day for the rest of the month; may raise a low-balance alert. */
+    public SafeToSpendResult getSafeToSpend(LocalDate today) {
+        return analytics.safeToSpend(today);
+    }
+
+    /** The projected balance for the next {@code days} days. */
+    public Forecast getForecast(int days, LocalDate today) {
+        return analytics.forecast(days, today);
     }
 
     // ---- alerts ----

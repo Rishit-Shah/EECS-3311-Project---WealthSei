@@ -8,8 +8,11 @@ import org.junit.jupiter.api.Test;
 import wealthsei.domain.Categories;
 import wealthsei.domain.Money;
 import wealthsei.domain.Transaction;
+import wealthsei.repository.InMemoryGoalRepository;
+import wealthsei.repository.InMemoryPlanRepository;
 import wealthsei.repository.InMemoryRecurringRepository;
 import wealthsei.repository.InMemoryTransactionRepository;
+import wealthsei.service.AlertMonitor;
 import wealthsei.service.ValidationException;
 
 class AnalyticsServiceTest {
@@ -17,7 +20,9 @@ class AnalyticsServiceTest {
     private static final LocalDate TODAY = LocalDate.of(2026, 11, 4);
     private final InMemoryTransactionRepository txRepo = new InMemoryTransactionRepository();
     private final InMemoryRecurringRepository flags = new InMemoryRecurringRepository();
-    private final AnalyticsService service = new AnalyticsService(txRepo, flags, new RecurringDetector());
+    private final AnalyticsService service = new AnalyticsService(txRepo, new InMemoryGoalRepository(), flags,
+            new InMemoryPlanRepository(), new AlertMonitor(), new RecurringDetector(), new ForecastEngine(),
+            new SafeToSpendCalculator());
     private int n;
 
     private void add(String merchant, String amount, String... dates) {
@@ -68,6 +73,6 @@ class AnalyticsServiceTest {
     void flaggingSomethingThatIsNotRecurringIsRejected() {
         add("Netflix", "16.49", "2026-08-05", "2026-09-05", "2026-10-05");
         assertThrows(ValidationException.class, () -> service.flagRecurring("Costco", true, TODAY));
-        assertTrue(flags.flagged().isEmpty());
+        assertTrue(flags.flaggedMerchants().isEmpty());
     }
 }

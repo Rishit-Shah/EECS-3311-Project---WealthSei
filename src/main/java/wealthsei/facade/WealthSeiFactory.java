@@ -3,11 +3,15 @@ package wealthsei.facade;
 import java.nio.file.Path;
 import java.util.List;
 import wealthsei.analytics.AnalyticsService;
+import wealthsei.analytics.ForecastEngine;
 import wealthsei.analytics.RecurringDetector;
+import wealthsei.analytics.SafeToSpendCalculator;
 import wealthsei.command.CategoryCorrector;
 import wealthsei.importing.CsvImporter;
 import wealthsei.repository.BudgetRepository;
+import wealthsei.repository.GoalRepository;
 import wealthsei.repository.InMemoryBudgetRepository;
+import wealthsei.repository.InMemoryGoalRepository;
 import wealthsei.repository.InMemoryRuleRepository;
 import wealthsei.repository.InMemoryPlanRepository;
 import wealthsei.repository.InMemoryTransactionRepository;
@@ -68,7 +72,9 @@ public final class WealthSeiFactory {
         TransactionService transactions = new TransactionService(txRepo, new CsvImporter(), categorizer);
         BudgetService budgets = new BudgetService(budgetRepo, txRepo, monitor);
         PlanService plans = new PlanService(planRepo);
-        AnalyticsService analytics = new AnalyticsService(txRepo, recurring, new RecurringDetector());
+        GoalRepository goals = new InMemoryGoalRepository();
+        AnalyticsService analytics = new AnalyticsService(txRepo, goals, recurring, planRepo, monitor,
+                new RecurringDetector(), new ForecastEngine(), new SafeToSpendCalculator());
         return new WealthSeiFacade(transactions, budgets, plans, monitor,
                 new CategoryCorrector(transactions, learned), analytics);
     }

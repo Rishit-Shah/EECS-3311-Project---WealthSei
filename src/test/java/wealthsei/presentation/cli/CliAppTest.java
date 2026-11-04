@@ -231,4 +231,63 @@ class CliAppTest {
         assertTrue(run("recurring dance x").startsWith("Usage:"));
         assertTrue(run("recurring flag Costco").startsWith("Error: No recurring payment found"));
     }
+
+    @Test
+    void safeWithoutAPlanAsksForOne() {
+        assertTrue(run("safe").startsWith("Error: No plan yet"));
+        assertTrue(run("forecast").startsWith("Error: No plan yet"));
+    }
+
+    @Test
+    void safeShowsTheDailyAllowanceAndTheExplanation() {
+        run("plan balance 1000");
+        run("plan buffer 200");
+        run("plan income Job 2000 monthly 2026-11-15");
+        run("plan bill Rent 900 monthly 2026-11-20");
+        String out = run("safe");
+        assertTrue(out.contains("Safe to spend on 2026-11-02:"), out);
+        assertTrue(out.contains("per day"), out);
+        assertTrue(out.contains("30 days") || out.contains("29 days"), out);
+        assertTrue(out.contains("balance 1000.00 + income 2000.00 - bills 900.00 - goals 0.00 - buffer 200.00"), out);
+        assertTrue(out.contains("You can spend about"), out);
+    }
+
+    @Test
+    void safeAcceptsADateAndRejectsABadOne() {
+        run("plan balance 1000");
+        assertTrue(run("safe 2026-11-30").contains("Safe to spend on 2026-11-30:"));
+        assertTrue(run("safe 2026-11-30").contains("over 1 days"));
+        assertTrue(run("safe tomorrow").startsWith("Error:"));
+        assertTrue(run("safe a b").startsWith("Usage:"));
+    }
+
+    @Test
+    void safeSaysOverCommittedAndAlertsWhenTheBalanceWillDropBelowTheBuffer() {
+        run("plan balance 300");
+        run("plan buffer 200");
+        run("plan bill Rent 900 monthly 2026-11-20");
+        String out = run("safe");
+        assertTrue(out.contains("0.00 per day (over-committed by 800.00)"), out);
+        assertTrue(out.contains("ALERT [OVER]"), out);
+    }
+
+    @Test
+    void forecastListsDaysWithActivityAndTheLowestBalance() {
+        run("plan balance 1000");
+        run("plan income Job 500 monthly 2026-11-10");
+        run("plan bill Rent 700 monthly 2026-11-20");
+        String out = run("forecast 30");
+        assertTrue(out.contains("2026-11-02"), out);
+        assertTrue(out.contains("2026-11-10") && out.contains("500.00"), out);
+        assertTrue(out.contains("2026-11-20") && out.contains("700.00"), out);
+        assertTrue(out.contains("Lowest balance 800.00 on 2026-11-20."), out);
+    }
+
+    @Test
+    void forecastRejectsBadDays() {
+        run("plan balance 1000");
+        assertTrue(run("forecast 0").startsWith("Usage:"));
+        assertTrue(run("forecast 400").startsWith("Usage:"));
+        assertTrue(run("forecast abc").startsWith("Error:"));
+    }
 }
