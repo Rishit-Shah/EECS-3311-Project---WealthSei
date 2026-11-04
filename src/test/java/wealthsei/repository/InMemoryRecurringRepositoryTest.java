@@ -10,22 +10,22 @@ class InMemoryRecurringRepositoryTest {
 
     @Test
     void flagsIgnoreCaseAndSpaces() {
-        repo.setFlagged("  Netflix ", true);
+        repo.saveFlag("  Netflix ", true);
         assertTrue(repo.isFlagged("NETFLIX"));
-        assertEquals(1, repo.flagged().size());
+        assertEquals(1, repo.flaggedMerchants().size());
     }
 
     @Test
     void clearingAFlagRemovesIt() {
-        repo.setFlagged("Netflix", true);
-        repo.setFlagged("netflix", false);
+        repo.saveFlag("Netflix", true);
+        repo.saveFlag("netflix", false);
         assertFalse(repo.isFlagged("Netflix"));
-        assertTrue(repo.flagged().isEmpty());
+        assertTrue(repo.flaggedMerchants().isEmpty());
     }
 
     @Test
     void clearingAFlagThatWasNeverSetIsHarmless() {
-        repo.setFlagged("nothing", false);
-        assertTrue(repo.flagged().isEmpty());
+        repo.saveFlag("nothing", false);
+        assertTrue(repo.flaggedMerchants().isEmpty());
     }
 }

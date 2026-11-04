@@ -4,7 +4,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeSet;
 import wealthsei.repository.RecurringRepository;
 
@@ -19,17 +18,17 @@ public class PersistentRecurringRepository implements RecurringRepository {
         this.file = Objects.requireNonNull(file, "file");
         for (TsvFile.Row row : TsvFile.read(file)) {
             FileCodec.parse(file, row, r -> {
-                inner.setFlagged(FileCodec.field(r, 0), true);
+                inner.saveFlag(FileCodec.field(r, 0), true);
                 return r;
             });
         }
     }
 
     @Override
-    public void setFlagged(String merchant, boolean flagged) {
-        inner.setFlagged(merchant, flagged);
+    public void saveFlag(String merchant, boolean flagged) {
+        inner.saveFlag(merchant, flagged);
         List<List<String>> rows = new ArrayList<>();
-        for (String key : new TreeSet<>(inner.flagged())) {
+        for (String key : new TreeSet<>(inner.flaggedMerchants())) {
             rows.add(List.of(key));
         }
         TsvFile.write(file, rows);
@@ -41,7 +40,7 @@ public class PersistentRecurringRepository implements RecurringRepository {
     }
 
     @Override
-    public Set<String> flagged() {
-        return inner.flagged();
+    public List<String> flaggedMerchants() {
+        return inner.flaggedMerchants();
     }
 }

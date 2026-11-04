@@ -210,12 +210,12 @@ class PersistentRepositoriesTest {
     void recurringFlagsSurviveARestartAndClearingIsSaved() throws IOException {
         Path file = tempDir().resolve("f.tsv");
         PersistentRecurringRepository a = new PersistentRecurringRepository(new InMemoryRecurringRepository(), file);
-        a.setFlagged("Netflix", true);
-        a.setFlagged("Spotify", true);
-        a.setFlagged("netflix", false);
+        a.saveFlag("Netflix", true);
+        a.saveFlag("Spotify", true);
+        a.saveFlag("netflix", false);
         PersistentRecurringRepository b = new PersistentRecurringRepository(new InMemoryRecurringRepository(), file);
         assertTrue(b.isFlagged("SPOTIFY"));
         assertFalse(b.isFlagged("Netflix"));
-        assertEquals(1, b.flagged().size());
+        assertEquals(1, b.flaggedMerchants().size());
     }
 }

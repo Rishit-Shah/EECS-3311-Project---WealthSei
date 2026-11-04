@@ -1,6 +1,7 @@
 package wealthsei.repository;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 /** Keeps the flags in memory. */
@@ -9,7 +10,7 @@ public class InMemoryRecurringRepository implements RecurringRepository {
     private final Set<String> flagged = new LinkedHashSet<>();
 
     @Override
-    public void setFlagged(String merchant, boolean flag) {
+    public void saveFlag(String merchant, boolean flag) {
         String key = RecurringRepository.keyOf(merchant);
         if (flag) {
             flagged.add(key);
@@ -24,7 +25,7 @@ public class InMemoryRecurringRepository implements RecurringRepository {
     }
 
     @Override
-    public Set<String> flagged() {
-        return Set.copyOf(flagged);
+    public List<String> flaggedMerchants() {
+        return List.copyOf(flagged);
     }
 }

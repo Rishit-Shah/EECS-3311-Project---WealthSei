@@ -1,7 +1,7 @@
 package wealthsei.repository;
 
+import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 /**
  * Remembers which recurring payments the user flagged for review. Merchants are compared
@@ -9,12 +9,12 @@ import java.util.Set;
  */
 public interface RecurringRepository {
 
-    void setFlagged(String merchant, boolean flagged);
+    void saveFlag(String merchant, boolean flagged);
 
     boolean isFlagged(String merchant);
 
     /** The normalised names of all flagged merchants. */
-    Set<String> flagged();
+    List<String> flaggedMerchants();
 
     /** The form of a merchant name used as the lookup key. */
     static String keyOf(String merchant) {
