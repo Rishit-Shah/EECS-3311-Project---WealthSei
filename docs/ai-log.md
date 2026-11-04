@@ -92,6 +92,68 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - The LLM fallback for unknown merchants is still to do (needs the API key and LangChain4j).
 - **My verification:** (fill in after running `mvn test` with real JUnit 5; expected 172 tests.)
 
+### 2026-11-02 - First runnable version: command-line interface
+- **My direction:** I wanted something I can actually run and talk to, not only classes. I left the CLI library choice to the AI; it recommended a small hand-written command reader because it can be fully tested in the AI's sandbox (picocli could not be downloaded there).
+- **AI contribution:** drafted `CliApp` (commands: import, transactions with filters, categories, correct, undo, redo, budget set/status, plan show/balance/buffer/income/bill/expense), `ArgTokenizer` (quoted arguments), `Main`, `WealthSeiFactory` (Factory pattern: one place that wires the services), `Categories.find`, and 25 tests.
+- **Defects found while testing:** the first test run showed that merchant names are stored title-cased ("Loblaws"), so my expected text was wrong; and 36-character ids made the table unreadable. Fixed by showing 8-character ids and accepting any unique prefix in `correct`.
+- **Design decisions to list in "changes from Stage 1":**
+  - Hand-written command reader instead of picocli.
+  - Data is in memory for now; it is lost when the program exits (persistence comes next).
+- **My verification:** (fill in after running `mvn test` with real JUnit 5, expected 199 tests, and trying the CLI by hand.)
+
+### 2026-11-02 - Saving data between sessions (file-based storage)
+- **My direction:** I told the AI to go with its own suggestion for storage. It recommended plain text files over SQLite because it could test them fully (the SQLite library could not be downloaded in its sandbox).
+- **AI contribution:** drafted `TsvFile` (tab-separated files with escaping and atomic replace), four file-backed repositories (`PersistentTransactionRepository`, `PersistentBudgetRepository`, `PersistentPlanRepository`, `PersistentLearnedRuleRepository`) that wrap the in-memory ones (Decorator pattern), `WealthSeiFactory.persistent(dir)`, a data folder setting in `Main` (`WEALTHSEI_HOME`, default `~/.wealthsei`), `BudgetRepository.findAll`, and 26 tests.
+- **Design decisions to list in "changes from Stage 1":**
+  - Text files instead of SQLite (no extra library; data can be opened in a text editor). The repository interfaces are unchanged, so SQLite could still be added later.
+  - A bad data file stops start-up with a message naming the file and line.
+  - The undo history and the alert monitor's memory are not saved; after a restart a budget already at WARNING may alert once more.
+- **My verification:** (fill in after running `mvn test` with real JUnit 5, expected 225 tests, and quitting and restarting the CLI to check the data is still there.)
+
+### 2026-11-04 - F04 Recurring payment and subscription detector
+- **My direction:** continue with the next feature in the design (F04, then F05).
+- **AI contribution:** drafted `RecurringPayment`, `RecurringDetector` (no AI: groups expenses by merchant, checks the gaps between payments and the amounts), `AnalyticsService`, `RecurringReport` with a template summary, `RecurringRepository` (in-memory and file-backed, for the review flags), the facade methods, the CLI commands `recurring` and `recurring flag|unflag`, a sample CSV, and 28 tests.
+- **Defect found by tests:** a pattern whose amounts were steady only half the time scored exactly 0.80 and was not shown as "possible"; fixed by moving the cut-off to 0.85.
+- **Design decisions to list in "changes from Stage 1":**
+  - Confidence is a fixed formula: 0.6 x share of regular gaps + 0.4 x share of steady amounts. Groups with fewer than 3 payments, under 75% regular gaps, or under 50% steady amounts are not reported.
+  - A pattern whose last payment is more than two intervals old is treated as cancelled.
+  - `flagRecurring` also takes today's date so it can refuse a merchant that is not a detected recurring payment.
+  - The summary is a fixed template for now. The LLM will be able to phrase it later; the template stays as the fallback the design asks for.
+  - `RecurringPayment` gained `priceIncrease` and `occurrences`.
+- **My verification:** (fill in after running `mvn test` with real JUnit 5, expected 253 tests, and trying `recurring` in the CLI with `sample-subscriptions.csv`.)
+
+### 2026-11-04 - Checking the code against the Stage 1 design
+- **My direction:** I asked the AI to make sure classes and methods follow Stage 1; more classes are fine, fewer are not.
+- **AI contribution:** compared every class named in the Stage 1 report with the code (40 built with the Stage 1 name, 103 still to build, each belonging to a feature not built yet), then aligned the places where the code had drifted: `LearnedRuleRepository` became `RuleRepository` (`save`, `delete`, `findAll` returning the new `LearnedRule` record), `CorrectCategoryCommand` became `RecategorizeCommand` and now calls `learn()` and `forget()` on `LearnedRuleStrategy` as the Stage 1 sequence diagram shows, `Command.description()` became `describe()`, `CommandHistory.run()` became `execute()`. Generated `docs/stage1-conformance.md`, and added 4 tests.
+- **Finding:** the plan classes (`FinancialPlan`, `IncomeSource`, `FixedBill`, `PlannedExpense`) are not in Stage 1 at all. They are extras that carry the balance, income and bills; Stage 1 only had `Account` with an opening balance. To be listed in the report's changes section.
+- **My verification:** (fill in after running `mvn test` with real JUnit 5, expected 257 tests.)
+
+### 2026-11-04 - F05 Safe-to-Spend Coach and 30-day forecast
+- **My direction:** continue with F05 and keep the class and method names as in Stage 1.
+- **AI contribution:** drafted `Forecast`, `DailyBalance`, `SafeToSpendResult`, `ForecastInputs` (with `deepCopy()`, the Prototype pattern), `ForecastEngine` (`project`, `monthlySurplus`), `SafeToSpendCalculator` (`calculate`), `SavingsGoal`, `GoalStatus`, `GoalRepository` (in-memory), the low-balance alert in `AlertMonitor`, `AnalyticsService.safeToSpend/forecast`, the facade methods, the CLI commands `safe [date]` and `forecast [days]`, and 45 tests. It also aligned `RecurringRepository` with Stage 1 (`saveFlag`, `flaggedMerchants`).
+- **Defect found by tests:** one of the AI's test expectations was wrong (it subtracted payments that happened before the balance date); the code was right and the test was corrected after I checked the arithmetic by hand.
+- **Design decisions to list in "changes from Stage 1":**
+  - The balance today is the plan's balance plus the transactions dated after the balance date, up to today.
+  - The forecast includes only committed money (income, plan bills, recurring payments, planned expenses); a recurring payment whose name matches a plan bill is counted once. Everyday spending is not projected.
+  - `DailyBalance` carries the day's income and outgoing as well as the balance; `SafeToSpendResult` carries extra fields (balance, expected income, buffer, days left, shortfall).
+  - A new plan starts with a safety buffer of $200 (the Stage 1 default). With no plan, `safe` asks the user to set a balance first.
+  - The LOW_BALANCE alert is raised once, again if the balance would drop below zero, and again only after the balance has recovered.
+  - The explanation is a fixed template for now; the LLM can phrase it later.
+  - Goals can be stored but not yet created from the CLI (that is F09).
+- **My verification:** (fill in after running `mvn test` with real JUnit 5, expected 298 tests, and trying `safe` and `forecast` in the CLI.)
+
+### 2026-11-04: F06 habit detective and F07 health score
+
+- **My direction:** I asked about F06, F07 and F08 before starting F09. Together we agreed F06 and F07 are plain calculations I can build and test now, and F08 needs the language-model layer, so it comes later with the agent.
+- **AI contribution:** `HabitAnalyzer` (five rules with fixed thresholds), `Insight` and `InsightType`, `HealthScoreCalculator` (30/25/25/20 weights, re-scaled when a part has no data), `HealthScore`, `ScoreComponent`, template explanations, the `habits` and `score` CLI commands, and 31 new tests (329 in total in the AI's stand-in runner).
+- **Design decisions to list in "changes from Stage 1":**
+  - Habit rules look only at non-essential spending, so rent and groceries do not hide habits.
+  - Fewer than 30 days of history gives a "need more data" error; no findings gives "no notable patterns".
+  - Savings rate and emergency buffer are measured over the 30-day forecast, so they need a plan.
+  - `ScoreComponent` has an extra `detail` field and `HealthScore` has an `excluded` list.
+  - "Change from last month" is not computed yet (there is no stored history of past scores); the field exists and the explanation uses it once known.
+- **My verification:** (fill in after running `mvn test`, expected 329 tests, and trying `habits 2026-10` and `score` in the CLI.)
+
 ## 4. Weekly commit summary (fill in with links)
 
 | Period | Dates (Toronto time) | Required | Commits (links) |

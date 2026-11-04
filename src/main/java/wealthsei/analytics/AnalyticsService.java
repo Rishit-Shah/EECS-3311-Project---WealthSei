@@ -1,10 +1,14 @@
 package wealthsei.analytics;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Objects;
 import wealthsei.domain.FinancialPlan;
+import wealthsei.domain.BudgetStatus;
 import wealthsei.domain.Forecast;
+import wealthsei.domain.HealthScore;
+import wealthsei.domain.Insight;
 import wealthsei.domain.Money;
 import wealthsei.domain.RecurringPayment;
 import wealthsei.domain.SafeToSpendResult;
@@ -35,10 +39,20 @@ public class AnalyticsService {
     private final RecurringDetector detector;
     private final ForecastEngine engine;
     private final SafeToSpendCalculator calculator;
+    private final HabitAnalyzer habitAnalyzer;
+    private final HealthScoreCalculator scoreCalculator;
 
     public AnalyticsService(TransactionRepository txRepo, GoalRepository goalRepo, RecurringRepository flags,
                             PlanRepository planRepo, AlertMonitor monitor, RecurringDetector detector,
                             ForecastEngine engine, SafeToSpendCalculator calculator) {
+        this(txRepo, goalRepo, flags, planRepo, monitor, detector, engine, calculator, new HabitAnalyzer(),
+                new HealthScoreCalculator());
+    }
+
+    public AnalyticsService(TransactionRepository txRepo, GoalRepository goalRepo, RecurringRepository flags,
+                            PlanRepository planRepo, AlertMonitor monitor, RecurringDetector detector,
+                            ForecastEngine engine, SafeToSpendCalculator calculator, HabitAnalyzer habitAnalyzer,
+                            HealthScoreCalculator scoreCalculator) {
         this.txRepo = Objects.requireNonNull(txRepo, "txRepo");
         this.goalRepo = Objects.requireNonNull(goalRepo, "goalRepo");
         this.flags = Objects.requireNonNull(flags, "flags");
@@ -47,6 +61,8 @@ public class AnalyticsService {
         this.detector = Objects.requireNonNull(detector, "detector");
         this.engine = Objects.requireNonNull(engine, "engine");
         this.calculator = Objects.requireNonNull(calculator, "calculator");
+        this.habitAnalyzer = Objects.requireNonNull(habitAnalyzer, "habitAnalyzer");
+        this.scoreCalculator = Objects.requireNonNull(scoreCalculator, "scoreCalculator");
     }
 
     // ---- F04 recurring payments ----
@@ -111,6 +127,50 @@ public class AnalyticsService {
         monitor.evaluateLowBalance(forecast.lowest(), plan.safetyBuffer());
         boolean hasTransactions = !inputs.transactions().isEmpty();
         return result.withExplanation(SafeToSpendSummaryTemplate.write(result, forecast, hasTransactions));
+    }
+
+    // ---- F06 habit detective ----
+
+    /** Days of history needed before habits are reported. */
+    public static final int MIN_HABIT_DAYS = 30;
+
+    /**
+     * Habits found in {@code month}.
+     *
+     * @return the insights, empty when there are none
+     * @throws ValidationException if the history spans fewer than {@value #MIN_HABIT_DAYS} days
+     */
+    public List<Insight> habits(YearMonth month) {
+        List<Transaction> all = txRepo.query(TxFilter.all());
+        if (!hasEnoughHistory(all)) {
+            throw new ValidationException("Need more data: habits need at least " + MIN_HABIT_DAYS
+                    + " days of transactions. Import more history first.");
+        }
+        return habitAnalyzer.analyze(all, month);
+    }
+
+    private static boolean hasEnoughHistory(List<Transaction> all) {
+        if (all.isEmpty()) {
+            return false;
+        }
+        LocalDate first = all.stream().map(Transaction::date).min(LocalDate::compareTo).orElseThrow();
+        LocalDate last = all.stream().map(Transaction::date).max(LocalDate::compareTo).orElseThrow();
+        return java.time.temporal.ChronoUnit.DAYS.between(first, last) + 1 >= MIN_HABIT_DAYS;
+    }
+
+    // ---- F07 health score ----
+
+    /**
+     * The financial health score for {@code month}. Parts that cannot be measured (no budget,
+     * no plan, no goals) are left out and the rest re-scaled.
+     *
+     * @param status the month's budget status, or null if no budget is set
+     * @param today  used for the savings and buffer parts, which look 30 days ahead
+     */
+    public HealthScore healthScore(BudgetStatus status, LocalDate today) {
+        Forecast forecast = planRepo.find().map(p -> engine.project(inputsFor(p, today), FORECAST_DAYS)).orElse(null);
+        HealthScore score = scoreCalculator.calculate(status, forecast, goalRepo.findAll());
+        return score.withExplanation(HealthScoreSummaryTemplate.write(score));
     }
 
     private FinancialPlan requirePlan() {

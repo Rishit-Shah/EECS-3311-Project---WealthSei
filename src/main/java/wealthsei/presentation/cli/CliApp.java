@@ -105,6 +105,8 @@ public class CliApp {
                 case "recurring" -> recurring(rest);
                 case "safe" -> safe(rest);
                 case "forecast" -> forecast(rest);
+                case "habits" -> habits(rest);
+                case "score" -> score(rest);
                 default -> out.println("Unknown command '" + command + "'. Type 'help'.");
             }
         } catch (UsageException e) {
@@ -138,6 +140,8 @@ public class CliApp {
                   recurring flag|unflag <merchant>          mark a recurring payment for review
                   safe [YYYY-MM-DD]                         how much you can spend per day this month
                   forecast [days]                           projected balance for the next days (default 30)
+                  habits <YYYY-MM>                          spending habits found in a month
+                  score [YYYY-MM]                           financial health score out of 100
                   exit
                 Frequency is one of: weekly, biweekly, monthly, yearly. Quote names with spaces.""");
     }
@@ -305,6 +309,40 @@ public class CliApp {
         out.println("  balance " + r.balance() + " + income " + r.expectedIncome() + " - bills " + r.upcomingBills()
                 + " - goals " + r.goalReserve() + " - buffer " + r.safetyBuffer());
         out.println(r.explanation());
+    }
+
+    private void habits(List<String> args) {
+        need(args.size() == 1, "habits <YYYY-MM>");
+        java.time.YearMonth month = java.time.YearMonth.parse(args.get(0));
+        java.util.List<wealthsei.domain.Insight> found = facade.getHabits(month);
+        if (found.isEmpty()) {
+            out.println("No notable patterns in " + month + ".");
+            return;
+        }
+        for (wealthsei.domain.Insight i : found) {
+            out.println("[" + i.severity() + "] " + i.title());
+            out.println("  " + i.evidence());
+            out.println("  " + i.explanation());
+        }
+    }
+
+    private void score(List<String> args) {
+        need(args.size() <= 1, "score [YYYY-MM]");
+        java.time.YearMonth month = args.isEmpty() ? java.time.YearMonth.from(today.get())
+                : java.time.YearMonth.parse(args.get(0));
+        wealthsei.domain.HealthScore s = facade.getHealthScore(month, today.get());
+        if (!s.isAvailable()) {
+            out.println("Health score: N/A");
+        } else {
+            out.println("Health score for " + month + ": " + s.total() + " / 100");
+            for (wealthsei.domain.ScoreComponent c : s.components()) {
+                out.printf("  %-18s %2d / %2d  %s%n", c.name(), c.points(), c.maxPoints(), c.detail());
+            }
+            for (String e : s.excluded()) {
+                out.println("  (left out) " + e);
+            }
+        }
+        out.println(s.explanation());
     }
 
     private void forecast(List<String> args) {

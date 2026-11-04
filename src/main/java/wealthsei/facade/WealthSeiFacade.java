@@ -161,6 +161,19 @@ public class WealthSeiFacade {
         return analytics.forecast(days, today);
     }
 
+    // ---- F06 habits and F07 score ----
+
+    /** Spending habits found in the month; fails with 'need more data' if under 30 days of history. */
+    public java.util.List<wealthsei.domain.Insight> getHabits(YearMonth month) {
+        return analytics.habits(month);
+    }
+
+    /** The health score for the month; parts without data (no budget, plan or goals) are left out. */
+    public wealthsei.domain.HealthScore getHealthScore(YearMonth month, LocalDate today) {
+        BudgetStatus status = budgets.hasBudget(month) ? budgets.getStatus(month) : null;
+        return analytics.healthScore(status, today);
+    }
+
     // ---- alerts ----
 
     /** Registers a screen or console to be told about alerts (Observer pattern). */

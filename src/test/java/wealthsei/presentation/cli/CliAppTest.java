@@ -290,4 +290,50 @@ class CliAppTest {
         assertTrue(run("forecast 400").startsWith("Usage:"));
         assertTrue(run("forecast abc").startsWith("Error:"));
     }
+
+    @Test
+    void habitsNeedMoreDataWhenHistoryIsShort() throws IOException {
+        run("import " + csv("2026-10-01,Starbucks,-5\n2026-10-10,Starbucks,-5\n"));
+        assertTrue(run("habits 2026-10").contains("Need more data"));
+    }
+
+    @Test
+    void habitsReportsAWeekendSpike() throws IOException {
+        StringBuilder rows = new StringBuilder();
+        for (int day = 1; day <= 31; day++) {
+            LocalDate d = LocalDate.of(2026, 10, day);
+            boolean weekend = d.getDayOfWeek().getValue() >= 6;
+            rows.append(d).append(",Pizza Place,-").append(weekend ? "70" : "20").append("\n");
+        }
+        run("import " + csv(rows.toString()));
+        String out = run("habits 2026-10");
+        assertTrue(out.contains("Weekend spending spike"), out);
+    }
+
+    @Test
+    void habitsWithSteadySpendingSaysNoPatterns() throws IOException {
+        StringBuilder rows = new StringBuilder();
+        for (int day = 1; day <= 31; day++) {
+            rows.append(LocalDate.of(2026, 10, day)).append(",Pizza Place,-20\n");
+        }
+        run("import " + csv(rows.toString()));
+        assertTrue(run("habits 2026-10").contains("No notable patterns in 2026-10"));
+    }
+
+    @Test
+    void scoreIsNotAvailableWithoutData() {
+        String out = run("score");
+        assertTrue(out.contains("Health score: N/A"), out);
+    }
+
+    @Test
+    void scoreUsesTheBudgetAndThePlan() {
+        run("plan balance 3000");
+        run("plan income Salary 3000 monthly 2026-11-15");
+        run("budget set 2026-11 dining=300");
+        String out = run("score 2026-11");
+        assertTrue(out.contains("Health score for 2026-11"), out);
+        assertTrue(out.contains("Budget adherence"), out);
+        assertTrue(out.contains("(left out)"), out);
+    }
 }
