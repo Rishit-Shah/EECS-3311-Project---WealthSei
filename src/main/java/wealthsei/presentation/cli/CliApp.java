@@ -1,0 +1,346 @@
+package wealthsei.presentation.cli;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeParseException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Supplier;
+import wealthsei.domain.Alert;
+import wealthsei.domain.BudgetLimits;
+import wealthsei.domain.BudgetLineStatus;
+import wealthsei.domain.BudgetStatus;
+import wealthsei.domain.Categories;
+import wealthsei.domain.Category;
+import wealthsei.domain.FinancialPlan;
+import wealthsei.domain.FixedBill;
+import wealthsei.domain.Frequency;
+import wealthsei.domain.ImportResult;
+import wealthsei.domain.IncomeSource;
+import wealthsei.domain.Money;
+import wealthsei.domain.PlannedExpense;
+import wealthsei.domain.Transaction;
+import wealthsei.domain.TxFilter;
+import wealthsei.facade.WealthSeiFacade;
+import wealthsei.repository.file.StorageException;
+import wealthsei.service.TransactionImportException;
+import wealthsei.service.ValidationException;
+
+/**
+ * The command-line screen. It only reads text, calls the {@link WealthSeiFacade} and prints
+ * the answer; no calculation happens here.
+ */
+public class CliApp {
+
+    private static final String PROMPT = "wealthsei> ";
+
+    private final WealthSeiFacade facade;
+    private final PrintStream out;
+    private final Supplier<LocalDate> today;
+
+    public CliApp(WealthSeiFacade facade, PrintStream out) {
+        this(facade, out, LocalDate::now);
+    }
+
+    /** @param today supplies the current date (tests pass a fixed one) */
+    public CliApp(WealthSeiFacade facade, PrintStream out, Supplier<LocalDate> today) {
+        this.facade = Objects.requireNonNull(facade, "facade");
+        this.out = Objects.requireNonNull(out, "out");
+        this.today = Objects.requireNonNull(today, "today");
+        facade.addAlertListener(this::printAlert);
+    }
+
+    /** Reads commands until the input ends or the user types {@code exit}. */
+    public void run(BufferedReader in) throws IOException {
+        out.println("WealthSei - type 'help' for commands, 'exit' to quit.");
+        out.print(PROMPT);
+        out.flush();
+        String line;
+        while ((line = in.readLine()) != null) {
+            if (!execute(line)) {
+                return;
+            }
+            out.print(PROMPT);
+            out.flush();
+        }
+        out.println();
+    }
+
+    /** Runs one command line. Returns false when the user asked to quit. */
+    public boolean execute(String line) {
+        String trimmed = line.trim();
+        if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+            return true;
+        }
+        try {
+            List<String> args = ArgTokenizer.tokenize(trimmed);
+            String command = args.get(0).toLowerCase();
+            List<String> rest = args.subList(1, args.size());
+            switch (command) {
+                case "help" -> help();
+                case "exit", "quit" -> {
+                    out.println("Goodbye.");
+                    return false;
+                }
+                case "import" -> importFile(rest);
+                case "transactions" -> transactions(rest);
+                case "categories" -> categories();
+                case "correct" -> correct(rest);
+                case "undo" -> undo();
+                case "redo" -> redo();
+                case "budget" -> budget(rest);
+                case "plan" -> plan(rest);
+                default -> out.println("Unknown command '" + command + "'. Type 'help'.");
+            }
+        } catch (UsageException e) {
+            out.println("Usage: " + e.getMessage());
+        } catch (ValidationException | TransactionImportException | StorageException | DateTimeParseException
+                 | IllegalArgumentException e) {
+            out.println("Error: " + e.getMessage());
+        }
+        return true;
+    }
+
+    // ---- commands ----
+
+    private void help() {
+        out.println("""
+                Commands:
+                  import <file.csv>                         load a bank CSV export
+                  transactions [month=YYYY-MM] [category=<id>] [merchant=<text>]
+                  categories                                list category ids
+                  correct <txId> <categoryId>               fix a category (the app remembers the merchant)
+                  undo | redo                               reverse or repeat a correction
+                  budget set <YYYY-MM> <categoryId>=<amount> ...
+                  budget status <YYYY-MM>
+                  plan show
+                  plan balance <amount> [YYYY-MM-DD]
+                  plan buffer <amount>
+                  plan income <name> <amount> <frequency> <nextPayDate>
+                  plan bill <name> <amount> <frequency> <nextDueDate> [categoryId]
+                  plan expense <description> <amount> <date> [categoryId]
+                  exit
+                Frequency is one of: weekly, biweekly, monthly, yearly. Quote names with spaces.""");
+    }
+
+    private void importFile(List<String> args) {
+        need(args.size() == 1, "import <file.csv>");
+        ImportResult r = facade.importTransactions(Path.of(args.get(0)));
+        out.println("Imported " + r.imported() + " transactions, skipped " + r.duplicates()
+                + " duplicates, rejected " + r.rejected().size() + " rows.");
+        r.rejected().forEach(reason -> out.println("  rejected: " + reason));
+    }
+
+    private void transactions(List<String> args) {
+        TxFilter filter = TxFilter.all();
+        for (String arg : args) {
+            int eq = arg.indexOf('=');
+            need(eq > 0, "transactions [month=YYYY-MM] [category=<id>] [merchant=<text>]");
+            String key = arg.substring(0, eq).toLowerCase();
+            String value = arg.substring(eq + 1);
+            switch (key) {
+                case "month" -> {
+                    YearMonth m = YearMonth.parse(value);
+                    filter = new TxFilter(m.atDay(1), m.atEndOfMonth(), filter.category(), filter.merchant());
+                }
+                case "category" -> filter = filter.withCategory(category(value));
+                case "merchant" -> filter = filter.withMerchant(value);
+                default -> throw new UsageException("transactions [month=YYYY-MM] [category=<id>] [merchant=<text>]");
+            }
+        }
+        List<Transaction> list = facade.listTransactions(filter);
+        if (list.isEmpty()) {
+            out.println("No transactions.");
+            return;
+        }
+        out.printf("%-9s %-10s %-26s %-14s %10s%n", "ID", "Date", "Merchant", "Category", "Amount");
+        for (Transaction tx : list) {
+            out.printf("%-9s %-10s %-26s %-14s %10s%n", shortId(tx.id()), tx.date(), cut(tx.merchant(), 26),
+                    tx.category().name(), tx.signedAmount());
+        }
+        out.println(list.size() + " transactions.");
+    }
+
+    private void categories() {
+        for (Category c : Categories.defaults()) {
+            out.printf("%-14s %s%s%n", c.id(), c.name(), c.essential() ? " (essential)" : "");
+        }
+    }
+
+    private void correct(List<String> args) {
+        need(args.size() == 2, "correct <txId> <categoryId>");
+        Category chosen = category(args.get(1));
+        Transaction tx = facade.correctCategory(resolveId(args.get(0)), chosen);
+        out.println(tx.merchant() + " is now " + tx.category().name()
+                + ". Future imports of this merchant use it too. Type 'undo' to reverse.");
+    }
+
+    private void undo() {
+        Optional<Transaction> tx = facade.undoCorrection();
+        out.println(tx.map(t -> "Undone: " + t.merchant() + " is back to " + t.category().name())
+                .orElse("Nothing to undo."));
+    }
+
+    private void redo() {
+        Optional<Transaction> tx = facade.redoCorrection();
+        out.println(tx.map(t -> "Redone: " + t.merchant() + " is " + t.category().name())
+                .orElse("Nothing to redo."));
+    }
+
+    private void budget(List<String> args) {
+        need(!args.isEmpty(), "budget set|status ...");
+        switch (args.get(0).toLowerCase()) {
+            case "set" -> {
+                need(args.size() >= 3, "budget set <YYYY-MM> <categoryId>=<amount> ...");
+                Map<Category, Money> limits = new LinkedHashMap<>();
+                for (String pair : args.subList(2, args.size())) {
+                    int eq = pair.indexOf('=');
+                    need(eq > 0, "budget set <YYYY-MM> <categoryId>=<amount> ...");
+                    limits.put(category(pair.substring(0, eq)), Money.of(pair.substring(eq + 1)));
+                }
+                printBudget(facade.setBudget(YearMonth.parse(args.get(1)), new BudgetLimits(limits)));
+            }
+            case "status" -> {
+                need(args.size() == 2, "budget status <YYYY-MM>");
+                printBudget(facade.getBudgetStatus(YearMonth.parse(args.get(1))));
+            }
+            default -> throw new UsageException("budget set|status ...");
+        }
+    }
+
+    private void printBudget(BudgetStatus status) {
+        out.println("Budget for " + status.month());
+        if (status.lines().isEmpty()) {
+            out.println("  (no limits set)");
+            return;
+        }
+        for (BudgetLineStatus line : status.lines()) {
+            out.printf("  %-14s %9s of %9s  %4.0f%%  %s%n", line.category().name(), line.spent(), line.limit(),
+                    line.ratio() * 100, line.level());
+        }
+        out.printf("  %-14s %9s of %9s%n", "Total", status.totalSpent(), status.totalLimit());
+    }
+
+    private void plan(List<String> args) {
+        need(!args.isEmpty(), "plan show|balance|buffer|income|bill|expense ...");
+        switch (args.get(0).toLowerCase()) {
+            case "show" -> printPlan();
+            case "balance" -> {
+                need(args.size() == 2 || args.size() == 3, "plan balance <amount> [YYYY-MM-DD]");
+                LocalDate asOf = args.size() == 3 ? LocalDate.parse(args.get(2)) : today.get();
+                facade.setBalance(Money.of(args.get(1)), asOf);
+                out.println("Balance set.");
+            }
+            case "buffer" -> {
+                need(args.size() == 2, "plan buffer <amount>");
+                facade.setSafetyBuffer(Money.of(args.get(1)));
+                out.println("Safety buffer set.");
+            }
+            case "income" -> {
+                need(args.size() == 5, "plan income <name> <amount> <frequency> <nextPayDate>");
+                facade.addIncome(new IncomeSource(args.get(1), Money.of(args.get(2)), frequency(args.get(3)),
+                        LocalDate.parse(args.get(4))));
+                out.println("Income added.");
+            }
+            case "bill" -> {
+                need(args.size() == 5 || args.size() == 6, "plan bill <name> <amount> <frequency> <nextDueDate> [categoryId]");
+                Category c = args.size() == 6 ? category(args.get(5)) : null;
+                facade.addFixedBill(new FixedBill(args.get(1), Money.of(args.get(2)), frequency(args.get(3)),
+                        LocalDate.parse(args.get(4)), c));
+                out.println("Bill added.");
+            }
+            case "expense" -> {
+                need(args.size() == 4 || args.size() == 5, "plan expense <description> <amount> <date> [categoryId]");
+                Category c = args.size() == 5 ? category(args.get(4)) : null;
+                facade.addPlannedExpense(new PlannedExpense(args.get(1), Money.of(args.get(2)),
+                        LocalDate.parse(args.get(3)), c));
+                out.println("Planned expense added.");
+            }
+            default -> throw new UsageException("plan show|balance|buffer|income|bill|expense ...");
+        }
+    }
+
+    private void printPlan() {
+        Optional<FinancialPlan> maybe = facade.getPlan();
+        if (maybe.isEmpty()) {
+            out.println("No plan yet. Start with: plan balance <amount>");
+            return;
+        }
+        FinancialPlan p = maybe.get();
+        out.println("Balance " + p.currentBalance() + " as of " + p.balanceAsOf()
+                + ", safety buffer " + p.safetyBuffer());
+        out.println("Income (" + p.monthlyIncome() + " per month):");
+        p.incomeSources().forEach(i -> out.println("  " + i.name() + " " + i.amount() + " "
+                + i.frequency().name().toLowerCase() + ", next " + i.nextPayDate()));
+        out.println("Fixed bills (" + p.monthlyFixedBills() + " per month):");
+        p.fixedBills().forEach(b -> out.println("  " + b.name() + " " + b.amount() + " "
+                + b.frequency().name().toLowerCase() + ", next " + b.nextDueDate()));
+        out.println("Planned expenses:");
+        p.plannedExpenses().forEach(e -> out.println("  " + e.description() + " " + e.amount() + " on " + e.date()));
+    }
+
+    // ---- helpers ----
+
+    private void printAlert(Alert alert) {
+        out.println("ALERT [" + alert.severity() + "] " + alert.message());
+    }
+
+    /** The transaction ids are long, so the table shows the first 8 characters. */
+    private static String shortId(String id) {
+        return id.length() <= 8 ? id : id.substring(0, 8);
+    }
+
+    /** Accepts a full id or any prefix that matches exactly one transaction. */
+    private String resolveId(String typed) {
+        List<String> matches = facade.listTransactions(TxFilter.all()).stream()
+                .map(Transaction::id)
+                .filter(id -> id.startsWith(typed))
+                .toList();
+        if (matches.size() == 1) {
+            return matches.get(0);
+        }
+        if (matches.isEmpty()) {
+            throw new IllegalArgumentException("No transaction with id '" + typed + "'. Type 'transactions' to see ids.");
+        }
+        throw new IllegalArgumentException("'" + typed + "' matches " + matches.size() + " transactions; type more characters.");
+    }
+
+    private static Category category(String id) {
+        return Categories.find(id).orElseThrow(() -> new IllegalArgumentException("Unknown category '" + id
+                + "'. Type 'categories' to see the ids."));
+    }
+
+    private static Frequency frequency(String text) {
+        try {
+            return Frequency.valueOf(text.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unknown frequency '" + text + "'. Use weekly, biweekly, monthly or yearly.");
+        }
+    }
+
+    private static String cut(String text, int max) {
+        return text.length() <= max ? text : text.substring(0, max - 1) + "~";
+    }
+
+    private static void need(boolean ok, String usage) {
+        if (!ok) {
+            throw new UsageException(usage);
+        }
+    }
+
+    /** The command was typed with the wrong arguments. */
+    private static final class UsageException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        UsageException(String usage) {
+            super(usage);
+        }
+    }
+}
