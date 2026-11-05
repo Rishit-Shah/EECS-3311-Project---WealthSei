@@ -21,10 +21,19 @@ import wealthsei.domain.Transaction;
  * @param incomeSources  income from the user's plan
  * @param fixedBills     bills from the user's plan
  * @param plannedExpenses one-off planned expenses from the user's plan
+ * @param typicalMonthlySpending everyday spending not covered by bills or recurring payments (zero when not counted)
  */
 public record ForecastInputs(LocalDate today, Money openingBalance, List<Transaction> transactions,
                              List<RecurringPayment> recurring, List<IncomeSource> incomeSources,
-                             List<FixedBill> fixedBills, List<PlannedExpense> plannedExpenses) {
+                             List<FixedBill> fixedBills, List<PlannedExpense> plannedExpenses,
+                             Money typicalMonthlySpending) {
+
+    /** Without everyday spending (the original form). */
+    public ForecastInputs(LocalDate today, Money openingBalance, List<Transaction> transactions,
+                          List<RecurringPayment> recurring, List<IncomeSource> incomeSources,
+                          List<FixedBill> fixedBills, List<PlannedExpense> plannedExpenses) {
+        this(today, openingBalance, transactions, recurring, incomeSources, fixedBills, plannedExpenses, Money.ZERO);
+    }
 
     public ForecastInputs {
         Objects.requireNonNull(today, "today");
@@ -34,21 +43,27 @@ public record ForecastInputs(LocalDate today, Money openingBalance, List<Transac
         incomeSources = List.copyOf(Objects.requireNonNull(incomeSources, "incomeSources"));
         fixedBills = List.copyOf(Objects.requireNonNull(fixedBills, "fixedBills"));
         plannedExpenses = List.copyOf(Objects.requireNonNull(plannedExpenses, "plannedExpenses"));
+        Objects.requireNonNull(typicalMonthlySpending, "typicalMonthlySpending");
     }
 
     /** A separate copy that can be changed without affecting this one. */
     public ForecastInputs deepCopy() {
         return new ForecastInputs(today, openingBalance, transactions, recurring, incomeSources, fixedBills,
-                plannedExpenses);
+                plannedExpenses, typicalMonthlySpending);
     }
 
     public ForecastInputs withOpeningBalance(Money balance) {
         return new ForecastInputs(today, balance, transactions, recurring, incomeSources, fixedBills,
-                plannedExpenses);
+                plannedExpenses, typicalMonthlySpending);
     }
 
     public ForecastInputs withPlannedExpenses(List<PlannedExpense> expenses) {
         return new ForecastInputs(today, openingBalance, transactions, recurring, incomeSources, fixedBills,
-                expenses);
+                expenses, typicalMonthlySpending);
+    }
+
+    public ForecastInputs withTypicalMonthlySpending(Money spending) {
+        return new ForecastInputs(today, openingBalance, transactions, recurring, incomeSources, fixedBills,
+                plannedExpenses, spending);
     }
 }

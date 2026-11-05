@@ -18,10 +18,19 @@ import wealthsei.domain.Money;
  * @param monthlySavingsDelta  scenario minus baseline, per month
  * @param changes              what was changed, in plain words
  * @param goalImpacts          when each goal would be reached, with and without the changes
+ * @param typicalMonthlySpending everyday spending counted in both columns (from your past full months)
  */
 public record ScenarioResult(int months, Money baselineEndBalance, Money scenarioEndBalance, Money baselineLowest,
                              Money scenarioLowest, Money baselineMonthlySavings, Money scenarioMonthlySavings,
-                             Money monthlySavingsDelta, List<String> changes, List<GoalImpact> goalImpacts) {
+                             Money monthlySavingsDelta, List<String> changes, List<GoalImpact> goalImpacts,
+                             Money typicalMonthlySpending) {
+
+    public ScenarioResult(int months, Money baselineEndBalance, Money scenarioEndBalance, Money baselineLowest,
+                          Money scenarioLowest, Money baselineMonthlySavings, Money scenarioMonthlySavings,
+                          Money monthlySavingsDelta, List<String> changes, List<GoalImpact> goalImpacts) {
+        this(months, baselineEndBalance, scenarioEndBalance, baselineLowest, scenarioLowest, baselineMonthlySavings,
+                scenarioMonthlySavings, monthlySavingsDelta, changes, goalImpacts, Money.ZERO);
+    }
 
     /**
      * When a goal would be reached. A null date means it would not be reached at that saving rate.
@@ -38,6 +47,7 @@ public record ScenarioResult(int months, Money baselineEndBalance, Money scenari
         Objects.requireNonNull(monthlySavingsDelta, "monthlySavingsDelta");
         changes = List.copyOf(changes);
         goalImpacts = List.copyOf(goalImpacts);
+        Objects.requireNonNull(typicalMonthlySpending, "typicalMonthlySpending");
     }
 
     public Money endBalanceDelta() {

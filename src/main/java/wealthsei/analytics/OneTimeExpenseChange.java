@@ -31,7 +31,7 @@ public class OneTimeExpenseChange implements ScenarioChange {
         List<PlannedExpense> expenses = new ArrayList<>(inputs.plannedExpenses());
         expenses.add(new PlannedExpense("What-if expense", amount, onDate, null));
         return new ForecastInputs(inputs.today(), inputs.openingBalance(), inputs.transactions(), inputs.recurring(),
-                inputs.incomeSources(), inputs.fixedBills(), expenses);
+                inputs.incomeSources(), inputs.fixedBills(), expenses, inputs.typicalMonthlySpending());
     }
 
     @Override

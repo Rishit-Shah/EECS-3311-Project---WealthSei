@@ -459,4 +459,118 @@ class CliAppTest {
         assertTrue(out.contains("Zzqx Unknown Place"));
         assertFalse(out.contains("Loblaws"));
     }
+
+    private void withHistoryAndBudget() throws IOException {
+        run("import " + csv("2026-10-05,Netflix,-20\n2026-09-05,Netflix,-20\n2026-08-05,Netflix,-20\n2026-08-12,Pizza Place,-300\n"
+                + "2026-09-12,Pizza Place,-300\n2026-10-12,Pizza Place,-300\n"));
+        run("plan balance 3000");
+        run("plan income Job 3000 monthly 2026-11-15");
+        run("budget set 2026-11 dining=400");
+    }
+
+    @Test
+    void aWhatIfCanBecomeProposalsThatChangeNothingUntilApproved() throws IOException {
+        withHistoryAndBudget();
+        String whatif = run("whatif cancel=Netflix caps=dining=150");
+        assertTrue(whatif.contains("can become proposals"), whatif);
+        String created = run("proposals from-whatif");
+        assertTrue(created.contains("Dining out limit for 2026-11 to 150"), created);
+        assertTrue(created.contains("Flag Netflix for review"), created);
+        assertTrue(run("budget status 2026-11").contains("400.00"));
+        String listed = run("proposals");
+        assertTrue(listed.contains("Pending"), listed);
+    }
+
+    @Test
+    void approvingAProposalMakesTheChangeAndItCanBeUndone() throws IOException {
+        withHistoryAndBudget();
+        run("whatif caps=dining=150");
+        String id = run("proposals from-whatif").lines().filter(l -> l.startsWith("Proposal ")).findFirst().orElseThrow()
+                .split(" ")[1].replace(":", "");
+        String approved = run("proposals approve " + id);
+        assertTrue(approved.startsWith("Applied"), approved);
+        assertTrue(run("budget status 2026-11").contains("150.00"));
+        String undone = run("proposals undo");
+        assertTrue(undone.startsWith("Undone"), undone);
+        assertTrue(run("budget status 2026-11").contains("400.00"));
+        assertTrue(run("proposals all").contains("Undone"));
+    }
+
+    @Test
+    void aDecidedProposalCannotBeDecidedAgain() throws IOException {
+        withHistoryAndBudget();
+        run("whatif caps=dining=150");
+        String id = run("proposals from-whatif").lines().filter(l -> l.startsWith("Proposal ")).findFirst().orElseThrow()
+                .split(" ")[1].replace(":", "");
+        run("proposals approve " + id);
+        String again = run("proposals approve " + id);
+        assertTrue(again.startsWith("Error:") && again.contains("Applied"), again);
+        assertTrue(run("proposals reject " + id).startsWith("Error:"));
+    }
+
+    @Test
+    void rejectingLeavesTheBudgetAlone() throws IOException {
+        withHistoryAndBudget();
+        run("whatif caps=dining=150");
+        String id = run("proposals from-whatif").lines().filter(l -> l.startsWith("Proposal ")).findFirst().orElseThrow()
+                .split(" ")[1].replace(":", "");
+        assertTrue(run("proposals reject " + id).startsWith("Rejected"));
+        assertTrue(run("budget status 2026-11").contains("400.00"));
+        assertTrue(run("proposals").contains("No proposals waiting"));
+    }
+
+    @Test
+    void protectedCategoriesAreNeverProposed() throws IOException {
+        run("import " + csv("2026-10-05,Loblaws,-300\n2026-09-05,Loblaws,-300\n2026-08-05,Loblaws,-300\n"));
+        run("plan balance 3000");
+        run("plan income Job 3000 monthly 2026-11-15");
+        run("budget set 2026-11 groceries=400");
+        run("whatif caps=groceries=100");
+        String out = run("proposals from-whatif");
+        assertTrue(out.contains("protected category"), out);
+        assertTrue(run("proposals").contains("No proposals waiting"));
+        run("unprotect groceries");
+        run("whatif caps=groceries=100");
+        assertTrue(run("proposals from-whatif").contains("Proposal "));
+    }
+
+    @Test
+    void aSuggestionThatCannotBeAppliedIsLeftOutWithAReason() throws IOException {
+        run("import " + csv("2026-10-12,Pizza Place,-300\n2026-09-12,Pizza Place,-300\n2026-08-12,Pizza Place,-300\n"));
+        run("plan balance 3000");
+        run("plan income Job 3000 monthly 2026-11-15");
+        run("whatif caps=dining=150");
+        String out = run("proposals from-whatif");
+        assertTrue(out.contains("Left out") && out.contains("no Dining out limit") || out.contains("There is no Dining out limit"), out);
+    }
+
+    @Test
+    void aGoalThatNeedsMoreCanBeProposedAsAHigherMonthlyAmount() {
+        run("plan balance 3000");
+        run("plan income Job 3000 monthly 2026-11-15");
+        run("goal add \"Laptop\" 1200 2027-11-02");
+        run("goal monthly 1 10");
+        String id = run("goal list").lines().skip(1).findFirst().orElse("").trim().split(" ")[0];
+        String out = run("proposals from-goal " + id);
+        assertTrue(out.contains("Proposal ") || out.startsWith("Error:"), out);
+    }
+
+    @Test
+    void proposalWhyExplainsTheChange() throws IOException {
+        withHistoryAndBudget();
+        run("whatif caps=dining=150");
+        String id = run("proposals from-whatif").lines().filter(l -> l.startsWith("Proposal ")).findFirst().orElseThrow()
+                .split(" ")[1].replace(":", "");
+        String why = run("proposals why " + id);
+        assertTrue(why.contains("Why:") && why.contains("What it does:"), why);
+    }
+
+    @Test
+    void proposalCommandsReportMistakes() {
+        assertTrue(run("proposals from-whatif").contains("Nothing to turn into proposals"));
+        assertTrue(run("proposals approve nope").startsWith("Error:"));
+        assertTrue(run("proposals dance").startsWith("Usage:"));
+        assertTrue(run("proposals undo").contains("Nothing to undo"));
+        assertTrue(run("protect").contains("Groceries"));
+    }
 }

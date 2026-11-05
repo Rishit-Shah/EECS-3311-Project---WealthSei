@@ -127,4 +127,79 @@ class WhatIfAgentTest {
         assertTrue(model.requests().isEmpty());
         assertThrows(ValidationException.class, () -> facade.simulateWhatIf(Map.of(), TODAY));
     }
+
+    @Test
+    void anAiWhatIfCarriesItsChangesAsDraftsThatChangeNothingByThemselves() {
+        facade.setBudgetLimit(java.time.YearMonth.of(2026, 11), wealthsei.domain.Categories.DINING, wealthsei.domain.Money.of("400"));
+        model.thenReply(LLMResponse.toolCall(scenario("cancel", "Spotify", "caps", "dining=150")));
+        model.thenReply(LLMResponse.text("Cancelling Spotify and capping dining would add $160.00 a month."));
+        AgentResult r = facade.runWhatIf("What if I cancel Spotify and cap dining at 150?");
+        assertEquals(2, r.drafts().size());
+        assertTrue(facade.listPendingProposals(TODAY).isEmpty());
+        var created = facade.createProposals(r.drafts(), r.traceId());
+        assertEquals(2, created.size());
+        assertEquals(r.traceId(), created.get(0).traceId());
+        assertEquals(2, facade.listPendingProposals(TODAY).size());
+    }
+
+    @Test
+    void proposalsFromAnEarlierMonthExpireAndCannotBeApproved() {
+        facade.setBudgetLimit(java.time.YearMonth.of(2026, 11), wealthsei.domain.Categories.DINING, wealthsei.domain.Money.of("400"));
+        var drafts = facade.whatIfDrafts(java.util.Map.of("caps", "dining=150"), TODAY);
+        var created = facade.createProposals(drafts, "");
+        assertEquals(1, facade.listPendingProposals(TODAY).size());
+        assertTrue(facade.listPendingProposals(LocalDate.of(2027, 1, 5)).isEmpty());
+        assertEquals("Expired", facade.getProposal(created.get(0).id()).statusName());
+        assertThrows(wealthsei.command.IllegalStateTransitionException.class,
+                () -> facade.decideProposal(created.get(0).id(), true));
+    }
+
+    @Test
+    void aDraftWithNoMachineReadableChangeIsLeftOutWithAReason() {
+        var created = facade.createProposals(java.util.List.of(new ProposalDraft("Spend less", "Just a thought")), "");
+        assertTrue(created.isEmpty());
+        assertEquals(1, facade.lastDiscardedDrafts().size());
+        assertTrue(facade.lastDiscardedDrafts().get(0).contains("only a suggestion"));
+    }
+
+    @Test
+    void aPaymentThatRepeatsEveryMonthIsCountedAsRecurringNotAsEverydaySpending() {
+        // Spotify (10) and Pizza Place (300) both repeat monthly, so they are recurring payments
+        var r = facade.simulateWhatIf(java.util.Map.of("caps", "dining=150"), TODAY);
+        assertEquals(wealthsei.domain.Money.ZERO, r.typicalMonthlySpending());
+        assertEquals(wealthsei.domain.Money.of("2690.00"), r.baselineMonthlySavings());
+        assertEquals(wealthsei.domain.Money.of("2840.00"), r.scenarioMonthlySavings());
+    }
+
+    @Test
+    void irregularSpendingFromPastFullMonthsIsCountedAsAMonthlyAverage() throws IOException {
+        WealthSeiFacade fresh = WealthSeiFactory.inMemory(model, LlmConfig.none(), () -> TODAY);
+        Path csv = Files.createTempFile("irregular", ".csv");
+        Files.writeString(csv, "Date,Description,Amount\n2026-08-03,Cafe Aaa,-100\n2026-09-14,Bistro Bbb,-200\n"
+                + "2026-10-21,Diner Ccc,-300\n2026-11-02,Snack Ddd,-50\n");
+        csv.toFile().deleteOnExit();
+        fresh.importTransactions(csv, TODAY);
+        CliApp app = new CliApp(fresh, new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8), () -> TODAY);
+        app.execute("plan balance 3000");
+        app.execute("plan income Job 3000 monthly 2026-11-15");
+        var r = fresh.simulateWhatIf(java.util.Map.of("income_increase", "100"), TODAY);
+        assertEquals(wealthsei.domain.Money.of("200.00"), r.typicalMonthlySpending());
+        assertEquals(wealthsei.domain.Money.of("2800.00"), r.baselineMonthlySavings());
+        assertEquals(wealthsei.domain.Money.of("2900.00"), r.scenarioMonthlySavings());
+    }
+
+    @Test
+    void withoutAFullMonthOfHistoryNoEverydaySpendingIsInvented() throws IOException {
+        WealthSeiFacade fresh = WealthSeiFactory.inMemory(model, LlmConfig.none(), () -> TODAY);
+        Path csv = Files.createTempFile("thismonth", ".csv");
+        Files.writeString(csv, "Date,Description,Amount\n2026-11-02,Pizza Place,-300\n");
+        csv.toFile().deleteOnExit();
+        fresh.importTransactions(csv, TODAY);
+        CliApp app = new CliApp(fresh, new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8), () -> TODAY);
+        app.execute("plan balance 3000");
+        app.execute("plan income Job 3000 monthly 2026-11-15");
+        var r = fresh.simulateWhatIf(java.util.Map.of("income_increase", "100"), TODAY);
+        assertEquals(wealthsei.domain.Money.ZERO, r.typicalMonthlySpending());
+        assertEquals(wealthsei.domain.Money.of("3000.00"), r.baselineMonthlySavings());
+    }
 }

@@ -39,6 +39,6 @@ public class IncomeChange implements ScenarioChange {
         LocalDate start = inputs.today().withDayOfMonth(1).plusMonths(1);
         incomes.add(new IncomeSource(name, amount, Frequency.MONTHLY, start));
         return new ForecastInputs(inputs.today(), inputs.openingBalance(), inputs.transactions(), inputs.recurring(),
-                incomes, inputs.fixedBills(), inputs.plannedExpenses());
+                incomes, inputs.fixedBills(), inputs.plannedExpenses(), inputs.typicalMonthlySpending());
     }
 }

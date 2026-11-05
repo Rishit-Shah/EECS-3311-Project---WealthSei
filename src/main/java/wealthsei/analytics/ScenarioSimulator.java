@@ -58,7 +58,7 @@ public class ScenarioSimulator {
         Money scenarioSavings = engine.monthlySurplus(changed);
         return new ScenarioResult(MONTHS, last(baseForecast), last(scenarioForecast), baseForecast.lowestBalance(),
                 scenarioForecast.lowestBalance(), baseSavings, scenarioSavings, scenarioSavings.subtract(baseSavings),
-                described, goalImpacts(baseline.today(), baseSavings, scenarioSavings));
+                described, goalImpacts(baseline.today(), baseSavings, scenarioSavings), baseline.typicalMonthlySpending());
     }
 
     private List<ScenarioResult.GoalImpact> goalImpacts(LocalDate today, Money baseSavings, Money scenarioSavings) {

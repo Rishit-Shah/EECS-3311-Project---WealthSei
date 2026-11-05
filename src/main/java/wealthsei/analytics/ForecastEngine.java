@@ -17,7 +17,8 @@ import wealthsei.domain.RecurringPayment;
 
 /**
  * Projects the balance forward day by day. No AI: it adds the income, bills, recurring payments
- * and planned expenses that fall on each day. A recurring payment that matches a bill in the
+ * and planned expenses that fall on each day, plus the user's typical everyday spending when the
+ * inputs carry it. A recurring payment that matches a bill in the
  * plan (same name) is counted once, as the bill.
  */
 public class ForecastEngine {
@@ -59,20 +60,21 @@ public class ForecastEngine {
                 outgoing.merge(e.date(), e.amount(), Money::add);
             }
         }
+        Money everyday = inputs.typicalMonthlySpending().multiply(12).divide(365);
         List<DailyBalance> result = new ArrayList<>();
         Money balance = inputs.openingBalance();
         result.add(new DailyBalance(start, balance, Money.ZERO, Money.ZERO));
         for (int i = 1; i <= days; i++) {
             LocalDate date = start.plusDays(i);
             Money in = income.getOrDefault(date, Money.ZERO);
-            Money out = outgoing.getOrDefault(date, Money.ZERO);
+            Money out = outgoing.getOrDefault(date, Money.ZERO).add(everyday);
             balance = balance.add(in).subtract(out);
             result.add(new DailyBalance(date, balance, in, out));
         }
         return new Forecast(result);
     }
 
-    /** Income minus bills and recurring payments, averaged per month. Negative when spending exceeds income. */
+    /** Income minus bills, recurring payments and (when counted) everyday spending, averaged per month. Negative when spending exceeds income. */
     public Money monthlySurplus(ForecastInputs inputs) {
         Objects.requireNonNull(inputs, "inputs");
         Money surplus = Money.ZERO;
@@ -87,7 +89,7 @@ public class ForecastEngine {
                 surplus = surplus.subtract(r.monthlyCost());
             }
         }
-        return surplus;
+        return surplus.subtract(inputs.typicalMonthlySpending());
     }
 
     private static boolean isCoveredByBill(RecurringPayment payment, List<FixedBill> bills) {

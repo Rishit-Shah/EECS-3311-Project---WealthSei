@@ -110,13 +110,16 @@ public class CliApp {
                 case "afford" -> afford(rest);
                 case "whatif" -> whatif(rest);
                 case "trace" -> trace(rest);
+                case "proposals" -> proposals(rest);
+                case "protect" -> protect(rest, true);
+                case "unprotect" -> protect(rest, false);
                 case "score" -> score(rest);
                 default -> out.println("Unknown command '" + command + "'. Type 'help'.");
             }
         } catch (UsageException e) {
             out.println("Usage: " + e.getMessage());
         } catch (ValidationException | TransactionImportException | StorageException | DateTimeParseException
-                 | IllegalArgumentException e) {
+                 | IllegalArgumentException | wealthsei.command.IllegalStateTransitionException e) {
             out.println("Error: " + e.getMessage());
         }
         return true;
@@ -155,6 +158,13 @@ public class CliApp {
                   whatif cancel=<name> caps=<cat>=<amt> income=<amt> buy=<amt>@<date>
                                                             the same with the changes typed directly (no AI)
                   trace [id]                                how the last answer was reached (tools used, figures)
+                  proposals [list|all]                      suggested changes waiting for your approval
+                  proposals from-whatif                     turn the last what-if into proposals
+                  proposals from-goal <goalId>              suggest the monthly amount a goal needs
+                  proposals approve|reject <id>             apply or discard a proposal (approve can be undone)
+                  proposals undo                            reverse the last approved proposal
+                  proposals why <id>                        what a proposal does and where it came from
+                  protect|unprotect [<category>]            categories the agent may never suggest changing
                   score [YYYY-MM]                           financial health score out of 100
                   exit
                 Frequency is one of: weekly, biweekly, monthly, yearly. Quote names with spaces.""");
@@ -363,10 +373,101 @@ public class CliApp {
                 out.println("[" + r.status() + "]");
             }
             out.println("(How did you get this? type: trace " + r.traceId() + ")");
+            lastDrafts = r.drafts();
+            lastDraftsTrace = r.traceId();
+            hintProposals();
             return;
         }
         printScenario(facade.simulateWhatIf(fields, today.get()));
+        lastDrafts = facade.whatIfDrafts(fields, today.get());
+        lastDraftsTrace = "";
+        hintProposals();
     }
+
+    private void hintProposals() {
+        if (!lastDrafts.isEmpty()) {
+            out.println(lastDrafts.size() + " change(s) from this what-if can become proposals: type 'proposals from-whatif'");
+        }
+    }
+
+    private void proposals(List<String> args) {
+        String sub = args.isEmpty() ? "list" : args.get(0).toLowerCase();
+        switch (sub) {
+            case "list" -> printProposals(facade.listPendingProposals(today.get()), "No proposals waiting for you.");
+            case "all" -> printProposals(facade.listAllProposals(), "No proposals yet.");
+            case "from-whatif" -> {
+                need(args.size() == 1, "proposals from-whatif");
+                if (lastDrafts.isEmpty()) {
+                    out.println("Nothing to turn into proposals: run a 'whatif' with a cap or a cancel first.");
+                    return;
+                }
+                reportCreated(facade.createProposals(lastDrafts, lastDraftsTrace));
+                lastDrafts = List.of();
+            }
+            case "from-goal" -> {
+                need(args.size() == 2, "proposals from-goal <goalId>");
+                reportCreated(facade.proposeGoalFix(args.get(1), today.get()));
+            }
+            case "approve", "reject" -> {
+                need(args.size() == 2, "proposals " + sub + " <id>");
+                wealthsei.command.Proposal p = facade.decideProposal(args.get(1), sub.equals("approve"));
+                out.println(p.statusName() + ": " + p.title());
+                if (sub.equals("approve")) {
+                    out.println("  Done: " + p.command().describe() + ". Type 'proposals undo' to reverse it.");
+                }
+            }
+            case "undo" -> {
+                need(args.size() == 1, "proposals undo");
+                out.println(facade.undoLastProposal()
+                        .map(p -> "Undone: " + p.title() + " (" + p.command().describe() + ")")
+                        .orElse("Nothing to undo."));
+            }
+            case "why" -> {
+                need(args.size() == 2, "proposals why <id>");
+                wealthsei.command.Proposal p = facade.getProposal(args.get(1));
+                out.println(p.title() + " [" + p.statusName() + "]");
+                out.println("  Why: " + p.rationale());
+                out.println("  What it does: " + p.command().describe());
+                if (!p.traceId().isEmpty()) {
+                    out.println("  How the AI got there: type: trace " + p.traceId());
+                }
+            }
+            default -> throw new UsageException("proposals list|all|from-whatif|from-goal|approve|reject|undo|why");
+        }
+    }
+
+    private void reportCreated(List<wealthsei.command.Proposal> created) {
+        created.forEach(p -> out.println("Proposal " + p.id() + ": " + p.title()));
+        facade.lastDiscardedDrafts().forEach(reason -> out.println("  Left out: " + reason));
+        if (!created.isEmpty()) {
+            out.println("Review with 'proposals', then 'proposals approve <id>' or 'proposals reject <id>'.");
+        }
+    }
+
+    private void printProposals(List<wealthsei.command.Proposal> list, String emptyMessage) {
+        if (list.isEmpty()) {
+            out.println(emptyMessage);
+            return;
+        }
+        out.printf("%-9s %-9s %s%n", "ID", "Status", "Proposal");
+        list.forEach(p -> out.printf("%-9s %-9s %s%n", p.id(), p.statusName(), p.title()));
+        out.println("Type 'proposals why <id>' for the reason, or 'proposals approve <id>'.");
+    }
+
+    private void protect(List<String> args, boolean on) {
+        if (args.isEmpty()) {
+            out.println("Protected categories (the agent may not suggest changing these): "
+                    + facade.protectedCategories().stream().map(Category::name).sorted().toList());
+            return;
+        }
+        need(args.size() == 1, on ? "protect <category>" : "unprotect <category>");
+        Category c = category(args.get(0));
+        facade.setProtectedCategory(c, on);
+        out.println(c.name() + (on ? " is now protected." : " is no longer protected."));
+    }
+
+    private List<wealthsei.agent.ProposalDraft> lastDrafts = List.of();
+    private String lastDraftsTrace = "";
 
     private void printScenario(wealthsei.analytics.ScenarioResult r) {
         out.println("What-if over the next " + r.months() + " months:");
@@ -377,6 +478,10 @@ public class CliApp {
                 r.scenarioLowest().subtract(r.baselineLowest()));
         out.printf("%-26s %12s %12s %12s%n", "Money left per month", r.baselineMonthlySavings(), r.scenarioMonthlySavings(),
                 r.monthlySavingsDelta());
+        if (r.typicalMonthlySpending().isPositive()) {
+            out.println("  (Both columns include your typical everyday spending of " + r.typicalMonthlySpending()
+                    + " a month, from your past full months.)");
+        }
         for (wealthsei.analytics.ScenarioResult.GoalImpact g : r.goalImpacts()) {
             out.printf("%-26s %12s %12s%n", "Goal '" + g.goalName() + "' reached",
                     g.baselineCompletion() == null ? "not reached" : g.baselineCompletion(),

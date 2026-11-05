@@ -34,7 +34,7 @@ public class CancelRecurringChange implements ScenarioChange {
         recurring.removeIf(r -> r.merchant().equalsIgnoreCase(target));
         bills.removeIf(b -> b.name().equalsIgnoreCase(target));
         return new ForecastInputs(inputs.today(), inputs.openingBalance(), inputs.transactions(), recurring,
-                inputs.incomeSources(), bills, inputs.plannedExpenses());
+                inputs.incomeSources(), bills, inputs.plannedExpenses(), inputs.typicalMonthlySpending());
     }
 
     private String resolve(List<String> names) {

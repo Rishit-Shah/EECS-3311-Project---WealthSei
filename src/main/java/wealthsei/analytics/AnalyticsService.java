@@ -152,7 +152,7 @@ public class AnalyticsService implements MonthlySurplusProvider {
             throw new ValidationException("The purchase date cannot be in the past");
         }
         FinancialPlan plan = requirePlan();
-        ForecastInputs base = inputsFor(plan, today);
+        ForecastInputs base = inputsFor(plan, today, true);
         int days = (int) Math.min(365, Math.max(FORECAST_DAYS, java.time.temporal.ChronoUnit.DAYS.between(today, date) + 1));
         Forecast before = engine.project(base, days);
         ForecastInputs changed;
@@ -223,13 +223,13 @@ public class AnalyticsService implements MonthlySurplusProvider {
 
     /** The starting point for what-if scenarios: the balance, plan and history as of {@code today}. */
     public ForecastInputs baselineInputs(LocalDate today) {
-        return inputsFor(requirePlan(), today);
+        return inputsFor(requirePlan(), today, true);
     }
 
     /** Income minus bills and uncovered recurring payments per month; zero when there is no plan. */
     @Override
     public Money monthlySurplus(LocalDate today) {
-        return planRepo.find().map(p -> engine.monthlySurplus(inputsFor(p, today))).orElse(Money.ZERO);
+        return planRepo.find().map(p -> engine.monthlySurplus(inputsFor(p, today, true))).orElse(Money.ZERO);
     }
 
     private FinancialPlan requirePlan() {
@@ -242,6 +242,15 @@ public class AnalyticsService implements MonthlySurplusProvider {
      * date, up to and including today.
      */
     private ForecastInputs inputsFor(FinancialPlan plan, LocalDate today) {
+        return inputsFor(plan, today, false);
+    }
+
+    /**
+     * @param withEverydaySpending true for what-ifs, affordability and goals, which need the balance a
+     *                             person really ends up with; false for safe-to-spend, whose daily allowance
+     *                             already is the everyday spending
+     */
+    private ForecastInputs inputsFor(FinancialPlan plan, LocalDate today, boolean withEverydaySpending) {
         List<Transaction> history = txRepo.query(TxFilter.all());
         Money balance = plan.currentBalance();
         for (Transaction tx : history) {
@@ -249,7 +258,41 @@ public class AnalyticsService implements MonthlySurplusProvider {
                 balance = balance.add(tx.signedAmount());
             }
         }
-        return new ForecastInputs(today, balance, history, detectRecurring(today), plan.incomeSources(),
-                plan.fixedBills(), plan.plannedExpenses());
+        List<RecurringPayment> recurring = detectRecurring(today);
+        Money everyday = withEverydaySpending ? typicalMonthlySpending(history, recurring, plan, today) : Money.ZERO;
+        return new ForecastInputs(today, balance, history, recurring, plan.incomeSources(),
+                plan.fixedBills(), plan.plannedExpenses(), everyday);
+    }
+
+    /**
+     * Average monthly spending that is not a bill or a recurring payment, over up to the last three
+     * full months of history. Zero when there is no full month yet, so a brand-new file never invents a figure.
+     */
+    static Money typicalMonthlySpending(List<Transaction> history, List<RecurringPayment> recurring,
+                                        FinancialPlan plan, LocalDate today) {
+        java.time.YearMonth current = java.time.YearMonth.from(today);
+        java.util.Optional<java.time.YearMonth> first = history.stream()
+                .map(tx -> java.time.YearMonth.from(tx.date())).min(java.time.YearMonth::compareTo);
+        if (first.isEmpty()) {
+            return Money.ZERO;
+        }
+        java.time.YearMonth from = first.get().isBefore(current.minusMonths(3)) ? current.minusMonths(3) : first.get();
+        java.time.YearMonth to = current.minusMonths(1);
+        if (from.isAfter(to)) {
+            return Money.ZERO;
+        }
+        int months = (int) java.time.temporal.ChronoUnit.MONTHS.between(from, to) + 1;
+        java.util.Set<String> covered = new java.util.HashSet<>();
+        recurring.forEach(r -> covered.add(r.merchant().trim().toLowerCase(java.util.Locale.ROOT)));
+        plan.fixedBills().forEach(b -> covered.add(b.name().trim().toLowerCase(java.util.Locale.ROOT)));
+        Money total = Money.ZERO;
+        for (Transaction tx : history) {
+            java.time.YearMonth m = java.time.YearMonth.from(tx.date());
+            if (tx.isExpense() && !m.isBefore(from) && !m.isAfter(to)
+                    && !covered.contains(tx.merchant().trim().toLowerCase(java.util.Locale.ROOT))) {
+                total = total.add(tx.amount());
+            }
+        }
+        return total.divide(months);
     }
 }
