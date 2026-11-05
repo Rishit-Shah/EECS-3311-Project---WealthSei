@@ -48,15 +48,21 @@ public record FinancialPlan(Money currentBalance, LocalDate balanceAsOf, Money s
         return new FinancialPlan(currentBalance, balanceAsOf, buffer, incomeSources, fixedBills, plannedExpenses);
     }
 
+    /** Adds an income source; one with the same name (ignoring case) is replaced, so adding it twice never counts it twice. */
     public FinancialPlan withIncomeSource(IncomeSource income) {
+        Objects.requireNonNull(income, "income");
         List<IncomeSource> list = new ArrayList<>(incomeSources);
-        list.add(Objects.requireNonNull(income, "income"));
+        list.removeIf(i -> i.name().equalsIgnoreCase(income.name()));
+        list.add(income);
         return new FinancialPlan(currentBalance, balanceAsOf, safetyBuffer, list, fixedBills, plannedExpenses);
     }
 
+    /** Adds a fixed bill; one with the same name (ignoring case) is replaced. */
     public FinancialPlan withFixedBill(FixedBill bill) {
+        Objects.requireNonNull(bill, "bill");
         List<FixedBill> list = new ArrayList<>(fixedBills);
-        list.add(Objects.requireNonNull(bill, "bill"));
+        list.removeIf(b -> b.name().equalsIgnoreCase(bill.name()));
+        list.add(bill);
         return new FinancialPlan(currentBalance, balanceAsOf, safetyBuffer, incomeSources, list, plannedExpenses);
     }
 

@@ -10,6 +10,8 @@ import wealthsei.domain.Forecast;
 import wealthsei.domain.HealthScore;
 import wealthsei.domain.Insight;
 import wealthsei.domain.Money;
+import wealthsei.domain.PlannedExpense;
+import wealthsei.domain.PurchaseImpact;
 import wealthsei.domain.RecurringPayment;
 import wealthsei.domain.SafeToSpendResult;
 import wealthsei.domain.SavingsGoal;
@@ -130,6 +132,51 @@ public class AnalyticsService implements MonthlySurplusProvider {
         return result.withExplanation(SafeToSpendSummaryTemplate.write(result, forecast, hasTransactions));
     }
 
+    // ---- F08 purchase impact ----
+
+    /**
+     * What buying something would do to the next month: the lowest balance and the daily
+     * allowance with and without it, and the verdict the rules give.
+     *
+     * @param date when it would be bought (today or later)
+     * @throws ValidationException if there is no plan, the price is not above zero, or the date is past
+     */
+    public PurchaseImpact purchaseImpact(String description, Money price, LocalDate date, LocalDate today) {
+        if (description == null || description.isBlank()) {
+            throw new ValidationException("Say what you want to buy");
+        }
+        if (price == null || !price.isPositive()) {
+            throw new ValidationException("The price must be more than zero");
+        }
+        if (date.isBefore(today)) {
+            throw new ValidationException("The purchase date cannot be in the past");
+        }
+        FinancialPlan plan = requirePlan();
+        ForecastInputs base = inputsFor(plan, today);
+        int days = (int) Math.min(365, Math.max(FORECAST_DAYS, java.time.temporal.ChronoUnit.DAYS.between(today, date) + 1));
+        Forecast before = engine.project(base, days);
+        ForecastInputs changed;
+        if (date.equals(today)) {
+            changed = base.withOpeningBalance(base.openingBalance().subtract(price));
+        } else {
+            List<PlannedExpense> expenses = new java.util.ArrayList<>(base.plannedExpenses());
+            expenses.add(new PlannedExpense(description.trim(), price, date, null));
+            changed = base.withPlannedExpenses(expenses);
+        }
+        Forecast after = engine.project(changed, days);
+        List<SavingsGoal> goals = goalRepo.findAll();
+        SafeToSpendResult allowanceBefore = calculator.calculate(before, goals, plan.safetyBuffer());
+        SafeToSpendResult allowanceAfter = calculator.calculate(after, goals, plan.safetyBuffer());
+        int needHelp = (int) goals.stream().filter(g -> g.status() == wealthsei.domain.GoalStatus.AT_RISK
+                || g.status() == wealthsei.domain.GoalStatus.BEHIND).count();
+        PurchaseAssessor.Assessment verdict = PurchaseAssessor.assess(after.lowestBalance(), plan.safetyBuffer(),
+                allowanceBefore.dailyAllowance(), allowanceAfter.dailyAllowance(), allowanceAfter.isOverCommitted(),
+                needHelp);
+        return new PurchaseImpact(description.trim(), price, date, before.lowest(), after.lowest(),
+                allowanceBefore.dailyAllowance(), allowanceAfter.dailyAllowance(), plan.safetyBuffer(), needHelp,
+                verdict.verdict(), verdict.reason());
+    }
+
     // ---- F06 habit detective ----
 
     /** Days of history needed before habits are reported. */
@@ -172,6 +219,11 @@ public class AnalyticsService implements MonthlySurplusProvider {
         Forecast forecast = planRepo.find().map(p -> engine.project(inputsFor(p, today), FORECAST_DAYS)).orElse(null);
         HealthScore score = scoreCalculator.calculate(status, forecast, goalRepo.findAll());
         return score.withExplanation(HealthScoreSummaryTemplate.write(score));
+    }
+
+    /** The starting point for what-if scenarios: the balance, plan and history as of {@code today}. */
+    public ForecastInputs baselineInputs(LocalDate today) {
+        return inputsFor(requirePlan(), today);
     }
 
     /** Income minus bills and uncovered recurring payments per month; zero when there is no plan. */

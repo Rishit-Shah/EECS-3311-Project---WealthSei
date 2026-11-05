@@ -380,4 +380,74 @@ class CliAppTest {
         assertTrue(run("goal replan nope").startsWith("Error:"));
         assertTrue(run("goal list").contains("No goals yet"));
     }
+
+    @Test
+    void affordWithoutAPlanExplainsWhatToDoFirst() {
+        String out = run("afford \"laptop\" 600");
+        assertTrue(out.contains("plan balance"), out);
+        assertTrue(out.contains("TOOL_FAILURE"), out);
+    }
+
+    @Test
+    void affordWithoutTheModelAnswersFromTheRulesAndShowsTheTrace() {
+        run("plan balance 3000");
+        run("plan income Job 3000 monthly 2026-11-15");
+        String out = run("afford \"laptop\" 600");
+        assertTrue(out.contains("Verdict: Yes"), out);
+        assertTrue(out.contains("Buying laptop for $600.00"), out);
+        assertTrue(out.contains("MODEL_UNAVAILABLE"), out);
+        String trace = run("trace");
+        assertTrue(trace.contains("TOOL_CALL: forecast"), trace);
+        assertTrue(trace.contains("purchase_impact"), trace);
+        assertTrue(trace.contains("ERROR"), trace);
+    }
+
+    @Test
+    void affordShowsNoWhenItWouldOverdraw() {
+        run("plan balance 300");
+        String out = run("afford \"laptop\" 600");
+        assertTrue(out.contains("Verdict: No"), out);
+    }
+
+    @Test
+    void affordChecksItsInput() {
+        assertTrue(run("afford \"laptop\"").startsWith("Usage:"));
+        assertTrue(run("afford \"laptop\" 0").startsWith("Error:"));
+        assertTrue(run("afford \"laptop\" abc").startsWith("Error:"));
+        assertTrue(run("afford \"laptop\" 600 not-a-date").startsWith("Error:"));
+    }
+
+    @Test
+    void traceBeforeAnyQuestionAndWithAWrongId() {
+        assertTrue(run("trace").contains("Nothing to show yet"));
+        assertTrue(run("trace nope").contains("No trace with id"));
+    }
+
+    @Test
+    void whatifWithTypedChangesShowsABaselineAgainstScenarioTable() throws IOException {
+        run("import " + csv("2026-10-05,Netflix,-20\n2026-09-05,Netflix,-20\n2026-08-05,Netflix,-20\n2026-08-12,Pizza Place,-300\n"
+                + "2026-09-12,Pizza Place,-300\n2026-10-12,Pizza Place,-300\n"));
+        run("plan balance 3000");
+        run("plan income Job 3000 monthly 2026-11-15");
+        String out = run("whatif cancel=Netflix caps=dining=150");
+        assertTrue(out.contains("What-if over the next 6 months"), out);
+        assertTrue(out.contains("Cancel Netflix"), out);
+        assertTrue(out.contains("End balance"), out);
+        assertTrue(out.contains("Baseline"), out);
+    }
+
+    @Test
+    void whatifReportsMistakesInTypedChanges() {
+        run("plan balance 3000");
+        assertTrue(run("whatif cancel=Hulu").startsWith("Error:"));
+        assertTrue(run("whatif caps=pets=10").startsWith("Error:"));
+        assertTrue(run("whatif").startsWith("Usage:"));
+    }
+
+    @Test
+    void whatifInPlainWordsNeedsTheModel() {
+        String out = run("whatif cancel my gym");
+        assertTrue(out.contains("whatif cancel=Spotify"), out);
+        assertTrue(out.contains("MODEL_UNAVAILABLE"), out);
+    }
 }

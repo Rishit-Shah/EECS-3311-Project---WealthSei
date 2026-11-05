@@ -36,6 +36,15 @@ import wealthsei.repository.InMemoryRecurringRepository;
 import wealthsei.repository.InMemoryGoalRepository;
 import wealthsei.repository.InMemoryPlanRepository;
 import wealthsei.repository.InMemoryTransactionRepository;
+import wealthsei.agent.AgentController;
+import wealthsei.analytics.ScenarioSimulator;
+import wealthsei.agent.GroundingChecker;
+import wealthsei.agent.InMemoryTraceRepository;
+import wealthsei.agent.Planner;
+import wealthsei.agent.PromptBuilder;
+import wealthsei.agent.ResponseParser;
+import wealthsei.agent.ToolManager;
+import wealthsei.llm.UnavailableLLMProvider;
 import wealthsei.service.AlertMonitor;
 import wealthsei.service.GoalPlanner;
 import wealthsei.service.GoalService;
@@ -71,8 +80,14 @@ class WealthSeiFacadeTest {
         InMemoryGoalRepository goalRepo = new InMemoryGoalRepository();
         AnalyticsService analytics = new AnalyticsService(txRepo, goalRepo, new InMemoryRecurringRepository(), planRepo,
                 monitor, new RecurringDetector(), new ForecastEngine(), new SafeToSpendCalculator());
+        GoalService goalService = new GoalService(goalRepo, new GoalPlanner(), analytics, monitor);
+        ToolManager tools = new ToolManager();
+        Planner planner = new Planner(new PromptBuilder("m"), new ResponseParser(), new UnavailableLLMProvider());
+        AgentController agent = new AgentController(planner, tools, new GroundingChecker(),
+                new InMemoryTraceRepository(), 3, () -> TODAY);
         facade = new WealthSeiFacade(transactions, budgets, plans, monitor, new CategoryCorrector(transactions, learned),
-                analytics, new GoalService(goalRepo, new GoalPlanner(), analytics, monitor));
+                analytics, goalService, agent,
+                new ScenarioSimulator(new ForecastEngine(), goalRepo, new GoalPlanner(), analytics::baselineInputs));
         facade.addAlertListener(alerts::add);
     }
 

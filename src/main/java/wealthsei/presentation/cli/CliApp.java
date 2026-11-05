@@ -107,6 +107,9 @@ public class CliApp {
                 case "forecast" -> forecast(rest);
                 case "habits" -> habits(rest);
                 case "goal" -> goal(rest);
+                case "afford" -> afford(rest);
+                case "whatif" -> whatif(rest);
+                case "trace" -> trace(rest);
                 case "score" -> score(rest);
                 default -> out.println("Unknown command '" + command + "'. Type 'help'.");
             }
@@ -147,6 +150,11 @@ public class CliApp {
                   goal replan <id>                          can it be reached? what to change if not
                   goal save <id> <amount>                   record money set aside for a goal
                   goal monthly <id> <amount>                set what you put aside each month
+                  afford "<item>" <price> [YYYY-MM-DD]      can I afford it? (AI agent, checked against your numbers)
+                  whatif <text>                             try a scenario in plain words (AI turns it into changes)
+                  whatif cancel=<name> caps=<cat>=<amt> income=<amt> buy=<amt>@<date>
+                                                            the same with the changes typed directly (no AI)
+                  trace [id]                                how the last answer was reached (tools used, figures)
                   score [YYYY-MM]                           financial health score out of 100
                   exit
                 Frequency is one of: weekly, biweekly, monthly, yearly. Quote names with spaces.""");
@@ -315,6 +323,82 @@ public class CliApp {
         out.println("  balance " + r.balance() + " + income " + r.expectedIncome() + " - bills " + r.upcomingBills()
                 + " - goals " + r.goalReserve() + " - buffer " + r.safetyBuffer());
         out.println(r.explanation());
+    }
+
+    private void afford(List<String> args) {
+        need(args.size() == 2 || args.size() == 3, "afford \"<item>\" <price> [YYYY-MM-DD]");
+        LocalDate date = args.size() == 3 ? LocalDate.parse(args.get(2)) : null;
+        wealthsei.agent.AgentResult r = facade.canIAfford(args.get(0), Money.of(args.get(1)), date);
+        if (r.verdict() != null) {
+            out.println("Verdict: " + r.verdict().label());
+        }
+        out.println(r.answer());
+        if (r.status() != wealthsei.agent.AgentStatus.COMPLETED) {
+            out.println("[" + r.status() + "]");
+        }
+        out.println("(How did you get this? type: trace " + r.traceId() + ")");
+    }
+
+    private static final java.util.Map<String, String> WHATIF_KEYS = java.util.Map.of("cancel", "cancel", "caps", "caps",
+            "income", "income_increase", "buy", "one_time_expenses");
+
+    private void whatif(List<String> args) {
+        need(!args.isEmpty(), "whatif <text>   or   whatif cancel=Spotify caps=dining=150 income=200 buy=600@2026-12-01");
+        java.util.Map<String, String> fields = new java.util.LinkedHashMap<>();
+        boolean structured = true;
+        for (String arg : args) {
+            int eq = arg.indexOf('=');
+            String key = eq > 0 ? WHATIF_KEYS.get(arg.substring(0, eq).toLowerCase()) : null;
+            if (key == null) {
+                structured = false;
+                break;
+            }
+            fields.merge(key, arg.substring(eq + 1), (a, b) -> a + "," + b);
+        }
+        if (!structured) {
+            wealthsei.agent.AgentResult r = facade.runWhatIf(String.join(" ", args));
+            out.println(r.answer());
+            if (r.status() != wealthsei.agent.AgentStatus.COMPLETED) {
+                out.println("[" + r.status() + "]");
+            }
+            out.println("(How did you get this? type: trace " + r.traceId() + ")");
+            return;
+        }
+        printScenario(facade.simulateWhatIf(fields, today.get()));
+    }
+
+    private void printScenario(wealthsei.analytics.ScenarioResult r) {
+        out.println("What-if over the next " + r.months() + " months:");
+        r.changes().forEach(c -> out.println("  - " + c));
+        out.printf("%-26s %12s %12s %12s%n", "", "Baseline", "Scenario", "Change");
+        out.printf("%-26s %12s %12s %12s%n", "End balance", r.baselineEndBalance(), r.scenarioEndBalance(), r.endBalanceDelta());
+        out.printf("%-26s %12s %12s %12s%n", "Lowest balance", r.baselineLowest(), r.scenarioLowest(),
+                r.scenarioLowest().subtract(r.baselineLowest()));
+        out.printf("%-26s %12s %12s %12s%n", "Money left per month", r.baselineMonthlySavings(), r.scenarioMonthlySavings(),
+                r.monthlySavingsDelta());
+        for (wealthsei.analytics.ScenarioResult.GoalImpact g : r.goalImpacts()) {
+            out.printf("%-26s %12s %12s%n", "Goal '" + g.goalName() + "' reached",
+                    g.baselineCompletion() == null ? "not reached" : g.baselineCompletion(),
+                    g.scenarioCompletion() == null ? "not reached" : g.scenarioCompletion());
+        }
+    }
+
+    private void trace(List<String> args) {
+        need(args.size() <= 1, "trace [id]");
+        java.util.Optional<wealthsei.agent.AgentTrace> found = args.isEmpty() ? facade.latestTrace()
+                : facade.getTrace(args.get(0));
+        if (found.isEmpty()) {
+            out.println(args.isEmpty() ? "Nothing to show yet: ask a question first (afford ...)."
+                    : "No trace with id '" + args.get(0) + "'.");
+            return;
+        }
+        wealthsei.agent.AgentTrace t = found.get();
+        out.println("Trace " + t.id() + " - " + t.question());
+        for (wealthsei.agent.TraceStep s : t.steps()) {
+            String what = s.kind().equals(wealthsei.agent.TraceStep.TOOL_CALL)
+                    ? s.toolName() + " " + s.argsJson() + " -> " + s.resultSummary() : s.resultSummary();
+            out.println("  " + s.index() + ". " + s.kind() + ": " + what);
+        }
     }
 
     private void goal(List<String> args) {

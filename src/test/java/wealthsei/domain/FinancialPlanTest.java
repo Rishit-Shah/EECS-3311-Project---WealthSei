@@ -101,4 +101,17 @@ class FinancialPlanTest {
         assertThrows(IllegalArgumentException.class, () -> new PlannedExpense("Trip", Money.ZERO, TODAY, null));
         assertTrue(new PlannedExpense("Trip", Money.of("1"), TODAY, null).categoryIfSet().isEmpty());
     }
+
+    @Test
+    void addingAnIncomeOrBillWithTheSameNameReplacesIt() {
+        FinancialPlan plan = FinancialPlan.starting(Money.of("100"), TODAY)
+                .withIncomeSource(new IncomeSource("Job", Money.of("2000"), Frequency.MONTHLY, TODAY))
+                .withIncomeSource(new IncomeSource("JOB", Money.of("2500"), Frequency.MONTHLY, TODAY))
+                .withFixedBill(new FixedBill("Rent", Money.of("900"), Frequency.MONTHLY, TODAY, RENT))
+                .withFixedBill(new FixedBill("rent", Money.of("950"), Frequency.MONTHLY, TODAY, RENT));
+        assertEquals(1, plan.incomeSources().size());
+        assertEquals(Money.of("2500"), plan.incomeSources().get(0).amount());
+        assertEquals(1, plan.fixedBills().size());
+        assertEquals(Money.of("950"), plan.fixedBills().get(0).amount());
+    }
 }
