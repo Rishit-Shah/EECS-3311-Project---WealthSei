@@ -30,6 +30,11 @@ public class CategoryCorrector {
         return command.transaction();
     }
 
+    /** A correction ready to run later (used by proposals, which have their own history). */
+    public Command newCommand(String txId, Category category) {
+        return new RecategorizeCommand(transactions, learned, txId, category);
+    }
+
     /** Reverses the latest correction; returns the transaction as restored, or empty. */
     public Optional<Transaction> undo() {
         return history.undo().map(RecategorizeCommand::transaction);

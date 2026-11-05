@@ -74,6 +74,11 @@ public class BudgetService {
                 .orElseThrow(() -> new ValidationException("No budget has been set for " + month)));
     }
 
+    /** The limit set for a category in a month, or empty if there is none. */
+    public java.util.Optional<Money> limitOf(YearMonth month, Category category) {
+        return repo.find(month).flatMap(b -> b.limitFor(category));
+    }
+
     public boolean hasBudget(YearMonth month) {
         return repo.find(month).isPresent();
     }

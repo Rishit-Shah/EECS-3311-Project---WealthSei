@@ -61,10 +61,18 @@ public class WealthSeiFacade {
     private final GoalService goals;
     private final AgentController agent;
     private final ScenarioSimulator simulator;
+    private final wealthsei.service.ProposalService proposals;
 
     public WealthSeiFacade(TransactionService transactions, BudgetService budgets, PlanService plans,
                            AlertMonitor alerts, CategoryCorrector corrector, AnalyticsService analytics,
                            GoalService goals, AgentController agent, ScenarioSimulator simulator) {
+        this(transactions, budgets, plans, alerts, corrector, analytics, goals, agent, simulator, LocalDate::now);
+    }
+
+    public WealthSeiFacade(TransactionService transactions, BudgetService budgets, PlanService plans,
+                           AlertMonitor alerts, CategoryCorrector corrector, AnalyticsService analytics,
+                           GoalService goals, AgentController agent, ScenarioSimulator simulator,
+                           java.util.function.Supplier<LocalDate> today) {
         this.transactions = Objects.requireNonNull(transactions, "transactions");
         this.budgets = Objects.requireNonNull(budgets, "budgets");
         this.plans = Objects.requireNonNull(plans, "plans");
@@ -74,6 +82,8 @@ public class WealthSeiFacade {
         this.goals = Objects.requireNonNull(goals, "goals");
         this.agent = Objects.requireNonNull(agent, "agent");
         this.simulator = Objects.requireNonNull(simulator, "simulator");
+        this.proposals = new wealthsei.service.ProposalService(new wealthsei.repository.InMemoryProposalRepository(),
+                new wealthsei.command.CommandFactory(budgets, goals, analytics, corrector, today));
     }
 
     // ---- F01 import ----
@@ -304,5 +314,70 @@ public class WealthSeiFacade {
     /** Registers a screen or console to be told about alerts (Observer pattern). */
     public void addAlertListener(AlertListener listener) {
         alerts.attach(listener);
+    }
+
+    // ---- F13 proposals ----
+
+    /** Stores the suggestions as pending proposals (the ones that pass the guardrails). Nothing is applied. */
+    public List<wealthsei.command.Proposal> createProposals(List<wealthsei.agent.ProposalDraft> drafts, String traceId) {
+        return proposals.createFromDrafts(drafts, traceId);
+    }
+
+    /** Why the latest batch of drafts lost some suggestions (protected category, bad details, ...). */
+    public List<String> lastDiscardedDrafts() {
+        return proposals.lastDiscarded();
+    }
+
+    /** The suggestions a what-if given as structured changes would lead to. */
+    public List<wealthsei.agent.ProposalDraft> whatIfDrafts(java.util.Map<String, String> fields, LocalDate today) {
+        return wealthsei.agent.ScenarioDrafts.from(new wealthsei.llm.ToolArgs(fields), today);
+    }
+
+    /** Proposals waiting for a decision; ones from an earlier month are expired first. */
+    public List<wealthsei.command.Proposal> listPendingProposals(LocalDate today) {
+        proposals.expireOld(YearMonth.from(today));
+        return proposals.listPending();
+    }
+
+    public List<wealthsei.command.Proposal> listAllProposals() {
+        return proposals.listAll();
+    }
+
+    public wealthsei.command.Proposal getProposal(String idOrPrefix) {
+        return proposals.find(idOrPrefix);
+    }
+
+    /** Approving runs the change; rejecting discards it. */
+    public wealthsei.command.Proposal decideProposal(String idOrPrefix, boolean approve) {
+        return proposals.decide(idOrPrefix, approve);
+    }
+
+    /** Reverses the most recently approved proposal. */
+    public java.util.Optional<wealthsei.command.Proposal> undoLastProposal() {
+        return proposals.undoLast();
+    }
+
+    /** If the goal needs more per month than is planned, suggests raising it to the required amount. */
+    public List<wealthsei.command.Proposal> proposeGoalFix(String idOrPrefix, LocalDate today) {
+        String id = resolveGoalId(idOrPrefix);
+        SavingsGoal goal = goals.find(id);
+        Money required = goals.feasibility(id, today).requiredMonthly();
+        if (required.compareTo(goal.monthlyContribution()) <= 0) {
+            throw new ValidationException("'" + goal.name() + "' already has enough set aside each month; nothing to change");
+        }
+        var draft = new wealthsei.agent.ProposalDraft(wealthsei.command.ProposalType.GOAL_ADJUSTMENT,
+                "Put " + required + " a month toward " + goal.name(),
+                "It needs " + required + " a month to be reached by " + goal.deadline() + "; you plan "
+                        + goal.monthlyContribution() + ".",
+                wealthsei.agent.ParamSet.of("goalId", id, "monthly", required.toString()));
+        return proposals.createFromDrafts(List.of(draft), "");
+    }
+
+    public void setProtectedCategory(Category category, boolean isProtected) {
+        proposals.setProtectedCategory(category, isProtected);
+    }
+
+    public java.util.Set<Category> protectedCategories() {
+        return proposals.protectedCategories();
     }
 }

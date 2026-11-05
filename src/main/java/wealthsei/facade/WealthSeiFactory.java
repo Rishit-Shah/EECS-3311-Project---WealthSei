@@ -135,6 +135,6 @@ public final class WealthSeiFactory {
         AgentController agent = new AgentController(planner, tools, new GroundingChecker(),
                 new InMemoryTraceRepository(), MAX_AGENT_STEPS, today);
         return new WealthSeiFacade(transactions, budgets, plans, monitor,
-                new CategoryCorrector(transactions, learned), analytics, goalService, agent, simulator);
+                new CategoryCorrector(transactions, learned), analytics, goalService, agent, simulator, today);
     }
 }

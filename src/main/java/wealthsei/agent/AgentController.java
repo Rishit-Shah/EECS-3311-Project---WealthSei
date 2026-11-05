@@ -107,7 +107,8 @@ public class AgentController {
             trace.addStep(TraceStep.GROUNDING, "", "", report.grounded() ? "All figures match tool results"
                     : "Not found in tool results: " + String.join(", ", report.ungroundedFigures()));
             if (report.grounded()) {
-                return finish(ctx, trace, done.answer(), AgentStatus.COMPLETED, null, impact, report, done.drafts());
+                return finish(ctx, trace, done.answer(), AgentStatus.COMPLETED, null, impact, report,
+                        draftsFor(ctx, done.drafts()));
             }
             if (revisions < 1) {
                 revisions++;
@@ -117,12 +118,30 @@ public class AgentController {
             }
             return finish(ctx, trace, done.answer() + "\n(Warning: these figures could not be verified: "
                     + String.join(", ", report.ungroundedFigures()) + ")", AgentStatus.UNGROUNDED, null, impact, report,
-                    done.drafts());
+                    draftsFor(ctx, done.drafts()));
         }
         String partial = impact != null ? AffordabilityFallback.write(impact)
                 : "I ran out of steps before I could finish.";
         return finish(ctx, trace, "I ran out of steps before finishing, so this is only partial. " + partial,
                 AgentStatus.STEP_LIMIT, AffordabilityFallback.suggestedOrNull(impact), null);
+    }
+
+    /**
+     * The model's own drafts, or for a what-if the changes it simulated, as suggestions the user can
+     * approve. Nothing is applied here; the drafts only become pending proposals if the user asks.
+     */
+    private List<ProposalDraft> draftsFor(AgentContext ctx, List<ProposalDraft> fromModel) {
+        if (!fromModel.isEmpty() || ctx.task().type() != TaskType.WHAT_IF) {
+            return fromModel;
+        }
+        List<AgentContext.Observation> seen = ctx.observations();
+        for (int i = seen.size() - 1; i >= 0; i--) {
+            AgentContext.Observation o = seen.get(i);
+            if (o.call().toolName().equals(ScenarioTool.NAME) && o.result().success()) {
+                return ScenarioDrafts.from(o.call().args(), today.get());
+            }
+        }
+        return fromModel;
     }
 
     /** Runs the purchase-impact tool before the model is asked anything. */

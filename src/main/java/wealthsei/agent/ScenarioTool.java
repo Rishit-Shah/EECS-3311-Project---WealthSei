@@ -59,6 +59,7 @@ public class ScenarioTool implements Tool {
         data.put("endBalanceChange", r.endBalanceDelta().amount());
         data.put("baselineLowestBalance", r.baselineLowest().amount());
         data.put("scenarioLowestBalance", r.scenarioLowest().amount());
+        data.put("everydaySpendingPerMonthCounted", r.typicalMonthlySpending().amount());
         data.put("baselineMonthlySavings", r.baselineMonthlySavings().amount());
         data.put("scenarioMonthlySavings", r.scenarioMonthlySavings().amount());
         data.put("monthlySavingsChange", r.monthlySavingsDelta().amount());
