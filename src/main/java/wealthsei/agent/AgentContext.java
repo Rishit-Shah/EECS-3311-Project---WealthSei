@@ -19,6 +19,8 @@ public class AgentContext {
     private final List<Message> history = new ArrayList<>();
     private final List<Observation> observations = new ArrayList<>();
     private List<ToolSpec> toolSpecs = List.of();
+    private final List<Message> prior = new ArrayList<>();
+    private String profileNote = "";
     private int tokensUsed;
 
     public AgentContext(AgentTask task, LocalDate today) {
@@ -60,6 +62,22 @@ public class AgentContext {
         observations.add(new Observation(call, result));
         history.add(Message.assistant("", List.of(call)));
         history.add(Message.toolResult(call.id(), result.forModel()));
+    }
+
+    /** Adds the remembered conversation before the current question, and the person's preferences. */
+    public void useMemory(List<Message> recent, String note) {
+        prior.addAll(recent);
+        history.addAll(0, recent);
+        profileNote = note == null ? "" : note;
+    }
+
+    /** Messages remembered from earlier turns (empty when memory is not used). */
+    public List<Message> priorMessages() {
+        return List.copyOf(prior);
+    }
+
+    public String profileNote() {
+        return profileNote;
     }
 
     public void addAssistantText(String text) {

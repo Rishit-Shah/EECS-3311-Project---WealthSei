@@ -52,6 +52,20 @@ public class PromptBuilder {
                     .append("Then explain the comparison: the change in end balance, lowest balance, monthly savings and goal dates, ")
                     .append("using only the tool's figures.\n");
         }
+        if (ctx.task().type() == TaskType.CHAT) {
+            sb.append("\nThe user asks a free-form question about their own finances. Look things up with the tools: ")
+                    .append("transactions (spending totals by month, category or merchant), budget_status, forecast, goals, insights ")
+                    .append("(habits and the health score for a month) and scenario (only for a what-if). Earlier messages in this ")
+                    .append("conversation may be follow-ups such as 'and last month?': use them to work out what is meant. ")
+                    .append("If the question is not about their money (general knowledge, coding, other topics), answer in one polite ")
+                    .append("sentence that you can only help with their finances, give one example question, and call no tools. ")
+                    .append("If the time is vague ('recently', 'lately'), use the current month so far and say you assumed that. ")
+                    .append("If the tools show no data for what was asked, say there is no data for it. ")
+                    .append("Do not change anything yourself; if the user wants a change, tell them it can be suggested as a proposal.\n");
+        }
+        if (!ctx.profileNote().isEmpty()) {
+            sb.append("\nWhat is remembered about this user: ").append(ctx.profileNote()).append('\n');
+        }
         return sb.toString();
     }
 }

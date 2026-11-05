@@ -79,7 +79,7 @@ class AffordabilityAgentTest {
         assertEquals("forecast", messages.get(1).toolCalls().get(0).toolName());
         assertEquals(Message.Role.TOOL_RESULT, messages.get(2).role());
         assertTrue(messages.get(2).text().contains("suggestedVerdict"));
-        assertEquals(5, model.requests().get(0).toolSpecs().size());
+        assertEquals(6, model.requests().get(0).toolSpecs().size());
         assertTrue(model.requests().get(0).systemPrompt().contains("VERDICT"));
     }
 

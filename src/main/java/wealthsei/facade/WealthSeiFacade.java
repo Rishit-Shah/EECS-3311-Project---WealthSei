@@ -64,6 +64,7 @@ public class WealthSeiFacade {
     private final wealthsei.service.ProposalService proposals;
     private final wealthsei.repository.ReviewRepository reviews = new wealthsei.repository.InMemoryReviewRepository();
     private final wealthsei.service.ReportService reports;
+    private final wealthsei.agent.MemoryManager memory;
 
     public WealthSeiFacade(TransactionService transactions, BudgetService budgets, PlanService plans,
                            AlertMonitor alerts, CategoryCorrector corrector, AnalyticsService analytics,
@@ -75,6 +76,15 @@ public class WealthSeiFacade {
                            AlertMonitor alerts, CategoryCorrector corrector, AnalyticsService analytics,
                            GoalService goals, AgentController agent, ScenarioSimulator simulator,
                            java.util.function.Supplier<LocalDate> today) {
+        this(transactions, budgets, plans, alerts, corrector, analytics, goals, agent, simulator, today, null);
+    }
+
+    /** @param memory remembered preferences and conversation; null means nothing is remembered */
+    public WealthSeiFacade(TransactionService transactions, BudgetService budgets, PlanService plans,
+                           AlertMonitor alerts, CategoryCorrector corrector, AnalyticsService analytics,
+                           GoalService goals, AgentController agent, ScenarioSimulator simulator,
+                           java.util.function.Supplier<LocalDate> today, wealthsei.agent.MemoryManager memory) {
+        this.memory = memory;
         this.transactions = Objects.requireNonNull(transactions, "transactions");
         this.budgets = Objects.requireNonNull(budgets, "budgets");
         this.plans = Objects.requireNonNull(plans, "plans");
@@ -87,6 +97,34 @@ public class WealthSeiFacade {
         this.proposals = new wealthsei.service.ProposalService(new wealthsei.repository.InMemoryProposalRepository(),
                 new wealthsei.command.CommandFactory(budgets, goals, analytics, corrector, today));
         this.reports = new wealthsei.service.ReportService(transactions, budgets, goals, reviews, today);
+        if (memory != null) {
+            for (Category c : proposals.protectedCategories()) {
+                proposals.setProtectedCategory(c, false);
+            }
+            memory.protectedCategories().forEach(c -> proposals.setProtectedCategory(c, true));
+        }
+    }
+
+    // ---- F12 chat with memory ----
+
+    /**
+     * Answers a free-form question about the person's finances, remembering the last few turns so
+     * follow-ups work.
+     *
+     * @throws ValidationException if the question is blank (the agent is not called)
+     */
+    public AgentResult ask(String question) {
+        if (question == null || question.isBlank()) {
+            throw new ValidationException("Type a question, for example: ask \"how much did I spend on dining last month?\"");
+        }
+        return agent.handle(new AgentTask(TaskType.CHAT, question.trim(), TaskParams.none()));
+    }
+
+    /** Starts a fresh conversation; saved preferences stay. */
+    public void clearConversation() {
+        if (memory != null) {
+            memory.forgetConversation();
+        }
     }
 
     // ---- F01 import ----
@@ -378,6 +416,9 @@ public class WealthSeiFacade {
 
     public void setProtectedCategory(Category category, boolean isProtected) {
         proposals.setProtectedCategory(category, isProtected);
+        if (memory != null) {
+            memory.setProtectedCategory(category, isProtected);
+        }
     }
 
     public java.util.Set<Category> protectedCategories() {

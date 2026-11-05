@@ -34,6 +34,7 @@ public class AgentController {
     private final int maxSteps;
     private final Supplier<LocalDate> today;
     private final Supplier<String> ids;
+    private final MemoryManager memory;
 
     public AgentController(Planner planner, ToolManager tools, GroundingChecker grounding, TraceRepository traces,
                            int maxSteps, Supplier<LocalDate> today) {
@@ -42,6 +43,13 @@ public class AgentController {
 
     public AgentController(Planner planner, ToolManager tools, GroundingChecker grounding, TraceRepository traces,
                            int maxSteps, Supplier<LocalDate> today, Supplier<String> ids) {
+        this(planner, tools, grounding, traces, maxSteps, today, ids, null);
+    }
+
+    /** @param memory remembers the conversation and the person's preferences; may be null for no memory */
+    public AgentController(Planner planner, ToolManager tools, GroundingChecker grounding, TraceRepository traces,
+                           int maxSteps, Supplier<LocalDate> today, Supplier<String> ids, MemoryManager memory) {
+        this.memory = memory;
         this.planner = Objects.requireNonNull(planner, "planner");
         this.tools = Objects.requireNonNull(tools, "tools");
         this.grounding = Objects.requireNonNull(grounding, "grounding");
@@ -63,9 +71,18 @@ public class AgentController {
     }
 
     public AgentResult handle(AgentTask task) {
+        AgentResult result = run(task);
+        if (memory != null && result.status() != AgentStatus.MODEL_UNAVAILABLE) {
+            memory.remember(task, result);
+        }
+        return result;
+    }
+
+    private AgentResult run(AgentTask task) {
         Objects.requireNonNull(task, "task");
         AgentTrace trace = new AgentTrace(ids.get(), task.type(), task.userInput());
-        AgentContext ctx = new AgentContext(task, today.get());
+        AgentContext ctx = memory != null && task.type() == TaskType.CHAT
+                ? memory.buildContext(task, today.get()) : new AgentContext(task, today.get());
         ctx.setToolSpecs(tools.listSpecs());
         Map<String, Object> impact = null;
         if (task.type() == TaskType.AFFORDABILITY) {
@@ -83,6 +100,9 @@ public class AgentController {
                     : task.type() == TaskType.WHAT_IF
                     ? "I need the AI model to read a free-text what-if. You can give the changes directly instead, for example: "
                     + "whatif cancel=Spotify caps=dining=150 income=200 buy=600@2026-12-01"
+                    : task.type() == TaskType.CHAT
+                    ? "I need the AI model to answer free-form questions, and it is not available right now. These commands "
+                    + "work without it: transactions, budget status <month>, habits <month>, score, forecast, safe, goal list."
                     : "I cannot answer that right now.";
             Verdict verdict = impact != null ? AffordabilityFallback.suggested(impact) : null;
             return finish(ctx, trace, answer + "\n(The AI explanation is unavailable: " + e.getMessage() + ")",
@@ -103,7 +123,7 @@ public class AgentController {
                 continue;
             }
             FinalAnswerStep done = (FinalAnswerStep) step;
-            GroundingReport report = grounding.verify(done.answer(), ctx.results(), allowedFigures(ctx.task()));
+            GroundingReport report = grounding.verify(done.answer(), ctx.results(), allowedFigures(ctx));
             trace.addStep(TraceStep.GROUNDING, "", "", report.grounded() ? "All figures match tool results"
                     : "Not found in tool results: " + String.join(", ", report.ungroundedFigures()));
             if (report.grounded()) {
@@ -167,9 +187,12 @@ public class AgentController {
         return result;
     }
 
-    private static List<BigDecimal> allowedFigures(AgentTask task) {
+    /** The figures the user typed, plus those in remembered earlier answers (which were checked when given). */
+    private static List<BigDecimal> allowedFigures(AgentContext ctx) {
+        AgentTask task = ctx.task();
         List<BigDecimal> allowed = new ArrayList<>(GroundingChecker.numbersIn(task.userInput()));
         task.params().values().values().forEach(v -> allowed.addAll(GroundingChecker.numbersIn(v)));
+        ctx.priorMessages().forEach(m -> allowed.addAll(GroundingChecker.numbersIn(m.text())));
         return allowed;
     }
 

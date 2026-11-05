@@ -109,6 +109,8 @@ public class CliApp {
                 case "goal" -> goal(rest);
                 case "afford" -> afford(rest);
                 case "whatif" -> whatif(rest);
+                case "ask" -> ask(rest);
+                case "forget" -> forget();
                 case "trace" -> trace(rest);
                 case "export" -> export(rest);
                 case "proposals" -> proposals(rest);
@@ -167,6 +169,8 @@ public class CliApp {
                   proposals approve|reject <id>             apply or discard a proposal (approve can be undone)
                   proposals undo                            reverse the last approved proposal
                   proposals why <id>                        what a proposal does and where it came from
+                  ask "<question>"                          ask about your finances; follow-ups are remembered
+                  forget                                    start a new conversation
                   protect|unprotect [<category>]            categories the agent may never suggest changing
                   score [YYYY-MM]                           financial health score out of 100
                   exit
@@ -466,6 +470,21 @@ public class CliApp {
         out.printf("%-9s %-9s %s%n", "ID", "Status", "Proposal");
         list.forEach(p -> out.printf("%-9s %-9s %s%n", p.id(), p.statusName(), p.title()));
         out.println("Type 'proposals why <id>' for the reason, or 'proposals approve <id>'.");
+    }
+
+    private void ask(List<String> args) {
+        need(!args.isEmpty(), "ask \"<question>\"   for example: ask \"how much did I spend on dining in 2026-10?\"");
+        wealthsei.agent.AgentResult r = facade.ask(String.join(" ", args));
+        out.println(r.answer());
+        if (r.status() != wealthsei.agent.AgentStatus.COMPLETED) {
+            out.println("[" + r.status() + "]");
+        }
+        out.println("(How did you get this? type: trace " + r.traceId() + ")");
+    }
+
+    private void forget() {
+        facade.clearConversation();
+        out.println("Started a new conversation. Your saved preferences are kept.");
     }
 
     private void protect(List<String> args, boolean on) {

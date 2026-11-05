@@ -79,7 +79,7 @@ public final class WealthSeiFactory {
     public static WealthSeiFacade inMemory(LLMProvider provider, LlmConfig config, Supplier<LocalDate> today) {
         return build(new InMemoryTransactionRepository(), new InMemoryBudgetRepository(),
                 new InMemoryPlanRepository(), new InMemoryRuleRepository(), new InMemoryRecurringRepository(),
-                new InMemoryGoalRepository(), provider, config, today);
+                new InMemoryGoalRepository(), new wealthsei.repository.InMemoryMemoryRepository(), provider, config, today);
     }
 
     /** Saves to text files in {@code dataDir}; AI features are off. */
@@ -101,13 +101,15 @@ public final class WealthSeiFactory {
                 new PersistentRuleRepository(new InMemoryRuleRepository(), dataDir.resolve("rules.tsv")),
                 new PersistentRecurringRepository(new InMemoryRecurringRepository(), dataDir.resolve("recurring.tsv")),
                 new PersistentGoalRepository(new InMemoryGoalRepository(), dataDir.resolve("goals.tsv")),
+                new wealthsei.repository.file.PersistentMemoryRepository(
+                        new wealthsei.repository.InMemoryMemoryRepository(), dataDir.resolve("memory.tsv")),
                 provider, config, LocalDate::now);
     }
 
     private static WealthSeiFacade build(TransactionRepository txRepo, BudgetRepository budgetRepo,
                                          PlanRepository planRepo, RuleRepository rules,
                                          RecurringRepository recurring, GoalRepository goals,
-                                         LLMProvider provider, LlmConfig config, Supplier<LocalDate> today) {
+                                         wealthsei.repository.MemoryRepository memoryRepo, LLMProvider provider, LlmConfig config, Supplier<LocalDate> today) {
         AlertMonitor monitor = new AlertMonitor();
         LearnedRuleStrategy learned = new LearnedRuleStrategy(rules);
         List<wealthsei.service.CategorizationStrategy> chain = new java.util.ArrayList<>(
@@ -131,11 +133,13 @@ public final class WealthSeiFactory {
         tools.register(new TransactionQueryTool(transactions));
         ScenarioSimulator simulator = new ScenarioSimulator(new ForecastEngine(), goals, goalPlanner, analytics::baselineInputs);
         tools.register(new ScenarioTool(simulator, today));
+        tools.register(new wealthsei.agent.InsightTool(analytics, budgets, today));
+        wealthsei.agent.MemoryManager memory = new wealthsei.agent.MemoryManager(memoryRepo);
         budgets.primeAlerts();
         Planner planner = new Planner(new PromptBuilder(config.sonnetModel()), new ResponseParser(), provider);
         AgentController agent = new AgentController(planner, tools, new GroundingChecker(),
-                new InMemoryTraceRepository(), MAX_AGENT_STEPS, today);
+                new InMemoryTraceRepository(), MAX_AGENT_STEPS, today, () -> java.util.UUID.randomUUID().toString().substring(0, 8), memory);
         return new WealthSeiFacade(transactions, budgets, plans, monitor,
-                new CategoryCorrector(transactions, learned), analytics, goalService, agent, simulator, today);
+                new CategoryCorrector(transactions, learned), analytics, goalService, agent, simulator, today, memory);
     }
 }
