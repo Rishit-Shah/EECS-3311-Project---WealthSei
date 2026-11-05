@@ -90,6 +90,13 @@ public class BudgetService {
         }
     }
 
+    /** Tells the alert monitor where every saved budget already stands, without raising alerts. */
+    public void primeAlerts() {
+        for (wealthsei.domain.Budget budget : repo.findAll()) {
+            monitor.prime(computeStatus(budget));
+        }
+    }
+
     private BudgetStatus statusAndAlert(YearMonth month) {
         BudgetStatus status = getStatus(month);
         monitor.evaluate(status);

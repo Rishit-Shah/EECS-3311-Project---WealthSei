@@ -94,4 +94,19 @@ class WealthSeiFactoryTest {
         assertEquals(1, report.payments().size());
         assertTrue(report.payments().get(0).flaggedForReview());
     }
+
+    @Test
+    void afterARestartCategoriesAlreadyOverBudgetDoNotAlertAgain() throws IOException {
+        Path dir = tempDir().resolve("data");
+        WealthSeiFacade first = WealthSeiFactory.persistent(dir);
+        first.importTransactions(csv("2026-10-02,LOBLAWS,-150\n"));
+        first.setBudget(OCT, new BudgetLimits(Map.of(Categories.GROCERIES, Money.of("100"))));
+
+        WealthSeiFacade second = WealthSeiFactory.persistent(dir);
+        List<wealthsei.domain.Alert> received = new java.util.ArrayList<>();
+        second.addAlertListener(received::add);
+        second.getBudgetStatus(OCT);
+        second.importTransactions(csv("2026-10-05,LOBLAWS,-10\n"));
+        assertTrue(received.isEmpty(), received.toString());
+    }
 }

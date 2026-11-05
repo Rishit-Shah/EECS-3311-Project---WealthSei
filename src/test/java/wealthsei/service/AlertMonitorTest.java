@@ -165,4 +165,15 @@ class AlertMonitorTest {
         monitor.evaluateLowBalance(low("100"), Money.of("200"));
         assertEquals(3, received.size());
     }
+
+    @Test
+    void primedLevelsAreRememberedWithoutAnAlert() {
+        monitor.attach(received::add);
+        monitor.prime(groceries("255"));
+        monitor.evaluate(groceries("260"));
+        assertTrue(received.isEmpty());
+        monitor.evaluate(groceries("310"));
+        assertEquals(1, received.size());
+        assertEquals(AlertSeverity.OVER, received.get(0).severity());
+    }
 }

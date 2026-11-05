@@ -131,6 +131,7 @@ public final class WealthSeiFactory {
         tools.register(new TransactionQueryTool(transactions));
         ScenarioSimulator simulator = new ScenarioSimulator(new ForecastEngine(), goals, goalPlanner, analytics::baselineInputs);
         tools.register(new ScenarioTool(simulator, today));
+        budgets.primeAlerts();
         Planner planner = new Planner(new PromptBuilder(config.sonnetModel()), new ResponseParser(), provider);
         AgentController agent = new AgentController(planner, tools, new GroundingChecker(),
                 new InMemoryTraceRepository(), MAX_AGENT_STEPS, today);

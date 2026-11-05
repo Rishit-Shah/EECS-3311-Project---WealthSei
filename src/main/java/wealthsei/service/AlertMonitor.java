@@ -49,6 +49,18 @@ public class AlertMonitor {
         listeners.remove(listener);
     }
 
+    /**
+     * Records where each category already stands without telling anyone, so that after a restart only
+     * categories that get worse raise an alert.
+     */
+    public void prime(BudgetStatus status) {
+        for (BudgetLineStatus line : status.lines()) {
+            if (line.level() != AlertSeverity.INFO) {
+                lastRaised.put(status.month() + "/" + line.category().id(), line.level());
+            }
+        }
+    }
+
     /** Raises a budget alert for each category that has newly reached 80% or gone over its limit. */
     public void evaluate(BudgetStatus status) {
         for (BudgetLineStatus line : status.lines()) {
