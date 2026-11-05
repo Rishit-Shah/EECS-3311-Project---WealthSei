@@ -167,6 +167,36 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - `GoalOptionKind` enum added; `MonthlySurplusProvider` interface lets the goal service ask the analytics layer for the surplus; goals now persist in `goals.tsv`.
 - **My verification:** (fill in after running `mvn test`, expected 361 tests, and trying `goal add`, `goal list` and `goal replan` in the CLI.)
 
+### 2026-11-04: LLM layer and F08 affordability agent
+
+- **My direction:** I bought the API key, put it only in a git-ignored `.env`, and asked for the language-model layer and F08 to follow Stage 1 (provider chain, tools, grounding check, trace). I chose to wait for the key before starting this piece.
+- **AI contribution:**
+  - `llm` package: `LLMProvider`, `ClaudeProvider` (talks to the Messages API), `MockLLMProvider`, `RetryingLLMProvider`, `LoggingLLMProvider`, `UnavailableLLMProvider`, `LlmConfig` (reads `.env`, never prints the key), a small JSON reader/writer.
+  - `agent` package: `AgentController`, `Planner`, `PromptBuilder`, `ResponseParser`, `ToolManager`, four tools (forecast, budget status, goals, transactions), `GroundingChecker`, `AgentTrace`.
+  - `PurchaseAssessor` (the fixed rules for Yes / Yes-but / Wait / No), `afford` and `trace` CLI commands, and 54 new tests (452 in the AI's stand-in runner), all using a scripted model.
+- **Design decisions to list in "changes from Stage 1":**
+  - No LangChain4j: the Messages API is called with the JDK's HTTP client and a small JSON class, because I could not build or test against LangChain4j in the AI's environment. `ClaudeProvider` is still the Adapter over an `HttpTransport`.
+  - `ToolSpec`, `ToolCall`, `ToolArgs`, `Message` live in the `llm` package; `ToolCall` has an `id` (the API needs it); `AgentResult` has `verdict` and `tokensUsed`; `AgentStep` is a sealed interface.
+  - Settings come from `.env` or environment variables instead of `config.properties`.
+  - For an affordability question the controller runs the purchase-impact tool first. The rules then act as a floor: the model may be more cautious but never more optimistic, and if it cannot be reached the answer is written from the rules.
+  - The grounding check compares figures with tool results (dollar amounts, percents, decimals and numbers of 100 or more; whole numbers may be rounded); one correction is allowed, then the answer is flagged.
+  - Traces are kept for the session only.
+- **Not yet verified live:** the AI's environment cannot reach the API, so the first real call is mine to run.
+- **My verification:** (fill in after `mvn test` expecting 452 tests, and a live `afford` with my key; note the model's answer, the trace, and `llm.log`.)
+
+### 2026-11-04: first live AI run, a plan bug it exposed, and F10 what-if simulator
+
+- **Live run:** with my key in `.env`, `afford "laptop" 600` worked: three model calls, 1,642 + 1,607 + 1,802 = 5,051 tokens (from `llm.log`). The first run showed a safe-to-spend figure that did not match my hand calculation. I traced it to the same income being added twice to the saved plan (the AI worked out that 8,800 / 27 days = 325.93 matched a double income). Fix: an income or bill with the same name now replaces the old one, with a test.
+- **My direction:** F10 as in Stage 1: the agent turns a plain-words scenario into structured changes, a deterministic simulator compares six months with and without them.
+- **AI contribution:** `ScenarioSimulator` (uses `ForecastInputs.deepCopy()`), `Scenario`, `ScenarioResult`, the four `ScenarioChange` classes, `ScenarioParser`, `ScenarioTool`, the prompt for what-if tasks, a `whatif` command that also accepts typed changes (`whatif cancel=Netflix caps=dining=150 income=200 buy=600@2026-12-01`) so it works without the model, and 34 new tests (487 in the AI's stand-in runner).
+- **Defects found:** six of the AI's own new test expectations were wrong (hand arithmetic); running real sample data showed that `cancel=Netflix` did not find "Netflix.com", so a part of a name now works when it picks exactly one item, and an ambiguous name is refused with the list.
+- **Design decisions to list in "changes from Stage 1":**
+  - The tool takes four plain-text fields (`cancel`, `caps`, `income_increase`, `one_time_expenses`) instead of a nested array, so the model fills in simple values and the code validates them.
+  - The forecast only contains committed money (income, bills, recurring payments, planned expenses). A category cap is therefore modelled as the average monthly spend (last up to 3 full months) minus the cap, counted as extra money each month from the first of next month. A raise is extra money from the first of next month.
+  - `simulate(scenario, today)` takes the date, like earlier methods; `Scenario` and `ScenarioResult` are in the `analytics` package.
+  - More than 5 changes, an unknown name or category, a non-positive value and a date outside the six months are all refused with a message.
+- **My verification:** (fill in after `mvn test` expecting 487 tests, and a live `whatif "cancel Spotify and cap dining at 150"` followed by `trace`.)
+
 ## 4. Weekly commit summary (fill in with links)
 
 | Period | Dates (Toronto time) | Required | Commits (links) |
