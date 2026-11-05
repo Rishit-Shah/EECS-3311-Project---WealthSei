@@ -28,7 +28,7 @@ public class CsvImporter {
     /** @param idSupplier produces the id of each new transaction (tests pass a counter) */
     public CsvImporter(Supplier<String> idSupplier) {
         this.idSupplier = Objects.requireNonNull(idSupplier, "idSupplier");
-        this.adapterFactories = List.of(SignedAmountCsvAdapter::new, DebitCreditCsvAdapter::new);
+        this.adapterFactories = List.of(CardStatementCsvAdapter::new, SignedAmountCsvAdapter::new, DebitCreditCsvAdapter::new);
     }
 
     /**

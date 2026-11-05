@@ -28,16 +28,18 @@ public class KeywordRuleStrategy implements CategorizationStrategy {
     /** A starter list of common Canadian merchants. */
     public static KeywordRuleStrategy withDefaults() {
         Map<String, Category> k = new LinkedHashMap<>();
-        put(k, Categories.GROCERIES, "loblaws", "sobeys", "metro", "no frills", "freshco", "farm boy", "t&t", "food basics");
+        put(k, Categories.GROCERIES, "loblaws", "sobeys", "metro", "loblaw", "no frills", "freshco", "farm boy", "t&t", "food basics",
+                "rabba", "circle k", "variety", "marche", "market");
         put(k, Categories.DINING, "uber eats", "doordash", "tim hortons", "starbucks", "mcdonald's", "mcdonalds",
-                "subway", "pizza", "restaurant", "a&w", "harvey's");
+                "subway", "pizza", "restaurant", "a&w", "harvey's", "coffee", "sushi",
+                "chipotle", "fresh choice", "yogen fruz", "chartwells", "indian", "bakery");
         put(k, Categories.TRANSPORT, "ttc", "presto", "uber", "lyft", "petro-canada", "esso", "shell", "parking", "go transit");
         put(k, Categories.RENT, "rent", "landlord");
         put(k, Categories.UTILITIES, "hydro", "enbridge", "rogers", "bell", "telus", "fido", "koodo");
-        put(k, Categories.SUBSCRIPTIONS, "netflix", "spotify", "disney plus", "youtube premium", "amazon prime", "apple.com/bill");
-        put(k, Categories.SHOPPING, "amazon", "best buy", "ikea", "h&m", "zara");
-        put(k, Categories.ENTERTAINMENT, "cineplex", "steam", "ticketmaster");
-        put(k, Categories.HEALTH, "shoppers drug mart", "rexall", "pharmacy", "dentist", "clinic");
+        put(k, Categories.SUBSCRIPTIONS, "netflix", "spotify", "claude", "neo build", "disney plus", "youtube premium", "amazon prime", "apple.com/bill");
+        put(k, Categories.SHOPPING, "amazon", "best buy", "ikea", "h&m", "zara", "uniqlo", "sephora");
+        put(k, Categories.ENTERTAINMENT, "cineplex", "famous player", "famous players", "tfc", "steam", "ticketmaster");
+        put(k, Categories.HEALTH, "shoppers drug mart", "rexall", "pharmacy", "dentist", "clinic", "supplements", "nutrition house");
         return new KeywordRuleStrategy(k);
     }
 
