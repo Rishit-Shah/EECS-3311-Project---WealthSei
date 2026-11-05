@@ -110,7 +110,13 @@ public final class WealthSeiFactory {
                                          LLMProvider provider, LlmConfig config, Supplier<LocalDate> today) {
         AlertMonitor monitor = new AlertMonitor();
         LearnedRuleStrategy learned = new LearnedRuleStrategy(rules);
-        Categorizer categorizer = new Categorizer(List.of(learned, KeywordRuleStrategy.withDefaults()));
+        List<wealthsei.service.CategorizationStrategy> chain = new java.util.ArrayList<>(
+                List.of(learned, KeywordRuleStrategy.withDefaults()));
+        if (config.hasKey()) {
+            // Only with a key: the model is the last resort for merchants no rule knows.
+            chain.add(new wealthsei.service.LLMCategorizationStrategy(provider, config.haikuModel()));
+        }
+        Categorizer categorizer = new Categorizer(chain);
         TransactionService transactions = new TransactionService(txRepo, new CsvImporter(), categorizer);
         BudgetService budgets = new BudgetService(budgetRepo, txRepo, monitor);
         PlanService plans = new PlanService(planRepo);

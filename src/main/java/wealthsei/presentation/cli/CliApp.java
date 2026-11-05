@@ -180,7 +180,8 @@ public class CliApp {
                     YearMonth m = YearMonth.parse(value);
                     filter = new TxFilter(m.atDay(1), m.atEndOfMonth(), filter.category(), filter.merchant());
                 }
-                case "category" -> filter = filter.withCategory(category(value));
+                case "category" -> filter = filter.withCategory(value.equalsIgnoreCase("uncategorized")
+                        ? Category.UNCATEGORIZED : category(value));
                 case "merchant" -> filter = filter.withMerchant(value);
                 default -> throw new UsageException("transactions [month=YYYY-MM] [category=<id>] [merchant=<text>]");
             }

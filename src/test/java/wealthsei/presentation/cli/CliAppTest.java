@@ -450,4 +450,13 @@ class CliAppTest {
         assertTrue(out.contains("whatif cancel=Spotify"), out);
         assertTrue(out.contains("MODEL_UNAVAILABLE"), out);
     }
+
+    @Test
+    void transactionsCanBeFilteredToTheUncategorizedOnes() throws IOException {
+        Path file = csv("Date,Description,Amount\n2026-10-01,Zzqx Unknown Place,-5.00\n2026-10-02,Loblaws,-20.00\n");
+        run("import " + file);
+        String out = run("transactions category=uncategorized");
+        assertTrue(out.contains("Zzqx Unknown Place"));
+        assertFalse(out.contains("Loblaws"));
+    }
 }

@@ -1,6 +1,6 @@
 # Stage 1 conformance (generated from the Stage 1 report)
 
-Stage 1 names 144 classes, interfaces and enums (diagrams plus the value-object table). As of 2026-11-04: **105 built with the Stage 1 name**, 1 built under a Java-style spelling, **38 still to build** (each belongs to a feature that is not implemented yet).
+Stage 1 names 144 classes, interfaces and enums (diagrams plus the value-object table). As of 2026-11-04: **106 built with the Stage 1 name**, 1 built under a Java-style spelling, **37 still to build** (each belongs to a feature that is not implemented yet).
 
 ## Built under a different spelling
 
@@ -8,7 +8,6 @@ Stage 1 names 144 classes, interfaces and enums (diagrams plus the value-object 
 
 ## Still to build, by feature
 
-- **F02 (rest):** `LLMCategorizationStrategy`
 - **F06/F07 Habits and Health Score:** `InsightTool`
 - **F09 Goals:** `GoalsView`
 - **F11 Monthly Review:** `MonthlyReview`, `ReviewService`, `ReviewRepository`
@@ -20,7 +19,7 @@ Stage 1 names 144 classes, interfaces and enums (diagrams plus the value-object 
 
 ## Built with the Stage 1 name
 
-`Account`, `AgentContext`, `AgentController`, `AgentResult`, `AgentStatus`, `AgentStep`, `AgentTask`, `AgentTrace`, `Alert`, `AlertListener`, `AlertMonitor`, `AlertSeverity`, `AlertType`, `AnalyticsService`, `BankCsvAdapter`, `Budget`, `BudgetLimits`, `BudgetLine`, `BudgetLineStatus`, `BudgetRepository`, `BudgetService`, `BudgetStatus`, `BudgetStatusTool`, `CancelRecurringChange`, `CapCategoryChange`, `CategorizationStrategy`, `Categorizer`, `Category`, `ClaudeProvider`, `CliApp`, `Command`, `CommandHistory`, `CsvImporter`, `DailyBalance`, `DebitCreditCsvAdapter`, `FeasibilityReport`, `FinalAnswerStep`, `Forecast`, `ForecastEngine`, `ForecastInputs`, `ForecastTool`, `Frequency`, `GoalOption`, `GoalPlanner`, `GoalRepository`, `GoalRequest`, `GoalService`, `GoalStatus`, `GoalTool`, `GroundingChecker`, `GroundingReport`, `HabitAnalyzer`, `HealthScore`, `HealthScoreCalculator`, `ImportResult`, `IncomeChange`, `Insight`, `KeywordRuleStrategy`, `LLMProvider`, `LLMProviderDecorator`, `LLMRequest`, `LLMResponse`, `LearnedRule`, `LearnedRuleStrategy`, `LoggingLLMProvider`, `Message`, `MockLLMProvider`, `Money`, `OneTimeExpenseChange`, `ParseResult`, `Planner`, `PromptBuilder`, `ProposalDraft`, `RecategorizeCommand`, `RecurringDetector`, `RecurringPayment`, `RecurringRepository`, `ResponseParser`, `RetryingLLMProvider`, `RuleRepository`, `SafeToSpendCalculator`, `SafeToSpendResult`, `SavingsGoal`, `Scenario`, `ScenarioChange`, `ScenarioResult`, `ScenarioSimulator`, `ScenarioTool`, `ScoreComponent`, `SignedAmountCsvAdapter`, `TaskType`, `Tool`, `ToolCall`, `ToolCallStep`, `ToolManager`, `ToolResult`, `ToolSpec`, `TraceRepository`, `TraceStep`, `Transaction`, `TransactionQueryTool`, `TransactionRepository`, `TransactionService`, `TxFilter`, `WealthSeiFacade`
+`Account`, `AgentContext`, `AgentController`, `AgentResult`, `AgentStatus`, `AgentStep`, `AgentTask`, `AgentTrace`, `Alert`, `AlertListener`, `AlertMonitor`, `AlertSeverity`, `AlertType`, `AnalyticsService`, `BankCsvAdapter`, `Budget`, `BudgetLimits`, `BudgetLine`, `BudgetLineStatus`, `BudgetRepository`, `BudgetService`, `BudgetStatus`, `BudgetStatusTool`, `CancelRecurringChange`, `CapCategoryChange`, `CategorizationStrategy`, `Categorizer`, `Category`, `ClaudeProvider`, `CliApp`, `Command`, `CommandHistory`, `CsvImporter`, `DailyBalance`, `DebitCreditCsvAdapter`, `FeasibilityReport`, `FinalAnswerStep`, `Forecast`, `ForecastEngine`, `ForecastInputs`, `ForecastTool`, `Frequency`, `GoalOption`, `GoalPlanner`, `GoalRepository`, `GoalRequest`, `GoalService`, `GoalStatus`, `GoalTool`, `GroundingChecker`, `GroundingReport`, `HabitAnalyzer`, `HealthScore`, `HealthScoreCalculator`, `ImportResult`, `IncomeChange`, `Insight`, `KeywordRuleStrategy`, `LLMCategorizationStrategy`, `LLMProvider`, `LLMProviderDecorator`, `LLMRequest`, `LLMResponse`, `LearnedRule`, `LearnedRuleStrategy`, `LoggingLLMProvider`, `Message`, `MockLLMProvider`, `Money`, `OneTimeExpenseChange`, `ParseResult`, `Planner`, `PromptBuilder`, `ProposalDraft`, `RecategorizeCommand`, `RecurringDetector`, `RecurringPayment`, `RecurringRepository`, `ResponseParser`, `RetryingLLMProvider`, `RuleRepository`, `SafeToSpendCalculator`, `SafeToSpendResult`, `SavingsGoal`, `Scenario`, `ScenarioChange`, `ScenarioResult`, `ScenarioSimulator`, `ScenarioTool`, `ScoreComponent`, `SignedAmountCsvAdapter`, `TaskType`, `Tool`, `ToolCall`, `ToolCallStep`, `ToolManager`, `ToolResult`, `ToolSpec`, `TraceRepository`, `TraceStep`, `Transaction`, `TransactionQueryTool`, `TransactionRepository`, `TransactionService`, `TxFilter`, `WealthSeiFacade`
 
 
 ## Added beyond Stage 1
