@@ -616,4 +616,28 @@ class CliAppTest {
         String text = Files.readString(file);
         assertTrue(text.contains("| Dining out | 300.00 | 200.00 | -100.00 | OVER |"), text);
     }
+
+    @Test
+    void reviewWithoutTheModelPrintsANumbersOnlyReviewForLastMonth() throws IOException {
+        run("import " + csv("2026-10-05,Spotify,-10\n2026-10-12,Pizza Place,-300\n2026-10-20,Employer,3000\n"));
+        String out = run("review");
+        assertTrue(out.contains("Monthly review for 2026-10"), out);
+        assertTrue(out.contains("What happened: in October 2026 you spent 310.00"), out);
+        assertTrue(out.contains("[Numbers only]"), out);
+        assertTrue(run("review 2026-10").contains("Replaced the earlier review"));
+    }
+
+    @Test
+    void reviewOfAMonthWithNothingInItSaysSo() {
+        assertTrue(run("review 2026-09").contains("no transactions in 2026-09"));
+    }
+
+    @Test
+    void askWithoutTheModelPointsToCommandsAndBlankAskShowsUsage() {
+        String out = run("ask how am I doing?");
+        assertTrue(out.contains("not available"), out);
+        assertTrue(out.contains("MODEL_UNAVAILABLE"), out);
+        assertTrue(run("ask").contains("Usage"));
+        assertTrue(run("forget").contains("new conversation"));
+    }
 }

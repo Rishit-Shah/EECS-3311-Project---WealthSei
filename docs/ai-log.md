@@ -197,6 +197,30 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - More than 5 changes, an unknown name or category, a non-positive value and a date outside the six months are all refused with a message.
 - **My verification:** (fill in after `mvn test` expecting 487 tests, and a live `whatif "cancel Spotify and cap dining at 150"` followed by `trace`.)
 
+### 2026-11-04: card statements, AI categorizer, F13 proposals, F14 export, everyday spending
+
+- **My direction:** import my real credit-card CSV (Neo); finish F02's AI step; F13 approval queue with State and Command patterns; F14 export; make affordability and what-if count normal everyday spending.
+- **AI contribution:** `CardStatementCsvAdapter` and `CardMerchantCleaner` (skip card payments, clean merchant names); `LLMCategorizationStrategy` (Haiku, last resort after learned and keyword rules, only when a key is set); `Proposal` with `ProposalState` and five states, the proposal commands and `CommandFactory`, `ProposalService`, `proposals` CLI; `ReportService` with Markdown, CSV and text exporters (Template Method); alert levels primed at startup so alerts do not repeat after a restart; `typicalMonthlySpending` in the analytics so the forecast and what-if figures include normal spending.
+- **Defects found:** a new keyword ("cafe") broke an existing categorizer test; an unset budget was reported as a tool failure instead of "no budget set"; forecasts ignored everyday spending ("3887 left per month" on my real data); the same budget alert printed again after every restart.
+- **Design decisions to list in "changes from Stage 1":** `UndoneState` added to the proposal states; the categorizer is only used when a key exists; pending proposals are kept for the session only; card payments are skipped rather than imported as income.
+- **My verification:** (fill in: real-data import gave 72 imported / 8 card payments skipped; `proposals`, `export` and `correct` checked by hand on my own data.)
+
+### 2026-11-05: F12 chat with memory
+
+- **My direction:** F12 as in Stage 1: free-form questions with a short memory, saved preferences, off-topic redirect, vague times assumed and stated.
+- **AI contribution:** `ConversationMemory` (our own bounded window, not langchain4j's), `UserProfileMemory`, `MemoryManager`, `MemoryRepository` with in-memory and file versions, `InsightTool` (the sixth tool), a chat section in the prompt, `ask` and `forget` commands, 9 tests.
+- **Defects found:** none in the live run; an existing test counted five tools and had to become six.
+- **Design decisions to list in "changes from Stage 1":** `ConversationMemory` is a plain bounded list; figures from earlier answers in the window are allowed in the grounding check; a model failure is not remembered.
+- **My verification:** (fill in: `ask` on my real data answered a dining total, understood "and on shopping?" as the same month, and redirected a question about France; protected categories survive a restart.)
+
+### 2026-11-05: F11 monthly review
+
+- **My direction:** F11 as in Stage 1: a review with what happened, what went well and what to fix, up to three fixes as proposals, saved, with a numbers-only fallback.
+- **AI contribution:** `ReviewService`, `ReviewResult`, the review prompt, `review` command, fix selection by code (goals behind schedule, subscriptions whose price rose, skipping fixes already waiting), 10 tests.
+- **Defects found:** (none yet; fill in after the live run.)
+- **Design decisions to list in "changes from Stage 1":** the fixes come from code rules, not from the model, so every suggestion is backed by numbers; reviews are kept for the session only; the previous review is passed to the model as a short summary from memory.
+- **My verification:** (fill in after `review 2026-10` on my real data, with and without the key.)
+
 ## 4. Weekly commit summary (fill in with links)
 
 | Period | Dates (Toronto time) | Required | Commits (links) |

@@ -52,6 +52,18 @@ public class PromptBuilder {
                     .append("Then explain the comparison: the change in end balance, lowest balance, monthly savings and goal dates, ")
                     .append("using only the tool's figures.\n");
         }
+        if (ctx.task().type() == TaskType.MONTHLY_REVIEW) {
+            String month = ctx.task().params().get("month").orElse("the month");
+            sb.append("\nWrite the monthly review for ").append(month).append(". Look at the month with the tools: transactions ")
+                    .append("(total spent and received, and by category), budget_status, insights (habits and the health score) and ")
+                    .append("goals. Write exactly three short parts, each starting with its label on a new line: 'What happened:', ")
+                    .append("'What went well:' and 'What to fix:'. This overrides rule 4: use at most eight sentences in total and no ")
+                    .append("bullet lists. Be specific and kind, and use only figures from the tools. If a previous review is given ")
+                    .append("below, say in one sentence how this month compares, without repeating its numbers as new facts. ")
+                    .append("Do not make suggestions as commands; fixes are offered to the user separately for approval.\n");
+            ctx.task().params().get("previous").ifPresent(prev ->
+                    sb.append("Previous review summary: ").append(prev).append('\n'));
+        }
         if (ctx.task().type() == TaskType.CHAT) {
             sb.append("\nThe user asks a free-form question about their own finances. Look things up with the tools: ")
                     .append("transactions (spending totals by month, category or merchant), budget_status, forecast, goals, insights ")

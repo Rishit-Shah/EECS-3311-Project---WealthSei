@@ -109,6 +109,7 @@ public class CliApp {
                 case "goal" -> goal(rest);
                 case "afford" -> afford(rest);
                 case "whatif" -> whatif(rest);
+                case "review" -> review(rest);
                 case "ask" -> ask(rest);
                 case "forget" -> forget();
                 case "trace" -> trace(rest);
@@ -169,6 +170,7 @@ public class CliApp {
                   proposals approve|reject <id>             apply or discard a proposal (approve can be undone)
                   proposals undo                            reverse the last approved proposal
                   proposals why <id>                        what a proposal does and where it came from
+                  review [YYYY-MM]                          monthly review: what happened, what went well, what to fix
                   ask "<question>"                          ask about your finances; follow-ups are remembered
                   forget                                    start a new conversation
                   protect|unprotect [<category>]            categories the agent may never suggest changing
@@ -470,6 +472,36 @@ public class CliApp {
         out.printf("%-9s %-9s %s%n", "ID", "Status", "Proposal");
         list.forEach(p -> out.printf("%-9s %-9s %s%n", p.id(), p.statusName(), p.title()));
         out.println("Type 'proposals why <id>' for the reason, or 'proposals approve <id>'.");
+    }
+
+    private void review(List<String> args) {
+        need(args.size() <= 1, "review [YYYY-MM]   (default: last month)");
+        java.time.YearMonth month = args.isEmpty() ? java.time.YearMonth.from(today.get()).minusMonths(1)
+                : java.time.YearMonth.parse(args.get(0));
+        wealthsei.service.ReviewResult r = facade.generateMonthlyReview(month);
+        if (r.replacedEarlier()) {
+            out.println("(Replaced the earlier review of " + month + ".)");
+        }
+        out.println("Monthly review for " + month);
+        out.println(r.review().narrative());
+        if (r.review().healthScore().isAvailable()) {
+            out.println("Health score: " + r.review().healthScore().total() + " / 100");
+        }
+        if (r.metricsOnly()) {
+            out.println("[Numbers only] " + r.note());
+        }
+        if (r.proposals().isEmpty() && r.alreadyWaiting() > 0) {
+            out.println(r.alreadyWaiting() + " suggested fix(es) are already waiting for your approval: type 'proposals'.");
+        } else if (r.proposals().isEmpty()) {
+            out.println("No fixes to suggest this time.");
+        } else {
+            out.println("Suggested fixes (waiting for your approval):");
+            r.proposals().forEach(p -> out.printf("  %-9s %s%n", p.id(), p.title()));
+            out.println("Type 'proposals why <id>' for the reason, or 'proposals approve <id>'.");
+        }
+        if (!r.review().traceId().isEmpty()) {
+            out.println("(How did you get this? type: trace " + r.review().traceId() + ")");
+        }
     }
 
     private void ask(List<String> args) {

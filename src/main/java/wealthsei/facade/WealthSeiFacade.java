@@ -65,6 +65,7 @@ public class WealthSeiFacade {
     private final wealthsei.repository.ReviewRepository reviews = new wealthsei.repository.InMemoryReviewRepository();
     private final wealthsei.service.ReportService reports;
     private final wealthsei.agent.MemoryManager memory;
+    private final wealthsei.service.ReviewService reviewService;
 
     public WealthSeiFacade(TransactionService transactions, BudgetService budgets, PlanService plans,
                            AlertMonitor alerts, CategoryCorrector corrector, AnalyticsService analytics,
@@ -97,12 +98,30 @@ public class WealthSeiFacade {
         this.proposals = new wealthsei.service.ProposalService(new wealthsei.repository.InMemoryProposalRepository(),
                 new wealthsei.command.CommandFactory(budgets, goals, analytics, corrector, today));
         this.reports = new wealthsei.service.ReportService(transactions, budgets, goals, reviews, today);
+        this.reviewService = new wealthsei.service.ReviewService(transactions, analytics, budgets, goals, agent,
+                proposals, reviews, memory, today, java.time.Instant::now);
         if (memory != null) {
             for (Category c : proposals.protectedCategories()) {
                 proposals.setProtectedCategory(c, false);
             }
             memory.protectedCategories().forEach(c -> proposals.setProtectedCategory(c, true));
         }
+    }
+
+    // ---- F11 monthly review ----
+
+    /**
+     * Makes the review for a month (replacing an earlier one): a written summary, the health score and up
+     * to three fixes waiting for approval.
+     *
+     * @throws ValidationException if the month has not started or has no transactions
+     */
+    public wealthsei.service.ReviewResult generateMonthlyReview(YearMonth month) {
+        return reviewService.generate(month);
+    }
+
+    public java.util.Optional<wealthsei.domain.MonthlyReview> getMonthlyReview(YearMonth month) {
+        return reviewService.find(month);
     }
 
     // ---- F12 chat with memory ----
