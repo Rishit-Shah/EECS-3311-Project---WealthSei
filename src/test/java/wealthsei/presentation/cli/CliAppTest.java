@@ -573,4 +573,47 @@ class CliAppTest {
         assertTrue(run("proposals undo").contains("Nothing to undo"));
         assertTrue(run("protect").contains("Groceries"));
     }
+
+    @Test
+    void exportSavesAReportInEachFormat() throws IOException {
+        withHistoryAndBudget();
+        for (String fmt : new String[] {"md", "csv", "txt"}) {
+            Path file = Files.createTempFile("wealthsei-export", "." + fmt);
+            Files.delete(file);
+            file.toFile().deleteOnExit();
+            String out = run("export 2026-10 " + fmt + " " + file);
+            assertTrue(out.contains("Report saved to"), out);
+            String text = Files.readString(file);
+            assertTrue(text.contains("Pizza Place") || text.contains("Dining out"), text);
+        }
+    }
+
+    @Test
+    void exportRefusesToReplaceAFileUnlessAsked() throws IOException {
+        withHistoryAndBudget();
+        Path file = Files.createTempFile("wealthsei-export", ".md");
+        file.toFile().deleteOnExit();
+        String refused = run("export 2026-10 md " + file);
+        assertTrue(refused.startsWith("Error:") && refused.contains("already exists"), refused);
+        assertTrue(run("export 2026-10 md " + file + " overwrite").contains("Report saved to"));
+    }
+
+    @Test
+    void exportReportsMistakes() {
+        assertTrue(run("export 2026-10 md /tmp/x.md").startsWith("Error:"));
+        assertTrue(run("export 2026-10 pdf /tmp/x.pdf").startsWith("Error:"));
+        assertTrue(run("export 2026-10").startsWith("Usage:"));
+        assertTrue(run("export 2026-13 md /tmp/x.md").startsWith("Error:"));
+    }
+
+    @Test
+    void aBudgetedMonthShowsLimitsAndLevelsInTheReport() throws IOException {
+        withHistoryAndBudget();
+        run("budget set 2026-10 dining=200");
+        Path file = Files.createTempFile("wealthsei-export", ".md");
+        file.toFile().deleteOnExit();
+        run("export 2026-10 md " + file + " overwrite");
+        String text = Files.readString(file);
+        assertTrue(text.contains("| Dining out | 300.00 | 200.00 | -100.00 | OVER |"), text);
+    }
 }

@@ -110,6 +110,7 @@ public class CliApp {
                 case "afford" -> afford(rest);
                 case "whatif" -> whatif(rest);
                 case "trace" -> trace(rest);
+                case "export" -> export(rest);
                 case "proposals" -> proposals(rest);
                 case "protect" -> protect(rest, true);
                 case "unprotect" -> protect(rest, false);
@@ -119,7 +120,8 @@ public class CliApp {
         } catch (UsageException e) {
             out.println("Usage: " + e.getMessage());
         } catch (ValidationException | TransactionImportException | StorageException | DateTimeParseException
-                 | IllegalArgumentException | wealthsei.command.IllegalStateTransitionException e) {
+                 | IllegalArgumentException | wealthsei.command.IllegalStateTransitionException
+                 | wealthsei.report.ExportException e) {
             out.println("Error: " + e.getMessage());
         }
         return true;
@@ -158,6 +160,7 @@ public class CliApp {
                   whatif cancel=<name> caps=<cat>=<amt> income=<amt> buy=<amt>@<date>
                                                             the same with the changes typed directly (no AI)
                   trace [id]                                how the last answer was reached (tools used, figures)
+                  export <YYYY-MM> <md|csv|txt> <file> [overwrite]  save a month's report to a file
                   proposals [list|all]                      suggested changes waiting for your approval
                   proposals from-whatif                     turn the last what-if into proposals
                   proposals from-goal <goalId>              suggest the monthly amount a goal needs
@@ -382,6 +385,17 @@ public class CliApp {
         lastDrafts = facade.whatIfDrafts(fields, today.get());
         lastDraftsTrace = "";
         hintProposals();
+    }
+
+    private void export(List<String> args) {
+        need(args.size() == 3 || args.size() == 4, "export <YYYY-MM> <md|csv|txt> <file> [overwrite]");
+        boolean overwrite = args.size() == 4;
+        if (overwrite && !args.get(3).equalsIgnoreCase("overwrite")) {
+            throw new UsageException("export <YYYY-MM> <md|csv|txt> <file> [overwrite]");
+        }
+        java.nio.file.Path written = facade.exportReport(YearMonth.parse(args.get(0)),
+                wealthsei.domain.ExportFormat.parse(args.get(1)), Path.of(args.get(2)), overwrite);
+        out.println("Report saved to " + written.toAbsolutePath());
     }
 
     private void hintProposals() {

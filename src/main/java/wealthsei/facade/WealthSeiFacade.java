@@ -62,6 +62,8 @@ public class WealthSeiFacade {
     private final AgentController agent;
     private final ScenarioSimulator simulator;
     private final wealthsei.service.ProposalService proposals;
+    private final wealthsei.repository.ReviewRepository reviews = new wealthsei.repository.InMemoryReviewRepository();
+    private final wealthsei.service.ReportService reports;
 
     public WealthSeiFacade(TransactionService transactions, BudgetService budgets, PlanService plans,
                            AlertMonitor alerts, CategoryCorrector corrector, AnalyticsService analytics,
@@ -84,6 +86,7 @@ public class WealthSeiFacade {
         this.simulator = Objects.requireNonNull(simulator, "simulator");
         this.proposals = new wealthsei.service.ProposalService(new wealthsei.repository.InMemoryProposalRepository(),
                 new wealthsei.command.CommandFactory(budgets, goals, analytics, corrector, today));
+        this.reports = new wealthsei.service.ReportService(transactions, budgets, goals, reviews, today);
     }
 
     // ---- F01 import ----
@@ -379,5 +382,17 @@ public class WealthSeiFacade {
 
     public java.util.Set<Category> protectedCategories() {
         return proposals.protectedCategories();
+    }
+
+    // ---- F14 report export ----
+
+    /** Saves the month's report as a file. Fails if the file exists and {@code overwrite} is false. */
+    public java.nio.file.Path exportReport(YearMonth month, wealthsei.domain.ExportFormat format, java.nio.file.Path out,
+                                           boolean overwrite) {
+        return reports.export(month, format, out, overwrite);
+    }
+
+    public java.nio.file.Path exportReport(YearMonth month, wealthsei.domain.ExportFormat format, java.nio.file.Path out) {
+        return reports.export(month, format, out, false);
     }
 }
