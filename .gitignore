@@ -22,6 +22,14 @@ config.local.json
 *.sqlite
 wealthsei-data/
 
+# Private bank exports (never commit real financial data)
+my-*.csv
+real-*.csv
+bank-*.csv
+private/
+exports/
+
 # OS
 .DS_Store
 Thumbs.db
+neo*.csv
