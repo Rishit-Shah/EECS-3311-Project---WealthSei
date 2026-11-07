@@ -11,13 +11,13 @@ simulations and monthly reviews. It has a GUI and a CLI.
 | Stage | Description | Status |
 |---|---|---|
 | 1 | Design (features, UML, patterns, traceability) | [Stage 1 report](docs/WealthSei_Stage1_Report.md) |
-| 2 | AI-assisted implementation |[Stage 2 report](docs/WealthSei_Stage2_Report.md) |
+| 2 | AI-assisted implementation | [Stage 2 report](docs/WealthSei_Stage2_Report.md) |
 | 3 | Testing (pytest and KUMA agent testing) |
 
 **Student:** Rishit Shah 
 ## Stage 2: build, run and demo
 
-Stage 2 implementation: full report in [WealthSei_Stage2_Report.md](WealthSei_Stage2_Report.md). Differences from the Stage 1 design are listed in [docs/stage1-conformance.md](docs/stage1-conformance.md) and in Section 4 of that report.
+Stage 2 implementation: full report in [WealthSei_Stage2_Report.md](docs/WealthSei_Stage2_Report.md). Differences from the Stage 1 design are listed in [docs/stage1-conformance.md](docs/stage1-conformance.md) and in Section 4 of that report.
 
 ## Prerequisites
 
