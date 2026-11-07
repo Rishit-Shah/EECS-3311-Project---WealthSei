@@ -8,7 +8,7 @@ This project is developed as a human-AI collaboration. I direct the work, make t
 
 | What I do | What the AI assistant does |
 |---|---|
-| Chose the project, its features and its stack (Java, as my professor advised; LangChain4j for the LLM calls) | Proposes designs and drafts the Stage 1 report text and diagrams from my requirements |
+| Chose the project, its features and its stack | Proposes designs and drafts the Stage 1 report text and diagrams from my requirements |
 | Decides what to build next and how much (for example: finish one piece at a time, no week-by-week plan; defer buying the API key) | Drafts the classes and unit tests for the piece I ask for, following the Stage 1 design |
 | Reads the output, asks for changes and questions design choices | Explains the code and the trade-offs when asked; revises on request |
 | Installs the tools, runs `mvn test` with real JUnit, reports the results and errors | Diagnoses errors from the logs and output I paste, and proposes fixes |
