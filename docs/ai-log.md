@@ -221,6 +221,12 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
 - **Design decisions to list in "changes from Stage 1":** the fixes come from code rules, not from the model, so every suggestion is backed by numbers; reviews are kept for the session only; the previous review is passed to the model as a short summary from memory.
 - **My verification:** (fill in after `review 2026-10` on my real data, with and without the key.)
 
+### 2026-11-06: F04 AI review (added after the first version)
+- **My direction:** F04 was designed as a hybrid feature (the model words the review message) but the first version only had the fixed template, so the AI part was missing. I asked for it to be added, with the template kept as the fallback.
+- **AI contribution:** drafted `RecurringReviewer` (asks Claude Haiku for 2 or 3 sentences from the computed facts only), `RecurringReview`, `AnalyticsService.reviewRecurring`, the facade method, the CLI command `recurring review`, the dashboard "AI review" button (runs in the background so the window does not freeze), and 8 tests.
+- **Design decisions:** the detection and the flag stay plain code. The model sees only the computed list, never raw transactions. Every number in the reply must also appear in the facts sent, otherwise the template summary is shown with the reason. Answers are remembered for identical facts, so the model is not called again until the data changes. It is a button and a command, not part of every screen refresh, to keep cost and waiting time down.
+- **Not tested live in the sandbox** (no API key there); the tests use a scripted model. **My verification:** (fill in: ran `recurring review` with the key on and compared every figure with `recurring`).
+
 ## 4. Weekly commit summary (fill in with links)
 
 | Period | Dates (Toronto time) | Required | Commits (links) |
