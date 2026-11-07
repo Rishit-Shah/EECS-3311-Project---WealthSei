@@ -37,9 +37,9 @@ Console figures (usage export, Nov 5-7 2026 UTC, no cache tokens, no web searche
 | Item | Value |
 |---|---|
 | Tool and model | Claude, chat with code tools; `claude-sonnet-5-5` |
-| Stage 2 up to the 2026-10-20 ~22:50 checkpoint | about $5.27 API-equivalent (about 15K plain input, 63K output, 10.1M cache-read and 1.07M cache-write tokens) |
-| Work after that checkpoint (GUI, demo data, videos, fixes) | not yet totalled: fill in at submission |
-| Total development cost | |
+| Early checkpoint (2026-10-20 ~22:50) | about $5.27 API-equivalent (about 15K plain input, 63K output, 10.1M cache-read and 1.07M cache-write tokens); included in the total below |
+| Whole session, Oct 20 21:34 to Nov 7 14:22 (Toronto) | about 248.5M tokens: 43,138 uncached input, 6,323,501 cache writes, 240,720,798 cache reads, 1,398,501 output; $62.73 API-equivalent |
+| Total development cost | $62.73 API-equivalent as of Nov 7 14:22 (later usage not included) |
 
 The figure is a computed API price, not necessarily what was billed (it depends on the plan used). Stage 1 usage is not included.
 

@@ -19,7 +19,7 @@ This project is developed as a human-AI collaboration. I direct the work, make t
 
 | Tool / platform | Model | Used for | Token / money cost |
 |---|---|---|---|
-| Claude (chat with code tools) | Claude Sonnet 5.5 (`claude-sonnet-5-5`) | AI-assisted development in Stage 2: project setup, domain classes, unit tests, build and editor debugging, report drafting. Earlier (Stage 1): design report, UML diagrams, use cases. | Stage 2 up to the 2026-10-20 ~22:50 checkpoint: about **$5.27 API-equivalent** (about 15K plain input, 63K output, 10.1M cache-read and 1.07M cache-write tokens). Later work not yet totalled. **Update at submission.** |
+| Claude (chat with code tools) | Claude Sonnet 5.5 (`claude-sonnet-5-5`) | AI-assisted development in Stage 2: project setup, domain classes, unit tests, build and editor debugging, report drafting. Earlier (Stage 1): design report, UML diagrams, use cases. | Whole of Stage 2 (Oct 20 to Nov 7, one session): **248,485,938 tokens** (43,138 plain input, 1,398,501 output, 240,720,798 cache-read, 6,323,501 cache-write), about **$62.73 API-equivalent**. (Checkpoint on Oct 20 ~22:50 was about $5.27.) |
 | Claude API inside WealthSei (runtime) | `claude-haiku-5-5`, `claude-sonnet-5-5` | The app's own LLM calls. Haiku: F02 category for an unknown merchant, F04 recurring review. Sonnet, through the tool-using agent: F08 to F13 (and the explanations in F05, F06, F07). | Token counts per call are in `llm.log` (`aicalls` in the CLI). Money cost: fill in from the Anthropic Console usage and cost pages, per model. |
 | VS Code + Java extension | n/a | Editing, running tests | Free |
 
