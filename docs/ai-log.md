@@ -20,7 +20,7 @@ This project is developed as a human-AI collaboration. I direct the work, make t
 | Tool / platform | Model | Used for | Token / money cost |
 |---|---|---|---|
 | Claude (chat with code tools) | Claude Sonnet 5.5 (`claude-sonnet-5-5`) | AI-assisted development in Stage 2: project setup, domain classes, unit tests, build and editor debugging, report drafting. Earlier (Stage 1): design report, UML diagrams, use cases. | Stage 2 up to the 2026-10-20 ~22:50 checkpoint: about **$5.27 API-equivalent** (about 15K plain input, 63K output, 10.1M cache-read and 1.07M cache-write tokens). Later work not yet totalled. **Update at submission.** |
-| Claude API inside WealthSei (runtime) | `claude-haiku-5-5`, `claude-sonnet-5-5` | The app's own LLM calls (categorization, explanations, the agent). **Not used yet.** | Fill in from the Anthropic Console usage page. |
+| Claude API inside WealthSei (runtime) | `claude-haiku-5-5`, `claude-sonnet-5-5` | The app's own LLM calls. Haiku: F02 category for an unknown merchant, F04 recurring review. Sonnet, through the tool-using agent: F08 to F13 (and the explanations in F05, F06, F07). | Token counts per call are in `llm.log` (`aicalls` in the CLI). Money cost: fill in from the Anthropic Console usage and cost pages, per model. |
 | VS Code + Java extension | n/a | Editing, running tests | Free |
 
 Notes on cost: the figure is a computed API price, not necessarily what was billed (it depends on the plan used). Stage 1 usage happened before the last conversation summary and is not included.
@@ -226,6 +226,41 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
 - **AI contribution:** drafted `RecurringReviewer` (asks Claude Haiku for 2 or 3 sentences from the computed facts only), `RecurringReview`, `AnalyticsService.reviewRecurring`, the facade method, the CLI command `recurring review`, the dashboard "AI review" button (runs in the background so the window does not freeze), and 8 tests.
 - **Design decisions:** the detection and the flag stay plain code. The model sees only the computed list, never raw transactions. Every number in the reply must also appear in the facts sent, otherwise the template summary is shown with the reason. Answers are remembered for identical facts, so the model is not called again until the data changes. It is a button and a command, not part of every screen refresh, to keep cost and waiting time down.
 - **Not tested live in the sandbox** (no API key there); the tests use a scripted model. **My verification:** (fill in: ran `recurring review` with the key on and compared every figure with `recurring`).
+
+### 2026-11-05 to 2026-11-06: Swing GUI
+
+- **My direction:** a desktop GUI over the same facade as the command line, with a top-navigation layout (Dashboard, Transactions, Goals, Proposals, Assistant, Reports), a chat popup, toasts for alerts, and every feature of the command line reachable from it. I reviewed screenshots of each screen and asked for changes (spacing, button placement, dashboard cards, month picker, "Set a limit", plan menu).
+- **AI contribution:** drafted the GUI classes in `presentation/gui`: `MainWindow`, `ShellPanel` (the `AppContext` the screens share), `DashboardView` and `DashboardData`, `TransactionsView`, `GoalsView`, `ProposalsView`, `AssistantView` (Ask, Can I afford it?, What if...), `ReportsView`, `PlanDialogs`, `TraceDialog`, `ChatDock` and `ChatPanel`, and small widgets (`Theme`, `Card`, `TopBar`, `Toast`, `Menus`, `Dropdown`, `Segmented`, `Text`). Also `GuiLogicTest` (6 tests for money and date parsing, text wrapping and the dashboard data).
+- **Defects found (from my screenshots and runs):** the hero text crowded the cards; a button stretched to the full card width; an input field was misaligned; wrapped HTML labels were clipped (replaced by our own `Text` component that wraps by the available width); the first import into an already-loaded folder said "0 transactions imported" because every row was a duplicate.
+- **Design decisions to list in "changes from Stage 1":** Swing instead of JavaFX (no extra dependency, runs on the plain JDK); a top-navigation layout instead of side menus; the GUI and CLI share one `WealthSeiFacade`, so no business logic lives in the screens; long calls (AI answers, reviews) run in a background worker so the window does not freeze.
+- **My verification:** (fill in: ran every screen with the demo data, checked each button against the CLI result, and checked the numbers on the dashboard against `safe`, `budget status` and `score`.)
+
+### 2026-11-06: Demo data and the demo videos
+
+- **My direction:** show real-looking data in the videos, using the same statement format as my own bank files but with invented transactions, never my real data or key.
+- **AI contribution:** `demo/make_demo_data.py` (a deterministic generator for invented statements in the Neo layout), four monthly CSVs, `demo/load-demo.sh` (loads them and a plan, budgets and goals into `~/.wealthsei-demo` only, and refuses any other folder), small statements for the categorization demo, a set of on-screen feature cards, and per-feature recording steps and video texts.
+- **Defects found:** a merchant name with a random suffix broke `recurring flag` (the demo name was simplified); the loader's relative paths depend on the folder it runs from.
+- **My verification:** (fill in: checked that no real merchant or amount appears in the demo files and that no key or `.env` is visible in any frame.)
+
+### 2026-11-06: Problems found while recording the feature videos
+
+- **My direction:** record each feature once in the GUI and once in the CLI, including the AI part, and fix anything that looks wrong on screen.
+- **Defects found and fixed (each with a test where it could be tested):**
+  - The Needs attention card held only five rows, so three over-budget rows and two unusual expenses hid the weekend spike and the other habits; now eight rows, with at most three over-budget and two unusual-expense rows.
+  - The grounding check flagged "100" in "55 out of 100" as an invented figure, and the rewrite request made the model add a note about what it changed; the scale is now ignored and the rewrite request asks for only the corrected answer.
+  - Answers sometimes contained markdown (`**bold**`); the prompt now forbids it and a clean-up step removes it.
+  - A whole-number score in an answer was not checked against the tools; a number right after the word "score" is now checked.
+  - F04 had no AI call although the design says the model words the review; `recurring review` and the "AI review" button were added (see the F04 entry).
+- **AI contribution:** `PlainText`, the `GroundingChecker` and `Planner` changes, the `aicalls` command (the last model calls from `llm.log` with this session's and the whole log's totals), and the tests above.
+- **A mistake of mine to note honestly:** I first said a health score of 55 in an answer was wrong, because my sandbox data gave 58; it was 55 on my machine, and the trace showed the figure came from the tool. The extra check is still correct but it was not fixing a wrong answer.
+- **My verification:** (fill in: reran each fixed case on my machine and confirmed the screens and the CLI show the same figures.)
+
+### 2026-11-07: Stage 1 audit before pushing
+- **My direction:** before pushing, compare every class, pattern, feature and domain item with the Stage 1 report and list anything skipped, missed or changed.
+- **AI contribution:** compared the code with the report (class level, method level, patterns, feature behaviours) and wrote the result to `docs/stage1-conformance.md`; found one real gap and fixed it.
+- **Defect found:** Stage 1 says the undo stack must be bounded, but `CommandHistory` grew without limit. It is now capped at 100 commands, with a test.
+- **Differences to list in the report (Section 4):** Swing instead of JavaFX; own `ClaudeProvider`, `CsvParser` and `ConversationMemory` instead of langchain4j and Apache Commons CSV; `ExplanationService`, `AnalysisFacts`, `ChatModel` not built; TSV files instead of SQLite; custom CLI parser instead of picocli; extra `UndoneState`.
+- **My verification:** (fill in: `mvn test` showed 587 tests passing; commits pushed.)
 
 ## 4. Weekly commit summary (fill in with links)
 
