@@ -11,6 +11,9 @@ import java.util.Optional;
  */
 public class CommandHistory<C extends Command> {
 
+    /** The undo stack is bounded (Stage 1: "must be bounded to avoid unbounded growth"). */
+    public static final int MAX_UNDO = 100;
+
     private final Deque<C> done = new ArrayDeque<>();
     private final Deque<C> undone = new ArrayDeque<>();
 
@@ -18,6 +21,7 @@ public class CommandHistory<C extends Command> {
         Objects.requireNonNull(command, "command");
         command.execute();
         done.push(command);
+        trim();
         undone.clear();
     }
 
@@ -40,6 +44,7 @@ public class CommandHistory<C extends Command> {
         C command = undone.pop();
         command.execute();
         done.push(command);
+        trim();
         return Optional.of(command);
     }
 
@@ -49,5 +54,11 @@ public class CommandHistory<C extends Command> {
 
     public boolean canRedo() {
         return !undone.isEmpty();
+    }
+
+    private void trim() {
+        while (done.size() > MAX_UNDO) {
+            done.removeLast();
+        }
     }
 }

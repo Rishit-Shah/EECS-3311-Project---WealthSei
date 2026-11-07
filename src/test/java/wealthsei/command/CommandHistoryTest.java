@@ -65,4 +65,17 @@ class CommandHistoryTest {
         assertThrows(IllegalStateException.class, () -> h.execute(bad));
         assertFalse(h.canUndo());
     }
+
+    @Test
+    void undoHistoryIsBounded() {
+        CommandHistory<Command> h = new CommandHistory<>();
+        for (int i = 0; i < CommandHistory.MAX_UNDO + 20; i++) {
+            h.execute(cmd("c" + i));
+        }
+        int undone = 0;
+        while (h.undo().isPresent()) {
+            undone++;
+        }
+        assertEquals(CommandHistory.MAX_UNDO, undone);
+    }
 }
