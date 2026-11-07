@@ -132,7 +132,7 @@ export 2026-10 md ~/october.md
 
 | ID | Feature | Main classes |
 |---|---|---|
-| F01 | Import transactions (CSV) | `CsvImporter`, `BankCsvAdapter` and subclasses, `CardStatementCsvAdapter`, `CsvParser` |
+| F01 | Import transactions (CSV or manual entry) | `CsvImporter`, `BankCsvAdapter` and subclasses, `CardStatementCsvAdapter`, `CsvParser` |
 | F02 | Categorization and corrections | `Categorizer`, `KeywordRuleStrategy`, `LearnedRuleStrategy`, `LLMCategorizationStrategy`, `RecategorizeCommand` |
 | F03 | Budgets and alerts | `BudgetService`, `BudgetCalculator`, `AlertMonitor` |
 | F04 | Recurring payments / subscriptions | `RecurringDetector`, `AnalyticsService`, `RecurringReviewer` |
@@ -176,7 +176,7 @@ Also indexed by feature in the Stage 2 report (Section 7). All videos use invent
 
 | ID | Feature | GUI demo | CLI demo |
 |---|---|---|---|
-| F01 | Import transactions (CSV) | [GUI video](https://www.youtube.com/watch?v=5yNhPIkFMKI) | [CLI video](https://www.youtube.com/watch?v=pw3QiRvM6do) |
+| F01 | Import transactions (CSV or manual entry) | [GUI video](https://www.youtube.com/watch?v=IuKLwaqHMj4) | [CLI video](https://www.youtube.com/watch?v=S9wAQwrDvTk) |
 | F02 | Categorization and corrections | [GUI video](https://www.youtube.com/watch?v=wP0EjDVBP4Q) | [CLI video](https://www.youtube.com/watch?v=Nerwf8442Z4) |
 | F03 | Budgets and alerts | [GUI video](https://youtu.be/T7yu2Cuq-7c) | [CLI video](https://www.youtube.com/watch?v=TSALZRgdeQQ) |
 | F04 | Recurring payments / subscriptions | [GUI video](https://youtu.be/CL4O3BdPj9Y) | [CLI video](https://youtu.be/oFYOGEhMv6s) |

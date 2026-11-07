@@ -277,6 +277,12 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
 - Design-to-code decisions (alert thresholds, `BIWEEKLY`, date drift) discussed and recorded.
 - Questions I raised about the design and the AI's answers, such as where `Alert` and `BudgetStatus` sit in the diagrams.
 
+## 5b. Late Stage 2 finding: manual entry (Nov 7)
+
+- I noticed the Stage 1 input said "a CSV file path, or a NewTransaction" and asked whether we had a manual-entry option. A search of my submitted UXF files showed `addTransaction(entry: NewTransaction)` on the facade and service, and `validate` on the service. The earlier conformance check had compared the Markdown copy of Stage 1, not the UXF files, so it missed this.
+- The AI added `NewTransaction`, `addTransaction`, `validate`, the CLI `add` command and a GUI dialog, with 9 tests. I reviewed and ran them.
+- Lesson: compare the diagrams that were actually submitted, not a summary of them.
+
 ## 6. Still to add as work continues
 
 - Each new feature or class group: date, my direction, AI contribution, defects found, design changes.

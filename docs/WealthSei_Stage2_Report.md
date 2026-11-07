@@ -38,11 +38,11 @@ Safeguards: `GroundingChecker` compares every dollar amount, percentage, decimal
 
 ### 1.3 Current working functionality
 
-All 14 Stage 1 features (F01–F14) are implemented and work in both the GUI and the CLI, plus three additions (financial plan setup, saved data, AI call log). 587 unit tests pass (`mvn test`). Each feature has a recorded demonstration (Section 7).
+All 14 Stage 1 features (F01–F14) are implemented and work in both the GUI and the CLI, plus three additions (financial plan setup, saved data, AI call log). 596 unit tests pass (`mvn test`). Each feature has a recorded demonstration (Section 7).
 
 | ID | Feature | Type in Stage 1 | Type as implemented | Status |
 |---|---|---|---|---|
-| F01 | Import transactions (CSV) | Deterministic | Deterministic | Implemented (modified: own CSV reader, extra card-statement layout) |
+| F01 | Import transactions (CSV or manual entry) | Deterministic | Deterministic | Implemented (modified: own CSV reader, extra card-statement layout; manual entry `NewTransaction` added at the end of Stage 2, see C17) |
 | F02 | Smart categorization and correction (with undo) | Hybrid | Hybrid | Implemented |
 | F03 | Budget setup, tracking and alerts | Deterministic | Deterministic | Implemented |
 | F04 | Recurring payment and subscription detector | Hybrid | Hybrid | Implemented (AI review added as a button/command) |
@@ -88,9 +88,9 @@ Package folders are under `src/main/java/wealthsei/`. "GUI" screens are in `pres
 | **Implemented classes/files and responsibilities** | `importing/CsvImporter` reads the header and chooses the adapter. `importing/BankCsvAdapter` (interface) with `AbstractCsvAdapter` (reads rows, template), `SignedAmountCsvAdapter`, `DebitCreditCsvAdapter`, `CardStatementCsvAdapter` (+ `CardMerchantCleaner`: tidies merchant names, skips card payments) turn rows into `Transaction` objects. `CsvParser`/`CsvRecord`/`RowParsing` split lines, handle quotes and parse dates and amounts. `service/TransactionService` removes duplicates, calls the `Categorizer` (F02) and saves through `TransactionRepository`. `domain/ImportResult`, `ParseResult` report counts and rejected rows. GUI: `TransactionsView`/`ShellPanel` (Import button, file chooser, summary). |
 | **Key methods** | `CsvImporter.parse(Path)`, `detectAdapter(header, parser)`, `AbstractCsvAdapter.readTransactions()`, `toTransaction(CsvRecord)`, `TransactionService.importFile(Path)`, `WealthSeiFacade.importTransactions(file, today)`, `CliApp.importFile` |
 | **Design patterns** | Adapter (CSV layouts behind one interface), Template Method (`AbstractCsvAdapter.readTransactions()` is final, subclasses supply `toTransaction`), Facade, Decorator (`PersistentTransactionRepository`) |
-| **Video link/timestamp** | [GUI video](https://www.youtube.com/watch?v=5yNhPIkFMKI) · [CLI video](https://www.youtube.com/watch?v=pw3QiRvM6do) |
+| **Video link/timestamp** | [GUI video](https://www.youtube.com/watch?v=IuKLwaqHMj4) · [CLI video](https://www.youtube.com/watch?v=S9wAQwrDvTk) (both show CSV import, duplicate skipping, and manual entry) |
 
-**How the classes collaborate.** The user picks a file in the GUI (or types `import <file>`); the call reaches `WealthSeiFacade.importTransactions`, which gives the path to `TransactionService.importFile`. `CsvImporter` reads the header row and asks each adapter whether it matches (`detectAdapter`); the matching adapter's final `readTransactions()` loops over the rows and calls its own `toTransaction` for each, collecting bad rows as rejected with a reason. `TransactionService` drops transactions already stored (same date, amount, merchant; matched by count so two real identical purchases in one file are both kept), categorizes the new ones through `Categorizer` (F02), and saves them. Back in the facade, `BudgetService.refreshAlerts` re-checks only the months touched (F03) and `GoalService.evaluateAll` re-checks goals (F09). The user sees "Imported n, skipped d duplicates, rejected r rows". This feature is deterministic: no model call.
+**How the classes collaborate.** The user picks a file in the GUI (or types `import <file>`); the call reaches `WealthSeiFacade.importTransactions`, which gives the path to `TransactionService.importFile`. `CsvImporter` reads the header row and asks each adapter whether it matches (`detectAdapter`); the matching adapter's final `readTransactions()` loops over the rows and calls its own `toTransaction` for each, collecting bad rows as rejected with a reason. `TransactionService` drops transactions already stored (same date, amount, merchant; matched by count so two real identical purchases in one file are both kept), categorizes the new ones through `Categorizer` (F02), and saves them. Back in the facade, `BudgetService.refreshAlerts` re-checks only the months touched (F03) and `GoalService.evaluateAll` re-checks goals (F09). The Stage 1 diagrams also allow a second input, a hand-typed `NewTransaction` (date, amount, merchant, description, optional category, income flag): the GUI "Add transaction" button or the CLI `add` command calls `WealthSeiFacade.addTransaction`, which calls `TransactionService.addTransaction`; its private `validate` rejects a missing date, a zero amount or a blank merchant, the category is the chosen one or the `Categorizer`'s answer, and the facade then refreshes that month's alerts and the goals the same way as for an import. The user sees "Imported n, skipped d duplicates, rejected r rows". This feature is deterministic: no model call.
 
 ### F02 — Smart Categorization and Correction (with Undo) · Hybrid
 
@@ -495,7 +495,7 @@ So **three** Stage 1 items were inaccurate (UC08, SD04, SD06) and are replaced b
 
 ## 4. Changes and rationale
 
-Each entry follows **Original design → Implemented change → Reason → Impact**. IDs C1–C16 are used in other sections.
+Each entry follows **Original design → Implemented change → Reason → Impact**. IDs C1–C17 are used in other sections.
 
 ### 4.1 Architecture and class changes
 
@@ -532,6 +532,8 @@ Each entry follows **Original design → Implemented change → Reason → Impac
 **C15 — F11/F12/F13.** F11 fixes are chosen by code rules so every suggestion has numbers behind it; F12 uses our own memory window and a `forget` command; F13 gains `from-whatif` / `from-goal` and `expireOld` for past months. *Impact:* proposals can come from three sources; pending proposals and reviews are session-only.
 
 **C16 — New features.** N01 Financial plan setup, N02 Saved data between sessions, N03 AI call log (`aicalls`, `llm.log`). *Reason:* the forecast, alerts and agent need a balance, income and bills; data should survive a restart; AI usage must be reported. *Impact:* Section 2.
+
+**C17 — F01 manual entry.** *Original:* F01 input is a CSV path or a `NewTransaction` (Stage 1 facade `addTransaction`, `TransactionService.addTransaction` and `validate`). *Implemented:* first Stage 2 builds covered CSV only; manual entry was found missing while comparing the submitted UXF files with the code and was added: `NewTransaction` record, `TransactionService.addTransaction`/`validate`, `WealthSeiFacade.addTransaction`, CLI `add`, GUI "Add transaction" dialog, 9 new tests. *Reason:* it was part of the Stage 1 design. *Impact:* none on other features; matches the Stage 1 diagrams.
 
 **Other differences (not behaviour changes).** The CLI syntax differs from the Stage 1 sketch (`correct` instead of `categorize`, `export <month> <fmt> <file>` instead of `--format --out`, `whatif` text or structured); the CLI is launched through `Main` with Maven (`exec:java`) rather than a `wealthsei` script. The undo stack is bounded to 100 commands as Stage 1 required. Learned rules apply to future imports only, not to past transactions.
 
@@ -656,7 +658,7 @@ Commits that changed only documents (the AI log and the conformance table) are n
 
 ### 6.2 Checks performed to verify the implementation
 
-- **Unit tests:** `mvn test` runs 587 JUnit 5 tests with 0 failures and 0 errors (test classes per package: domain, importing, repository, service, analytics, command, agent, llm, report, facade, CLI and GUI logic). The tests that involve the model use `MockLLMProvider` with scripted replies, so they are repeatable and cost nothing.
+- **Unit tests:** `mvn test` runs 596 JUnit 5 tests with 0 failures and 0 errors (test classes per package: domain, importing, repository, service, analytics, command, agent, llm, report, facade, CLI and GUI logic). The tests that involve the model use `MockLLMProvider` with scripted replies, so they are repeatable and cost nothing.
 - **Strict compile:** the code is compiled for Java 17 with `-Xlint:all -Werror` before each delivery.
 - **Hand arithmetic:** the safe-to-spend figure, goal months and budget percentages were recomputed by hand from the demo data and compared with the application (for example the safe-to-spend example in the F05 video: $208.17 per day on Nov 6).
 - **Real API runs:** every AI feature was run against the real Claude API with my own key, and each model call was checked in `llm.log` / `aicalls` (model, tokens, time).
@@ -694,7 +696,7 @@ Every feature has a GUI recording and a CLI recording using the invented demo da
 
 | ID | Feature | GUI demonstration | CLI demonstration | Where AI is shown |
 |---|---|---|---|---|
-| F01 | Import transactions (CSV) | [GUI video](https://www.youtube.com/watch?v=5yNhPIkFMKI) | [CLI video](https://www.youtube.com/watch?v=pw3QiRvM6do) | none (deterministic) |
+| F01 | Import transactions (CSV or manual entry) | [GUI video](https://www.youtube.com/watch?v=IuKLwaqHMj4) | [CLI video](https://www.youtube.com/watch?v=S9wAQwrDvTk) | none (deterministic) |
 | F02 | Categorization and correction (with undo) | [GUI video](https://www.youtube.com/watch?v=wP0EjDVBP4Q) | [CLI video](https://www.youtube.com/watch?v=Nerwf8442Z4) | Haiku fallback for an unknown merchant, call visible in `llm.log` |
 | F03 | Budgets and alerts | [GUI video](https://youtu.be/T7yu2Cuq-7c) | [CLI video](https://www.youtube.com/watch?v=TSALZRgdeQQ) | none; shows saved data after a restart (N02) |
 | F04 | Recurring payments | [GUI video](https://youtu.be/CL4O3BdPj9Y) | [CLI video](https://youtu.be/oFYOGEhMv6s) | AI review (Haiku) and the template fallback |
