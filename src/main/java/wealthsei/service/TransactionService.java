@@ -10,10 +10,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import wealthsei.domain.Category;
 import wealthsei.domain.ImportResult;
 import wealthsei.domain.Money;
+import wealthsei.domain.NewTransaction;
 import wealthsei.domain.ParseResult;
 import wealthsei.domain.Transaction;
 import wealthsei.domain.TxFilter;
@@ -30,8 +33,16 @@ public class TransactionService {
     private final TransactionRepository repo;
     private final CsvImporter importer;
     private final Categorizer categorizer;
+    private final Supplier<String> idSupplier;
 
     public TransactionService(TransactionRepository repo, CsvImporter importer, Categorizer categorizer) {
+        this(repo, importer, categorizer, () -> UUID.randomUUID().toString());
+    }
+
+    /** @param idSupplier produces the id of each hand-entered transaction (tests pass a counter) */
+    public TransactionService(TransactionRepository repo, CsvImporter importer, Categorizer categorizer,
+                              Supplier<String> idSupplier) {
+        this.idSupplier = Objects.requireNonNull(idSupplier, "idSupplier");
         this.repo = Objects.requireNonNull(repo, "repo");
         this.importer = Objects.requireNonNull(importer, "importer");
         this.categorizer = Objects.requireNonNull(categorizer, "categorizer");
@@ -60,6 +71,37 @@ public class TransactionService {
                 .collect(Collectors.toSet());
         return new ImportResult(categorized.size(), parsed.transactions().size() - fresh.size(),
                 parsed.rejectedRows(), months);
+    }
+
+    /**
+     * Saves one hand-entered transaction. The category is the one the person chose, or the
+     * categorizer's answer when none was chosen.
+     *
+     * @throws ValidationException if the date, amount or merchant is missing or invalid
+     */
+    public Transaction addTransaction(NewTransaction entry) {
+        validate(entry);
+        Transaction raw = new Transaction(idSupplier.get(), entry.date(), entry.amount(), entry.merchant().trim(),
+                entry.description().trim(), entry.income(), Category.UNCATEGORIZED);
+        Category category = entry.category().orElseGet(() -> categorizer.categorize(raw));
+        Transaction saved = raw.withCategory(category);
+        repo.saveAll(List.of(saved));
+        return saved;
+    }
+
+    private void validate(NewTransaction entry) {
+        if (entry == null) {
+            throw new ValidationException("Enter the transaction details");
+        }
+        if (entry.date() == null) {
+            throw new ValidationException("Enter a date");
+        }
+        if (entry.amount() == null || !entry.amount().isPositive()) {
+            throw new ValidationException("The amount must be greater than zero");
+        }
+        if (entry.merchant() == null || entry.merchant().isBlank()) {
+            throw new ValidationException("Enter who the money went to or came from");
+        }
     }
 
     public List<Transaction> query(TxFilter filter) {

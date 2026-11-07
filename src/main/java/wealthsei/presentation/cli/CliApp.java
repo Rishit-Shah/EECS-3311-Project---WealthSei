@@ -95,6 +95,7 @@ public class CliApp {
                     return false;
                 }
                 case "import" -> importFile(rest);
+                case "add" -> addTransaction(rest);
                 case "transactions" -> transactions(rest);
                 case "categories" -> categories();
                 case "correct" -> correct(rest);
@@ -137,6 +138,8 @@ public class CliApp {
         out.println("""
                 Commands:
                   import <file.csv>                         load a bank CSV export
+                  add <YYYY-MM-DD> <amount> "<merchant>" [category=<id>] [income] [note="<text>"]
+                                                            enter one transaction by hand
                   transactions [month=YYYY-MM] [category=<id>] [merchant=<text>]
                   categories                                list category ids
                   correct <txId> <categoryId>               fix a category (the app remembers the merchant)
@@ -188,6 +191,29 @@ public class CliApp {
         out.println("Imported " + r.imported() + " transactions, skipped " + r.duplicates()
                 + " duplicates, rejected " + r.rejected().size() + " rows.");
         r.rejected().forEach(reason -> out.println("  rejected: " + reason));
+    }
+
+    private void addTransaction(List<String> args) {
+        String usage = "add <YYYY-MM-DD> <amount> \"<merchant>\" [category=<id>] [income] [note=\"<text>\"]";
+        need(args.size() >= 3, usage);
+        java.util.Optional<Category> chosen = java.util.Optional.empty();
+        boolean income = false;
+        String note = "";
+        for (String opt : args.subList(3, args.size())) {
+            if (opt.equalsIgnoreCase("income")) {
+                income = true;
+            } else if (opt.regionMatches(true, 0, "category=", 0, 9)) {
+                chosen = java.util.Optional.of(category(opt.substring(9)));
+            } else if (opt.regionMatches(true, 0, "note=", 0, 5)) {
+                note = opt.substring(5);
+            } else {
+                throw new UsageException(usage);
+            }
+        }
+        Transaction tx = facade.addTransaction(new wealthsei.domain.NewTransaction(
+                LocalDate.parse(args.get(0)), Money.of(args.get(1)), args.get(2), note, chosen, income));
+        out.println("Added " + tx.merchant() + " " + tx.signedAmount() + " on " + tx.date() + " in "
+                + tx.category().name() + " (id " + shortId(tx.id()) + ").");
     }
 
     private void transactions(List<String> args) {

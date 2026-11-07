@@ -65,6 +65,7 @@ public class WealthSeiFacade {
     private final wealthsei.repository.ReviewRepository reviews = new wealthsei.repository.InMemoryReviewRepository();
     private final wealthsei.service.ReportService reports;
     private final wealthsei.agent.MemoryManager memory;
+    private final java.util.function.Supplier<LocalDate> today;
     private final wealthsei.service.ReviewService reviewService;
 
     public WealthSeiFacade(TransactionService transactions, BudgetService budgets, PlanService plans,
@@ -86,6 +87,7 @@ public class WealthSeiFacade {
                            GoalService goals, AgentController agent, ScenarioSimulator simulator,
                            java.util.function.Supplier<LocalDate> today, wealthsei.agent.MemoryManager memory) {
         this.memory = memory;
+        this.today = Objects.requireNonNull(today, "today");
         this.transactions = Objects.requireNonNull(transactions, "transactions");
         this.budgets = Objects.requireNonNull(budgets, "budgets");
         this.plans = Objects.requireNonNull(plans, "plans");
@@ -158,6 +160,14 @@ public class WealthSeiFacade {
         budgets.refreshAlerts(result.affectedMonths());
         goals.evaluateAll(today);
         return result;
+    }
+
+    /** Records one hand-entered transaction, then refreshes that month's alerts and the goals. */
+    public Transaction addTransaction(wealthsei.domain.NewTransaction entry) {
+        Transaction saved = transactions.addTransaction(entry);
+        refreshMonthOf(saved);
+        goals.evaluateAll(today.get());
+        return saved;
     }
 
     public List<Transaction> listTransactions(TxFilter filter) {

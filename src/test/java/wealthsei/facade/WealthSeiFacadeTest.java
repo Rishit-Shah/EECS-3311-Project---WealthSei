@@ -189,4 +189,14 @@ class WealthSeiFacadeTest {
         assertEquals(2, all.size());
         assertTrue(all.stream().allMatch(t -> t.category().equals(Categories.ENTERTAINMENT)));
     }
+
+    @Test
+    void addingATransactionRefreshesBudgetAlerts() {
+        facade.setBudget(OCT, limits(Categories.GROCERIES, "100"));
+        assertTrue(alerts.isEmpty());
+        facade.addTransaction(wealthsei.domain.NewTransaction.expense(
+                java.time.LocalDate.of(2026, 10, 2), Money.of("90"), "Loblaws"));
+        assertEquals(1, alerts.size());
+        assertEquals(Money.of("90"), facade.getBudgetStatus(OCT).totalSpent());
+    }
 }

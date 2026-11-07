@@ -133,6 +133,7 @@ public class TransactionsView extends View {
         });
         field.setText(search);
         controls.add(field);
+        controls.add(new FlatButton("Add transaction", null, true, this::addTransaction));
         controls.add(new FlatButton("Undo", null, false, this::undo));
         controls.add(new FlatButton("Redo", null, false, this::redo));
     }
@@ -209,6 +210,27 @@ public class TransactionsView extends View {
         try {
             ctx.facade().correctCategory(tx.id(), target);
             ctx.toast(tx.merchant() + " moved to " + target.name() + ". Next time it is filed there automatically.", Toast.Kind.SUCCESS);
+            afterChange();
+        } catch (RuntimeException e) {
+            ctx.toast(e.getMessage(), Toast.Kind.ERROR);
+        }
+    }
+
+    private void addTransaction() {
+        String[] v = Dialogs.form(this, "Add a transaction",
+                "Type it in by hand. Leave category empty and WealthSei files it for you. Type 'income' in the last box for money received.",
+                new String[]{"Date (YYYY-MM-DD)", "Amount", "Merchant", "Category (optional, e.g. groceries)", "Type 'income' if money received (optional)"},
+                new String[]{LocalDate.now().toString(), "", "", "", ""}, "Add");
+        if (v == null) {
+            return;
+        }
+        try {
+            java.util.Optional<Category> chosen = v[3].isBlank() ? java.util.Optional.empty()
+                    : java.util.Optional.of(Categories.find(v[3].trim().toLowerCase(Locale.ROOT))
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown category '" + v[3] + "'")));
+            Transaction tx = ctx.facade().addTransaction(new wealthsei.domain.NewTransaction(
+                    Dialogs.date(v[0]), Dialogs.money(v[1]), v[2], "", chosen, v[4].equalsIgnoreCase("income")));
+            ctx.toast("Added " + tx.merchant() + " to " + tx.category().name() + ".", Toast.Kind.SUCCESS);
             afterChange();
         } catch (RuntimeException e) {
             ctx.toast(e.getMessage(), Toast.Kind.ERROR);

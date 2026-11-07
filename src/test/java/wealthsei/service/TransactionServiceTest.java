@@ -137,4 +137,54 @@ class TransactionServiceTest {
         assertEquals(Money.of("9.99"), changed.amount());
         assertThrows(IllegalArgumentException.class, () -> service.updateCategory("nope", Categories.SHOPPING));
     }
+
+    @Test
+    void addsAHandEnteredTransactionAndCategorizesIt() {
+        Transaction tx = service.addTransaction(wealthsei.domain.NewTransaction.expense(
+                java.time.LocalDate.of(2026, 10, 5), Money.of("12.50"), "  Loblaws  "));
+        assertEquals("Loblaws", tx.merchant());
+        assertEquals(Categories.GROCERIES, tx.category());
+        assertFalse(tx.income());
+        assertEquals(tx, service.findById(tx.id()).orElseThrow());
+    }
+
+    @Test
+    void aChosenCategoryBeatsTheCategorizer() {
+        Transaction tx = service.addTransaction(new wealthsei.domain.NewTransaction(
+                java.time.LocalDate.of(2026, 10, 5), Money.of("12.50"), "Loblaws", "gift",
+                java.util.Optional.of(Categories.SHOPPING), false));
+        assertEquals(Categories.SHOPPING, tx.category());
+        assertEquals("gift", tx.description());
+    }
+
+    @Test
+    void anIncomeEntryIsSavedAsIncome() {
+        Transaction tx = service.addTransaction(new wealthsei.domain.NewTransaction(
+                java.time.LocalDate.of(2026, 10, 5), Money.of("900"), "Acme", "",
+                java.util.Optional.of(Categories.INCOME), true));
+        assertTrue(tx.income());
+        assertEquals(Money.of("900"), tx.signedAmount());
+    }
+
+    @Test
+    void rejectsEntriesWithMissingOrBadFields() {
+        java.time.LocalDate d = java.time.LocalDate.of(2026, 10, 5);
+        assertThrows(ValidationException.class, () -> service.addTransaction(null));
+        assertThrows(ValidationException.class, () -> service.addTransaction(
+                wealthsei.domain.NewTransaction.expense(null, Money.of("5"), "A")));
+        assertThrows(ValidationException.class, () -> service.addTransaction(
+                wealthsei.domain.NewTransaction.expense(d, Money.of("0"), "A")));
+        assertThrows(ValidationException.class, () -> service.addTransaction(
+                wealthsei.domain.NewTransaction.expense(d, Money.of("5"), "   ")));
+        assertTrue(service.query(TxFilter.all()).isEmpty());
+    }
+
+    @Test
+    void handEnteredTransactionsGetDistinctIds() {
+        java.time.LocalDate d = java.time.LocalDate.of(2026, 10, 5);
+        Transaction a = service.addTransaction(wealthsei.domain.NewTransaction.expense(d, Money.of("5"), "Loblaws"));
+        Transaction b = service.addTransaction(wealthsei.domain.NewTransaction.expense(d, Money.of("5"), "Loblaws"));
+        assertFalse(a.id().equals(b.id()));
+        assertEquals(2, service.query(TxFilter.all()).size());
+    }
 }

@@ -672,4 +672,26 @@ class CliAppTest {
         assertTrue(run("ask").contains("Usage"));
         assertTrue(run("forget").contains("new conversation"));
     }
+
+    @Test
+    void addEntersATransactionByHand() {
+        String out = run("add 2026-10-05 12.50 Loblaws");
+        assertTrue(out.contains("Added Loblaws -12.50 on 2026-10-05 in Groceries"), out);
+        assertTrue(run("transactions").contains("1 transactions."));
+    }
+
+    @Test
+    void addAcceptsCategoryIncomeAndNote() {
+        String out = run("add 2026-10-05 900 Acme category=income income note=bonus");
+        assertTrue(out.contains("Added Acme 900.00"), out);
+        assertTrue(out.contains("Income"), out);
+    }
+
+    @Test
+    void addWithBadInputGivesUsageOrError() {
+        assertTrue(run("add 2026-10-05").toLowerCase().contains("usage"));
+        assertTrue(run("add 2026-10-05 12 Loblaws color=red").toLowerCase().contains("usage"));
+        assertFalse(run("add 2026-10-05 0 Loblaws").isBlank());
+        assertTrue(run("transactions").contains("No transactions."));
+    }
 }
