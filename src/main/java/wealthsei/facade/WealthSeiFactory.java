@@ -124,6 +124,9 @@ public final class WealthSeiFactory {
         PlanService plans = new PlanService(planRepo);
         AnalyticsService analytics = new AnalyticsService(txRepo, goals, recurring, planRepo, monitor,
                 new RecurringDetector(), new ForecastEngine(), new SafeToSpendCalculator());
+        if (config.hasKey()) {
+            analytics.useReviewer(new wealthsei.analytics.RecurringReviewer(provider, config.haikuModel()));
+        }
         GoalPlanner goalPlanner = new GoalPlanner();
         GoalService goalService = new GoalService(goals, goalPlanner, analytics, monitor);
         ToolManager tools = new ToolManager();

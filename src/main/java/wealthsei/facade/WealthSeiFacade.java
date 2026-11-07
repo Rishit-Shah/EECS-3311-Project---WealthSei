@@ -241,6 +241,11 @@ public class WealthSeiFacade {
         return analytics.recurringReport(asOf);
     }
 
+    /** A short review of the recurring payments, worded by the model when AI is on. */
+    public wealthsei.analytics.RecurringReview reviewRecurring(LocalDate asOf) {
+        return analytics.reviewRecurring(asOf);
+    }
+
     /** Marks a recurring payment for review (or clears the mark). */
     public void flagRecurring(String merchant, boolean flagged, LocalDate asOf) {
         analytics.flagRecurring(merchant, flagged, asOf);

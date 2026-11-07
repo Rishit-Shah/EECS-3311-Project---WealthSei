@@ -44,6 +44,7 @@ public class AnalyticsService implements MonthlySurplusProvider {
     private final SafeToSpendCalculator calculator;
     private final HabitAnalyzer habitAnalyzer;
     private final HealthScoreCalculator scoreCalculator;
+    private RecurringReviewer reviewer;
 
     public AnalyticsService(TransactionRepository txRepo, GoalRepository goalRepo, RecurringRepository flags,
                             PlanRepository planRepo, AlertMonitor monitor, RecurringDetector detector,
@@ -84,6 +85,23 @@ public class AnalyticsService implements MonthlySurplusProvider {
         boolean hasTransactions = !txRepo.query(TxFilter.all()).isEmpty();
         return new RecurringReport(payments, total,
                 RecurringSummaryTemplate.write(payments, total, hasTransactions));
+    }
+
+    /** Lets the review use a language model. Without one, the review is the template wording. */
+    public void useReviewer(RecurringReviewer reviewer) {
+        this.reviewer = reviewer;
+    }
+
+    /**
+     * A short review of the recurring payments: worded by the model when one is set up and it
+     * answers acceptably, otherwise the fixed template wording.
+     */
+    public RecurringReview reviewRecurring(LocalDate asOf) {
+        RecurringReport report = recurringReport(asOf);
+        if (reviewer == null) {
+            return new RecurringReview(report.summary(), false, "AI features are off.");
+        }
+        return reviewer.review(report.payments(), report.monthlyTotal(), report.summary());
     }
 
     /**
