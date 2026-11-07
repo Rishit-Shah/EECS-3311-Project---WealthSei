@@ -455,6 +455,8 @@ The diagrams are provided as UMLet `.uxf` source files in `docs/uxf_stage2/` (on
 
 **How the class diagrams differ from Stage 1.** Stage 1 had seven figures (3.1–3.7). They are redrawn here as six figures (3.1–3.6) with the same groups of classes, so a figure-by-figure comparison is possible: Stage 1 Fig 3.1 (presentation and facade) → 3.1; Fig 3.2 (import, categorization, budgets, alerts) → 3.1 and 3.2; Fig 3.3 (analytics, goals, scenarios) → covered by the service/analytics classes in 3.1 and 3.4 and by Section 2; Fig 3.4 (agent) → 3.4; Fig 3.5 (LLM layer) → 3.5; Fig 3.6 (proposals, commands, reviews, reports) → 3.2 and 3.3; Fig 3.7 (domain) → 3.6. The classes removed, renamed and added are listed in Section 4 (C1–C9) and in full in `docs/stage1-conformance.md`.
 
+**Note on class members.** The Stage 2 figures above show the classes, their relationships and the patterns, with a few key operations. The full attribute and method lists are in the Stage 1 class diagrams (Figures 3-1 to 3-7) and are unchanged for every class except those listed in Section 4, where each renamed or replaced method is recorded. Section 2 also gives the key methods of every feature. The hand-entry operations of F01 (`NewTransaction`, `WealthSeiFacade.addTransaction`, `TransactionService.addTransaction` and `validate`) are the same as in Stage 1 Figures 3-1 and 3-2; they were implemented late (C17) and so are not redrawn in the Stage 2 figures.
+
 ### 3.2 Use-case and sequence diagram updates
 
 Stage 1 has one use-case diagram, fourteen use-case descriptions (UC01–UC14) and eleven sequence diagrams (SD01–SD11). Checking each against the implementation:
@@ -693,6 +695,8 @@ See Section 1.4 for the complete list. In short: pending proposals, reviews, tra
 ## 7. Demonstration index
 
 Every feature has a GUI recording and a CLI recording using the invented demo data (`demo/`); no keys or real data appear. Each feature has its own video (one GUI, one CLI), so each link opens at the start of that feature's demonstration. Each video starts with a title card naming the feature ID.
+
+**Note on F01 manual entry.** The F01 videos show both inputs: CSV import and adding a transaction by hand (GUI "Add transaction" button, CLI `add`). Manual entry was implemented on Nov 7, after the other feature videos were recorded. In those earlier videos the Transactions screen therefore has no "Add transaction" button and the CLI help has no `add` line. Nothing else in them is affected: the other features do not depend on how a transaction was entered.
 
 | ID | Feature | GUI demonstration | CLI demonstration | Where AI is shown |
 |---|---|---|---|---|
