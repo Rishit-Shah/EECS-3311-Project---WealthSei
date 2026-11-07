@@ -38,7 +38,7 @@
     <coordinates><x>1220</x><y>20</y><w>230</w><h>68</h></coordinates>
     <panel_attributes>FinancialPlan
 --
-NEW</panel_attributes>
+</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
@@ -46,7 +46,7 @@ NEW</panel_attributes>
     <coordinates><x>1520</x><y>20</y><w>230</w><h>68</h></coordinates>
     <panel_attributes>IncomeSource
 --
-NEW</panel_attributes>
+</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
@@ -54,7 +54,7 @@ NEW</panel_attributes>
     <coordinates><x>1820</x><y>20</y><w>230</w><h>68</h></coordinates>
     <panel_attributes>FixedBill
 --
-NEW</panel_attributes>
+</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
@@ -62,7 +62,7 @@ NEW</panel_attributes>
     <coordinates><x>20</x><y>158</y><w>230</w><h>68</h></coordinates>
     <panel_attributes>PlannedExpense
 --
-NEW</panel_attributes>
+</panel_attributes>
     <additional_attributes/>
   </element>
   <element>

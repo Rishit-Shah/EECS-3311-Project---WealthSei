@@ -38,13 +38,13 @@ Safeguards: `GroundingChecker` compares every dollar amount, percentage, decimal
 
 ### 1.3 Current working functionality
 
-All 14 Stage 1 features (F01–F14) are implemented and work in both the GUI and the CLI, plus three additions (financial plan setup, saved data, AI call log). 596 unit tests pass (`mvn test`). Each feature has a recorded demonstration (Section 7).
+All 14 Stage 1 features (F01–F14) are implemented and work in both the GUI and the CLI, plus three supporting items that implement or extend parts of Stage 1 (plan setup from F03, saved data in place of SQLite, an AI call log built on the Stage 1 logging decorator). 596 unit tests pass (`mvn test`). Each feature has a recorded demonstration (Section 7).
 
 | ID | Feature | Type in Stage 1 | Type as implemented | Status |
 |---|---|---|---|---|
 | F01 | Import transactions (CSV or manual entry) | Deterministic | Deterministic | Implemented (modified: own CSV reader, extra card-statement layout; manual entry `NewTransaction` added at the end of Stage 2, see C17) |
 | F02 | Smart categorization and correction (with undo) | Hybrid | Hybrid | Implemented |
-| F03 | Budget setup, tracking and alerts | Deterministic | Deterministic | Implemented |
+| F03 | Budget and plan setup, tracking and alerts | Deterministic | Deterministic | Implemented |
 | F04 | Recurring payment and subscription detector | Hybrid | Hybrid | Implemented (AI review added as a button/command) |
 | F05 | Safe-to-spend coach | Hybrid | Deterministic + AI explanation on request | Implemented (modified) |
 | F06 | Spending habit detective | Hybrid | Deterministic + AI explanation on request | Implemented (modified) |
@@ -56,9 +56,9 @@ All 14 Stage 1 features (F01–F14) are implemented and work in both the GUI and
 | F12 | Natural-language chat with agent trace | AI (agent) | AI (agent) | Implemented |
 | F13 | Proposal approval queue | Hybrid | Deterministic queue; drafts come from the agent, what-if, goals | Implemented |
 | F14 | Report export | Deterministic | Deterministic | Implemented |
-| N01 | Financial plan setup (balance, buffer, income, bills, planned expenses) | New | Deterministic | Implemented |
-| N02 | Saved data between sessions (text files) | New (Stage 1 planned SQLite) | Deterministic | Implemented |
-| N03 | AI call log and `aicalls` command | New | Deterministic | Implemented |
+| N01 | Financial plan setup (balance, buffer, income, bills, planned expenses): the plan part of Stage 1 F03 | Stage 1 F03 | Deterministic | Implemented (CLI command names differ, see Section 4) |
+| N02 | Saved data between sessions (text files): Stage 1 persistence behind the repository interfaces | Stage 1 (SQLite) | Deterministic | Implemented (modified: text files instead of SQLite, C3) |
+| N03 | AI call log and `aicalls` command: output of the Stage 1 `LoggingLLMProvider` | Stage 1 (logging decorator) | Deterministic | Implemented (extended: `llm.log` file and `aicalls` viewer) |
 
 ### 1.4 Limitations and incomplete functionality (stated honestly)
 
@@ -112,7 +112,7 @@ Package folders are under `src/main/java/wealthsei/`. "GUI" screens are in `pres
 |---|---|
 | **Feature ID and name** | F03 — Budget Setup, Tracking and Alerts |
 | **Stage 1 feature/reference** | F03 (UC03, SD03) |
-| **Status or change** | **Implemented.** Added `BudgetCalculator` (pure calculation) and `PlanService` (balance and plan, see N01); alerts are not repeated at start-up (`primeAlerts`). |
+| **Status or change** | **Implemented.** Added `BudgetCalculator` (pure calculation); the plan part of F03 (`PlanService`, plan dialogs) is described under N01; alerts are not repeated at start-up (`primeAlerts`). |
 | **Implemented classes/files and responsibilities** | `service/BudgetService` saves limits and returns the status; `BudgetCalculator.compute` counts the month's expenses against each limit (80% or more = warning, over 100% = over); `AlertMonitor` raises an `Alert` only when a category's level gets worse and tells its listeners; `BudgetRepository` (`InMemory…`, `PersistentBudgetRepository`); domain `Budget`, `BudgetLine`, `BudgetLimits`, `BudgetStatus`, `BudgetLineStatus`, `Alert`. GUI: dashboard budget card, `PlanDialogs`, toast alerts from `ShellPanel`. |
 | **Key methods** | `BudgetService.setBudget/setLimit/getStatus/refreshAlerts/primeAlerts`, `BudgetCalculator.compute`, `AlertMonitor.attach/evaluate/publish`, `WealthSeiFacade.setBudget/getBudgetStatus/addAlertListener`, `SetBudgetLimitCommand` (used by F13) |
 | **Design patterns** | Observer (`AlertMonitor` subject, `AlertListener` observers), Decorator (persistent repository), Facade |
@@ -274,15 +274,17 @@ Package folders are under `src/main/java/wealthsei/`. "GUI" screens are in `pres
 
 **How the classes collaborate.** `export 2026-10 md ~/october.md` → facade → `ReportService.export(month, format, path, overwrite)`: `buildReportData` reads transactions, budget status, goals and the saved review for the month; the service picks the exporter for the format; `ReportExporter.export` (final) calls the abstract steps in a fixed order and writes the file (refusing to overwrite unless asked). A month with no review gets a note instead of a review section. Deterministic.
 
-### New features (not in Stage 1)
+### Supporting items (parts of Stage 1 that are implemented differently or extended)
+
+These three were drawn in Stage 1 only as part of other features (plan inside F03, SQLite storage behind the repositories, the logging decorator). They are given their own IDs here because they have their own classes and videos.
 
 #### N01 — Financial Plan Setup · Deterministic
 
 | Field | Details |
 |---|---|
 | **Feature ID and name** | N01 — Financial Plan Setup |
-| **Stage 1 feature/reference** | New (Stage 1 only had `Account` with an opening balance) |
-| **Status or change** | **New.** Needed by F03, F05, F07, F08, F10. |
+| **Stage 1 feature/reference** | F03 (UC03, SD03): "Budget and Plan Setup": income sources, current balance, fixed bills, planned one-off expenses, safety buffer; `FinancialPlan`, `IncomeSource`, `FixedBill`, `PlannedExpense`, `PlanService`, `PlanRepository` |
+| **Status or change** | **Implemented as designed; command names differ.** Stage 1: `plan set-income`, `plan add-bill`, `plan add-expense`, `plan set-balance`; implemented: `plan income`, `plan bill`, `plan expense`, `plan balance`, plus `plan buffer`. GUI: plan dialogs (`PlanDialogs`) opened from the dashboard instead of a fixed Plan panel. Needed by F03, F05, F07, F08, F10. |
 | **Implemented classes/files and responsibilities** | `service/PlanService` (balance with its date, safety buffer — default $200, income sources, fixed bills, planned expenses; a repeated name replaces the old entry); `domain/FinancialPlan`, `IncomeSource`, `FixedBill`, `PlannedExpense`, `Frequency` (weekly, biweekly, monthly, yearly); `PlanRepository` (+ persistent). GUI: `PlanDialogs`. |
 | **Key methods** | `PlanService.setBalance/setSafetyBuffer/addIncome/addFixedBill/addPlannedExpense/getPlan`, `WealthSeiFacade` same names, `CliApp` `plan show|balance|buffer|income|bill|expense` |
 | **Design patterns** | Facade, Decorator (persistent repository) |
@@ -295,8 +297,8 @@ Package folders are under `src/main/java/wealthsei/`. "GUI" screens are in `pres
 | Field | Details |
 |---|---|
 | **Feature ID and name** | N02 — Saved Data Between Sessions |
-| **Stage 1 feature/reference** | New (Stage 1 planned SQLite) |
-| **Status or change** | **New (replacement for SQLite).** |
+| **Stage 1 feature/reference** | Stage 1 stack and package table: "SQLite via JDBC", "repository interfaces and their `Sqlite…` implementations" |
+| **Status or change** | **Modified (C3).** The repository interfaces are as designed; the `Sqlite…` implementations are replaced by `Persistent*Repository` classes that write text files. |
 | **Implemented classes/files and responsibilities** | `repository/file/TsvFile` (tab-separated files, escaping, atomic replace), `FileCodec`, `StorageException`, and the `Persistent*Repository` classes (transactions, budgets, plan, rules, goals, recurring flags, memory) that wrap the in-memory repositories; `WealthSeiFactory.persistent(dir, …)`; `Main` (data folder `~/.wealthsei`, override `WEALTHSEI_HOME`). |
 | **Key methods** | `TsvFile.read/write`, `Persistent*Repository.save/findAll`, `WealthSeiFactory.persistent` |
 | **Design patterns** | Decorator (adds saving to the in-memory repository), Factory (`WealthSeiFactory`) |
@@ -309,8 +311,8 @@ Package folders are under `src/main/java/wealthsei/`. "GUI" screens are in `pres
 | Field | Details |
 |---|---|
 | **Feature ID and name** | N03 — AI Call Log |
-| **Stage 1 feature/reference** | New |
-| **Status or change** | **New** (supports the AI-use reporting required in Stage 2). |
+| **Stage 1 feature/reference** | Fig 3.5 and pattern P7 (Decorator): `LoggingLLMProvider` does "logging and token counting" |
+| **Status or change** | **Extended.** The Stage 1 decorator is implemented as designed; the `llm.log` file, the `aicalls` command and `scripts/ai-usage.sh` are additions that support the AI-use reporting required in Stage 2. |
 | **Implemented classes/files and responsibilities** | `llm/LoggingLLMProvider` (decorator) writes one line per call to `llm.log` (call number, model, tokens, milliseconds; never the key, questions or data); `CliApp` `aicalls [n]` reads it; `scripts/ai-usage.sh` totals calls and tokens per model. |
 | **Key methods** | `LoggingLLMProvider.complete`, `CliApp.aicalls/setCallLog` |
 | **Design patterns** | Decorator |
@@ -449,7 +451,7 @@ The diagrams are provided as UMLet `.uxf` source files in `docs/uxf_stage2/` (on
 
 ![Figure 3.5](img/d3b.png)
 
-**Figure 3.6 — Domain model.** Value classes and records. Classes marked NEW do not exist in Stage 1 (the plan classes carry the balance, income, bills and buffer; `PurchaseImpact` carries the result the affordability rules use). Stage 1's `Account` is kept but the balance used by the forecast is held in `FinancialPlan`.
+**Figure 3.6 — Domain model.** Value classes and records. The class marked NEW does not exist in Stage 1 (`PurchaseImpact` carries the result the affordability rules use). The plan classes (`FinancialPlan`, `IncomeSource`, `FixedBill`, `PlannedExpense`) are in Stage 1 and keep their names. Stage 1's `Account` is kept but the balance used by the forecast is held in `FinancialPlan`.
 
 ![Figure 3.6](img/d4.png)
 
@@ -517,7 +519,7 @@ Each entry follows **Original design → Implemented change → Reason → Impac
 
 **C8 — Prototype adopted.** *Original:* only "also considered". *Implemented:* `ForecastInputs.deepCopy` (P10). *Reason:* the simulator needs an independent copy. *Impact:* none on other patterns.
 
-**C9 — Added domain/service classes.** `FinancialPlan`, `IncomeSource`, `FixedBill`, `PlannedExpense`, `PlanService`, `PlanRepository` (N01), `BudgetCalculator`, `CategoryCorrector`, `PurchaseAssessor`, `Verdict`, `PlainText`, `ScenarioDrafts`, `RecurringReviewer`, `RecurringReview`, `AbstractCsvAdapter`, `CardStatementCsvAdapter`, `CardMerchantCleaner`, `WealthSeiFactory`, `LlmConfig`, `HttpTransport`/`JdkHttpTransport`, `Json`, `UnavailableLLMProvider` and the Swing helper classes. *Reason:* each fills a gap found while implementing (the plan data the forecast needs; the fixed rules for affordability; markdown-free answers). *Impact:* more classes than Stage 1, none fewer except those in C2 and C4 (137 of 144 Stage 1 classes have the same name, 3 are renamed, 4 are replaced; full list in `docs/stage1-conformance.md`).
+**C9 — Added domain/service classes.** `BudgetCalculator`, `CategoryCorrector`, `PurchaseAssessor`, `Verdict`, `PlainText`, `ScenarioDrafts`, `RecurringReviewer`, `RecurringReview`, `AbstractCsvAdapter`, `CardStatementCsvAdapter`, `CardMerchantCleaner`, `WealthSeiFactory`, `LlmConfig`, `HttpTransport`/`JdkHttpTransport`, `Json`, `UnavailableLLMProvider` and the Swing helper classes. *Reason:* each fills a gap found while implementing (the plan data the forecast needs; the fixed rules for affordability; markdown-free answers). *Impact:* more classes than Stage 1. Every class named in the final Stage 1 report exists under the same name, except the library classes (C2: `CSVParser`, `ChatModel`, `AnthropicChatModel`, `MessageWindowChatMemory` and the LangChain4j message types), `ExplanationService` and `AnalysisFacts` (C4), and the renamed `ProposalView`/`ReportView` (C1). The check compared the class names written in the Stage 1 text with the code; `docs/stage1-conformance.md` has the details.
 
 ### 4.2 Feature changes
 
@@ -533,11 +535,32 @@ Each entry follows **Original design → Implemented change → Reason → Impac
 
 **C15 — F11/F12/F13.** F11 fixes are chosen by code rules so every suggestion has numbers behind it; F12 uses our own memory window and a `forget` command; F13 gains `from-whatif` / `from-goal` and `expireOld` for past months. *Impact:* proposals can come from three sources; pending proposals and reviews are session-only.
 
-**C16 — New features.** N01 Financial plan setup, N02 Saved data between sessions, N03 AI call log (`aicalls`, `llm.log`). *Reason:* the forecast, alerts and agent need a balance, income and bills; data should survive a restart; AI usage must be reported. *Impact:* Section 2.
+**C16 — Supporting items N01–N03.** *Original:* the plan is part of F03; persistence is SQLite behind repository interfaces; logging is the `LoggingLLMProvider` decorator. *Implemented:* these are given their own IDs and videos: N01 plan setup (as designed, command names differ), N02 text-file storage (C3), N03 `llm.log` and the `aicalls` command (an addition to the decorator). *Reason:* they have their own classes and are shown in their own videos; AI use must be reported. *Impact:* Section 2.
 
 **C17 — F01 manual entry.** *Original:* F01 input is a CSV path or a `NewTransaction` (Stage 1 facade `addTransaction`, `TransactionService.addTransaction` and `validate`). *Implemented:* first Stage 2 builds covered CSV only; manual entry was found missing while comparing the submitted UXF files with the code and was added: `NewTransaction` record, `TransactionService.addTransaction`/`validate`, `WealthSeiFacade.addTransaction`, CLI `add`, GUI "Add transaction" dialog, 9 new tests. *Reason:* it was part of the Stage 1 design. *Impact:* none on other features; matches the Stage 1 diagrams.
 
-**Other differences (not behaviour changes).** The CLI syntax differs from the Stage 1 sketch (`correct` instead of `categorize`, `export <month> <fmt> <file>` instead of `--format --out`, `whatif` text or structured); the CLI is launched through `Main` with Maven (`exec:java`) rather than a `wealthsei` script. The undo stack is bounded to 100 commands as Stage 1 required. Learned rules apply to future imports only, not to past transactions.
+**Command-line differences from Stage 1 (not behaviour changes).** Stage 1 sketched the CLI as `wealthsei <command>` (picocli). The implemented CLI is started through `Main` with Maven (`exec:java`): with no arguments it opens a prompt, and with arguments it runs that one command and exits. The commands keep the Stage 1 meaning; only the spelling of some differs:
+
+| Stage 1 | Implemented | Note |
+|---|---|---|
+| `import <file.csv>` | `import <file.csv>` | same |
+| `add-tx --date <d> --amount <a> --merchant <m> [--category <c>] [--income]` | `add <date> <amount> "<merchant>" [category=<id>] [income] [note="<text>"]` | positional instead of flags (C17) |
+| `categorize <txId> <category>` | `correct <txId> <categoryId>` | renamed |
+| `undo`, `redo` | `undo`, `redo` | same |
+| `plan set-income`, `add-bill`, `add-expense`, `set-balance` | `plan income`, `bill`, `expense`, `balance` | shorter names; `plan buffer` added; `plan show` same |
+| `budget set <month> <category> <amount>` | `budget set <month> <category>=<amount> ...` | several limits at once |
+| `budget status <month>` | `budget status <month>` | same |
+| `recurring`, `safe [date]`, `habits <month>` | same | `forecast`, `recurring review`, `recurring flag` added |
+| `score <month>`, `review <month>` | `score [month]`, `review [month]` | month optional |
+| `afford "<item>" <price>` | `afford "<item>" <price> [date]` | optional date |
+| `goal add "<name>" <target> <deadline>`, `goal replan <id>` | same, `goal add` takes an optional saved amount | `goal list`, `save`, `monthly` added |
+| `whatif "<text>"` | `whatif <text>` | also a typed form `whatif key=value` that needs no AI |
+| `ask "<question>"`, `trace <id>` | `ask "<question>"`, `trace [id]` | id optional (latest by default) |
+| `proposals list`, `approve <id>`, `reject <id>` | same | `all`, `from-whatif`, `from-goal`, `undo`, `why` added |
+| `export <month> --format md --out report.md` | `export <month> <md\|csv\|txt> <file> [overwrite]` | positional |
+| (not in Stage 1) | `transactions`, `categories`, `aicalls`, `forget`, `protect`/`unprotect` | helper commands |
+
+In the GUI the plan is edited in dialogs opened from the dashboard (`PlanDialogs`), where Stage 1 drew a Plan panel on `DashboardView`. The undo stack is bounded to 100 commands as Stage 1 required. Learned rules apply to future imports only, not to past transactions.
 
 ---
 
