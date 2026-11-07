@@ -39,7 +39,8 @@ public class Planner {
         ctx.addUserMessage("Your answer contained figures that no tool result contains: "
                 + String.join(", ", report.ungroundedFigures())
                 + ". Rewrite it using only figures from the tool results (call a tool if you need one). "
-                + "Keep the VERDICT line if you had one.");
+                + "Keep the VERDICT line if you had one. Reply with only the corrected answer itself: "
+                + "do not explain what you changed and do not mention this message.");
         return nextStep(ctx);
     }
 

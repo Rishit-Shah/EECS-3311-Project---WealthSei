@@ -24,6 +24,23 @@ class GroundingCheckerTest {
     }
 
     @Test
+    void aScoreMustMatchTheTools() {
+        List<ToolResult> scored = List.of(new ToolResult(true, "{\"healthScore\":58}", ""));
+        assertTrue(checker.verify("Your score was 58 out of 100.", scored, List.of()).grounded());
+        GroundingReport wrong = checker.verify("Your health score was 55 out of 100.", scored, List.of());
+        assertFalse(wrong.grounded());
+        assertEquals(List.of("55"), wrong.ungroundedFigures());
+    }
+
+    @Test
+    void theScaleOfAScoreIsNotAFigure() {
+        List<ToolResult> scored = List.of(new ToolResult(true, "{\"healthScore\":58,\"percentUsed\":80}", ""));
+        assertTrue(checker.verify("Your health score was 58 out of 100, and you used 80% of dining.", scored, List.of()).grounded());
+        assertTrue(checker.verify("Score 58/100.", scored, List.of()).grounded());
+        assertFalse(check("You have 250 left.").grounded());
+    }
+
+    @Test
     void inventedOrCalculatedFiguresAreFlagged() {
         GroundingReport r = check("You would have $2,350.00 left and spend $193.10 a day.");
         assertFalse(r.grounded());

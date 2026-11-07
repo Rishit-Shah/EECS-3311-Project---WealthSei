@@ -222,6 +222,7 @@ public class AgentController {
         if (status == AgentStatus.COMPLETED && ctx.results().stream().anyMatch(r -> !r.success())) {
             status = AgentStatus.TOOL_FAILURE;
         }
+        text = PlainText.of(text);
         trace.addStep(TraceStep.ANSWER, "", "", (verdict == null ? "" : verdict.label() + ": ") + text);
         traces.save(trace);
         return new AgentResult(text, drafts, status, report, trace.id(), verdict, ctx.tokensUsed());

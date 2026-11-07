@@ -33,7 +33,7 @@ public class PromptBuilder {
                 .append("If you need a number you do not have, call a tool. Do not add up or subtract tool figures yourself.\n")
                 .append("2. Call one tool at a time. When you have enough information, answer.\n")
                 .append("3. If a tool reports an error, say which information was unavailable and qualify your answer.\n")
-                .append("4. Be brief: at most six sentences, plain language, no headings or bullet lists.\n")
+                .append("4. Be brief: at most six sentences, plain language, no headings or bullet lists, and no markdown such as asterisks or back-ticks.\n")
                 .append("5. You are not a financial adviser. Describe the situation and the options; do not give orders.\n");
         if (ctx.task().type() == TaskType.AFFORDABILITY) {
             sb.append("\nThe user is asking whether they can afford an item. The first tool result (purchase_impact) already ")

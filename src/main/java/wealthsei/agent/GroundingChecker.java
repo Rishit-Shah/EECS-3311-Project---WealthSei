@@ -13,13 +13,17 @@ import wealthsei.llm.Json;
 /**
  * Checks that the figures in an answer came from tool results, so the model cannot invent or
  * miscalculate numbers. A figure is checked when it has a dollar sign, a percent sign, a
- * decimal point, or is 100 or more (so "3 goals" or "30 days" are not checked, and neither are
- * dates or standalone years). A whole-number figure may be a rounding of a tool figure
+ * decimal point, follows the word "score", or is 100 or more (so "3 goals" or "30 days" are not checked, and neither are
+ * dates, standalone years or the scale of a score such as "out of 100"). A whole-number figure may be a rounding of a tool figure
  * (within 0.5); a figure with decimals must match to the cent.
  */
 public class GroundingChecker {
 
     private static final Pattern DATE = Pattern.compile("\\d{4}-\\d{2}(-\\d{2})?");
+    /** The scale of a score ("out of 100", "/100") is not a figure the tools have to produce. */
+    /** A whole number right after the word "score" is a figure too (a score of 55 must really be 55). */
+    private static final Pattern SCORE_BEFORE = Pattern.compile("(?i)\\bscore(?:d)?\\D{0,25}$");
+    private static final Pattern SCALE = Pattern.compile("(?i)\\bout of 100\\b|/\\s?100\\b");
     private static final Pattern NUMBER = Pattern.compile("(\\$)?(\\d{1,3}(?:,\\d{3})+|\\d+)(\\.\\d+)?(%)?");
     private static final BigDecimal CENT = new BigDecimal("0.005");
     private static final BigDecimal HALF = new BigDecimal("0.5");
@@ -63,7 +67,7 @@ public class GroundingChecker {
     private record Figure(String text, BigDecimal value, boolean checked, boolean wholeNumber) { }
 
     private static List<Figure> figures(String text) {
-        String cleaned = DATE.matcher(text).replaceAll(" ");
+        String cleaned = SCALE.matcher(DATE.matcher(text).replaceAll(" ")).replaceAll(" ");
         List<Figure> out = new ArrayList<>();
         Matcher m = NUMBER.matcher(cleaned);
         while (m.find()) {
@@ -74,7 +78,8 @@ public class GroundingChecker {
             BigDecimal value = new BigDecimal(digits);
             boolean year = !dollar && !decimal && !percent && value.compareTo(new BigDecimal(1900)) >= 0
                     && value.compareTo(new BigDecimal(2100)) <= 0;
-            boolean checked = !year && (dollar || percent || decimal || value.compareTo(new BigDecimal(100)) >= 0);
+            boolean afterScore = SCORE_BEFORE.matcher(cleaned.substring(Math.max(0, m.start() - 30), m.start())).find();
+            boolean checked = !year && (dollar || percent || decimal || afterScore || value.compareTo(new BigDecimal(100)) >= 0);
             out.add(new Figure(m.group().trim(), value, checked, !decimal));
         }
         return out;
