@@ -35,6 +35,38 @@ class CliAppTest {
     }
 
     @Test
+    void aiCallsShowsTheLastLinesOfTheCallLog() throws IOException {
+        assertTrue(run("aicalls").contains("No AI calls recorded yet."));
+        Path log = Files.createTempFile("wealthsei-llm", ".log");
+        log.toFile().deleteOnExit();
+        Files.writeString(log, "t1 LLM call 1 model=claude-haiku-5-5 tokens=175 ms=800\n"
+                + "t2 LLM call 1 model=claude-sonnet-5-5 tokens=1642 ms=2100\n"
+                + "t3 LLM call 2 model=claude-sonnet-5-5 tokens=1607 ms=1900\n");
+        cli.setCallLog(log);
+        assertTrue(run("aicalls").contains("This session so far: 0 calls, 0 tokens"));
+        Files.writeString(log, "t4 LLM call 1 model=claude-sonnet-5-5 tokens=1000 ms=1\n"
+                + "t5 LLM call 2 model=claude-sonnet-5-5 tokens=500 ms=1\n", java.nio.file.StandardOpenOption.APPEND);
+        String summary = run("aicalls");
+        assertTrue(summary.contains("This session so far: 2 calls (claude-sonnet-5-5: 2), 1500 tokens"), summary);
+        assertTrue(summary.contains("Whole log: 5 calls (claude-haiku-5-5: 1, claude-sonnet-5-5: 4), 4924 tokens"), summary);
+        String two = run("aicalls 2");
+        assertTrue(two.contains("Last 2 AI call(s)"));
+        assertTrue(two.contains("tokens=1000") && two.contains("tokens=500"));
+        assertFalse(two.contains("t1 LLM call"));
+        assertTrue(run("aicalls").contains("t1 LLM call"));
+        assertTrue(run("aicalls 0").contains("aicalls [n from 1 to 100]"));
+    }
+
+    @Test
+    void aLeadingTildeMeansTheHomeFolder() {
+        Path home = Path.of(System.getProperty("user.home"));
+        assertEquals(home.resolve("Desktop/a.md"), CliApp.expandHome("~/Desktop/a.md"));
+        assertEquals(home, CliApp.expandHome("~"));
+        assertEquals(Path.of("demo/x.csv"), CliApp.expandHome("demo/x.csv"));
+        assertEquals(Path.of("a~b.csv"), CliApp.expandHome("a~b.csv"));
+    }
+
+    @Test
     void helpListsTheCommands() {
         String out = run("help");
         assertTrue(out.contains("import <file.csv>"));

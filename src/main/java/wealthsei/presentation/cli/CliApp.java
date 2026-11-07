@@ -113,6 +113,7 @@ public class CliApp {
                 case "ask" -> ask(rest);
                 case "forget" -> forget();
                 case "trace" -> trace(rest);
+                case "aicalls" -> aiCalls(rest);
                 case "export" -> export(rest);
                 case "proposals" -> proposals(rest);
                 case "protect" -> protect(rest, true);
@@ -149,6 +150,7 @@ public class CliApp {
                   plan bill <name> <amount> <frequency> <nextDueDate> [categoryId]
                   plan expense <description> <amount> <date> [categoryId]
                   recurring                                 find subscriptions and other repeating payments
+                  recurring review                          a short AI-worded review of them
                   recurring flag|unflag <merchant>          mark a recurring payment for review
                   safe [YYYY-MM-DD]                         how much you can spend per day this month
                   forecast [days]                           projected balance for the next days (default 30)
@@ -163,6 +165,7 @@ public class CliApp {
                   whatif cancel=<name> caps=<cat>=<amt> income=<amt> buy=<amt>@<date>
                                                             the same with the changes typed directly (no AI)
                   trace [id]                                how the last answer was reached (tools used, figures)
+                  aicalls [n]                               the last AI calls: model, tokens and time (default 5)
                   export <YYYY-MM> <md|csv|txt> <file> [overwrite]  save a month's report to a file
                   proposals [list|all]                      suggested changes waiting for your approval
                   proposals from-whatif                     turn the last what-if into proposals
@@ -181,7 +184,7 @@ public class CliApp {
 
     private void importFile(List<String> args) {
         need(args.size() == 1, "import <file.csv>");
-        ImportResult r = facade.importTransactions(Path.of(args.get(0)), today.get());
+        ImportResult r = facade.importTransactions(expandHome(args.get(0)), today.get());
         out.println("Imported " + r.imported() + " transactions, skipped " + r.duplicates()
                 + " duplicates, rejected " + r.rejected().size() + " rows.");
         r.rejected().forEach(reason -> out.println("  rejected: " + reason));
@@ -323,8 +326,14 @@ public class CliApp {
             return;
         }
         String action = args.get(0).toLowerCase();
+        if (action.equals("review") && args.size() == 1) {
+            wealthsei.analytics.RecurringReview review = facade.reviewRecurring(today.get());
+            out.println(review.byAi() ? "AI review:" : "Standard summary (" + review.note() + ")");
+            out.println(review.text());
+            return;
+        }
         need((action.equals("flag") || action.equals("unflag")) && args.size() == 2,
-                "recurring [flag|unflag <merchant>]");
+                "recurring [review | flag|unflag <merchant>]");
         boolean flag = action.equals("flag");
         facade.flagRecurring(args.get(1), flag, today.get());
         out.println(args.get(1) + (flag ? " flagged for review." : " is no longer flagged."));
@@ -400,7 +409,7 @@ public class CliApp {
             throw new UsageException("export <YYYY-MM> <md|csv|txt> <file> [overwrite]");
         }
         java.nio.file.Path written = facade.exportReport(YearMonth.parse(args.get(0)),
-                wealthsei.domain.ExportFormat.parse(args.get(1)), Path.of(args.get(2)), overwrite);
+                wealthsei.domain.ExportFormat.parse(args.get(1)), expandHome(args.get(2)), overwrite);
         out.println("Report saved to " + written.toAbsolutePath());
     }
 
@@ -533,6 +542,8 @@ public class CliApp {
 
     private List<wealthsei.agent.ProposalDraft> lastDrafts = List.of();
     private String lastDraftsTrace = "";
+    private java.nio.file.Path callLog;
+    private int callsBefore;
 
     private void printScenario(wealthsei.analytics.ScenarioResult r) {
         out.println("What-if over the next " + r.months() + " months:");
@@ -552,6 +563,73 @@ public class CliApp {
                     g.baselineCompletion() == null ? "not reached" : g.baselineCompletion(),
                     g.scenarioCompletion() == null ? "not reached" : g.scenarioCompletion());
         }
+    }
+
+    /** Tells the command where the call log is. Without it, {@code aicalls} says there is no log. */
+    public void setCallLog(java.nio.file.Path file) {
+        this.callLog = file;
+        this.callsBefore = readLog().size();
+    }
+
+    private List<String> readLog() {
+        try {
+            return callLog != null && java.nio.file.Files.isRegularFile(callLog)
+                    ? java.nio.file.Files.readAllLines(callLog, java.nio.charset.StandardCharsets.UTF_8) : List.of();
+        } catch (java.io.IOException e) {
+            return List.of();
+        }
+    }
+
+    /** "3 calls (claude-haiku-5-5: 1, claude-sonnet-5-5: 2), 4985 tokens" for the given log lines. */
+    private static String totals(List<String> lines) {
+        java.util.Map<String, Integer> byModel = new java.util.TreeMap<>();
+        long tokens = 0;
+        for (String line : lines) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("model=(\\S+) tokens=(\\d+)").matcher(line);
+            if (m.find()) {
+                byModel.merge(m.group(1), 1, Integer::sum);
+                tokens += Long.parseLong(m.group(2));
+            }
+        }
+        int calls = byModel.values().stream().mapToInt(Integer::intValue).sum();
+        String models = byModel.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue())
+                .collect(java.util.stream.Collectors.joining(", "));
+        return calls + (calls == 1 ? " call" : " calls") + (calls == 0 ? "" : " (" + models + ")") + ", " + tokens + " tokens";
+    }
+
+    /** A leading ~ means the home folder, as in a shell; the app reads paths itself, so it has to do this. */
+    static Path expandHome(String path) {
+        if (path.equals("~") || path.startsWith("~/") || path.startsWith("~\\")) {
+            return Path.of(System.getProperty("user.home")).resolve(path.length() <= 2 ? "" : path.substring(2));
+        }
+        return Path.of(path);
+    }
+
+    private void aiCalls(List<String> args) {
+        need(args.size() <= 1, "aicalls [n]");
+        int n = args.isEmpty() ? 5 : Integer.parseInt(args.get(0));
+        need(n >= 1 && n <= 100, "aicalls [n from 1 to 100]");
+        if (callLog == null || !java.nio.file.Files.isRegularFile(callLog)) {
+            out.println("No AI calls recorded yet.");
+            return;
+        }
+        List<String> lines;
+        try {
+            lines = java.nio.file.Files.readAllLines(callLog, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (java.io.IOException e) {
+            out.println("Could not read the call log: " + e.getMessage());
+            return;
+        }
+        if (lines.isEmpty()) {
+            out.println("No AI calls recorded yet.");
+            return;
+        }
+        out.println("Last " + Math.min(n, lines.size()) + " AI call(s) (time is UTC; the log never holds your key or your data):");
+        for (String line : lines.subList(Math.max(0, lines.size() - n), lines.size())) {
+            out.println("  " + line);
+        }
+        out.println("This session so far: " + totals(lines.subList(Math.min(callsBefore, lines.size()), lines.size())));
+        out.println("Whole log: " + totals(lines));
     }
 
     private void trace(List<String> args) {
