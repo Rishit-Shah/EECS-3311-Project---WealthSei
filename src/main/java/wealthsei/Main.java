@@ -16,7 +16,7 @@ import wealthsei.presentation.cli.CliApp;
 import wealthsei.repository.file.StorageException;
 
 /**
- * Starts the command-line version. With arguments, runs that one command and exits
+ * Starts the command-line version, or the window with the argument {@code gui}. With arguments, runs that one command and exits
  * (for example {@code import bank.csv}); with none, starts an interactive session.
  *
  * <p>Data is saved in the folder named by the {@code WEALTHSEI_HOME} environment variable, or
@@ -31,9 +31,20 @@ public final class Main {
         Path dataDir = dataDirectory();
         LlmConfig config = LlmConfig.load(Path.of(".env"), System.getenv());
         LLMProvider provider = LLMProviders.create(config, line -> appendLog(dataDir, line));
+        if (args.length == 1 && args[0].equalsIgnoreCase("gui")) {
+            try {
+                wealthsei.presentation.gui.MainWindow.launch(WealthSeiFactory.persistent(dataDir, provider, config),
+                        java.time.LocalDate::now, config.hasKey(), dataDir.toString());
+            } catch (StorageException e) {
+                System.err.println("Cannot open the data folder: " + e.getMessage());
+                System.exit(1);
+            }
+            return;
+        }
         CliApp cli;
         try {
             cli = new CliApp(WealthSeiFactory.persistent(dataDir, provider, config), System.out);
+            cli.setCallLog(dataDir.resolve("llm.log"));
         } catch (StorageException e) {
             System.err.println("Cannot open the data folder: " + e.getMessage());
             System.exit(1);
