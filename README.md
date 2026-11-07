@@ -176,20 +176,20 @@ Also indexed by feature in the Stage 2 report (Section 7). All videos use invent
 
 | ID | Feature | GUI demo | CLI demo |
 |---|---|---|---|
-| F01 | Import transactions (CSV) | [GUI video](PASTE_LINK_F01_GUI) | [CLI video](PASTE_LINK_F01_CLI) |
-| F02 | Categorization and corrections | [GUI video](PASTE_LINK_F02_GUI) | [CLI video](PASTE_LINK_F02_CLI) |
-| F03 | Budgets and alerts | [GUI video](PASTE_LINK_F03_GUI) | [CLI video](PASTE_LINK_F03_CLI) |
-| F04 | Recurring payments / subscriptions | [GUI video](PASTE_LINK_F04_GUI) | [CLI video](PASTE_LINK_F04_CLI) |
-| F05 | Safe-to-spend and forecast | [GUI video](PASTE_LINK_F05_GUI) | [CLI video](PASTE_LINK_F05_CLI) |
-| F06 | Habit detective | [GUI video](PASTE_LINK_F06_GUI) | [CLI video](PASTE_LINK_F06_CLI) |
-| F07 | Financial health score | [GUI video](PASTE_LINK_F07_GUI) | [CLI video](PASTE_LINK_F07_CLI) |
-| F08 | Affordability agent | [GUI video](PASTE_LINK_F08_GUI) | [CLI video](PASTE_LINK_F08_CLI) |
-| F09 | Savings goals | [GUI video](PASTE_LINK_F09_GUI) | [CLI video](PASTE_LINK_F09_CLI) |
-| F10 | What-if scenarios | [GUI video](PASTE_LINK_F10_GUI) | [CLI video](PASTE_LINK_F10_CLI) |
-| F11 | Monthly review | [GUI video](PASTE_LINK_F11_GUI) | [CLI video](PASTE_LINK_F11_CLI) |
-| F12 | Chat with memory | [GUI video](PASTE_LINK_F12_GUI) | [CLI video](PASTE_LINK_F12_CLI) |
-| F13 | Proposals needing approval | [GUI video](PASTE_LINK_F13_GUI) | [CLI video](PASTE_LINK_F13_CLI) |
-| F14 | Report export | [GUI video](PASTE_LINK_F14_GUI) | [CLI video](PASTE_LINK_F14_CLI) |
+| F01 | Import transactions (CSV) | [GUI video](https://www.youtube.com/watch?v=5yNhPIkFMKI) | [CLI video](https://www.youtube.com/watch?v=pw3QiRvM6do) |
+| F02 | Categorization and corrections | [GUI video](https://www.youtube.com/watch?v=wP0EjDVBP4Q) | [CLI video](https://www.youtube.com/watch?v=Nerwf8442Z4) |
+| F03 | Budgets and alerts | [GUI video](https://youtu.be/T7yu2Cuq-7c) | [CLI video](https://www.youtube.com/watch?v=TSALZRgdeQQ) |
+| F04 | Recurring payments / subscriptions | [GUI video](https://youtu.be/CL4O3BdPj9Y) | [CLI video](https://youtu.be/oFYOGEhMv6s) |
+| F05 | Safe-to-spend and forecast | [GUI video](https://youtu.be/VXB-AQRf45U) | [CLI video](https://youtu.be/XkTgEJcGAMg) |
+| F06 | Habit detective | [GUI video](https://youtu.be/NX8BO9QgJ7c) | [CLI video](https://youtu.be/H1Pr89MZJmw) |
+| F07 | Financial health score | [GUI video](https://youtu.be/QchTzeQavGg) | [CLI video](https://youtu.be/PUYuD7kA78E) |
+| F08 | Affordability agent | [GUI video](https://youtu.be/hgBisO-yNps) | [CLI video](https://youtu.be/mHH2tObicxQ) |
+| F09 | Savings goals | [GUI video](https://youtu.be/pjaA9EA_er0) | [CLI video](https://youtu.be/zYbl2amQ1xQ) |
+| F10 | What-if scenarios | [GUI video](https://youtu.be/sr6ZeIOjvGw) | [CLI video](https://youtu.be/fa5guZbTO-I) |
+| F11 | Monthly review | [GUI video](https://youtu.be/c_ku3EHiG-4) | [CLI video](https://youtu.be/BVwFyLeVzNg) |
+| F12 | Chat with memory | [GUI video](https://youtu.be/7pM860_9wrw) | [CLI video](https://youtu.be/asXd1FVOAtE) |
+| F13 | Proposals needing approval | [GUI video](https://youtu.be/cRXxYoqjJa4) | [CLI video](https://youtu.be/geAHvxzxwPY) |
+| F14 | Report export | [GUI video](https://youtu.be/_mjlCXFyK10) | [CLI video](https://youtu.be/4kad3BqnIeM) |
 
 ## Safety
 

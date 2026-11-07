@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="15.1">
+  <zoom_level>10</zoom_level>
+  <element>
+    <id>UMLSequenceAllInOne</id>
+    <coordinates><x>20</x><y>20</y><w>1190</w><h>510</h></coordinates>
+    <panel_attributes>title=F05-F07 as implemented
+obj=User~User actor
+obj=DashboardView / CliApp~UI
+obj=WealthSeiFacade~F
+obj=AnalyticsService~AN
+obj=ForecastEngine / SafeToSpendCalculator / HabitAnalyzer / HealthScoreCalculator~ENG
+obj=Summary templates~TPL
+obj=AgentController (only if the user asks in the Assistant)~AG
+User-&gt;UI : open dashboard, or safe / forecast / habits / score
+UI-&gt;F : getSafeToSpend / getForecast / getHabits / getHealthScore
+F-&gt;AN : same call (today, month)
+AN-&gt;ENG : compute from saved plan, transactions, goals, budget
+ENG-&gt;&gt;AN : numbers (deterministic)
+AN-&gt;TPL : write(result)
+TPL-&gt;&gt;AN : fixed-template sentence
+AN-&gt;&gt;F : result + text
+F-&gt;&gt;UI : shown as numbers and text
+UI-&gt;F : ask(question)
+F-&gt;AG : handle(CHAT)
+AG-&gt;AN : tool calls (forecast / insights tools)
+AG-&gt;&gt;UI : model wording, every figure grounded against the tool results</panel_attributes>
+    <additional_attributes/>
+  </element>
+</diagram>

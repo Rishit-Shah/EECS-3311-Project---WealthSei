@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="15.1">
+  <zoom_level>10</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>20</x><y>20</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>CliApp
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>320</x><y>20</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>ShellPanel
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>620</x><y>20</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>MainWindow
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>920</x><y>20</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>GuiViews
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>1220</x><y>20</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>WealthSeiFactory
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>1520</x><y>20</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>TransactionService
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>20</x><y>142</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>BudgetService
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>320</x><y>142</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>PlanService
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>620</x><y>142</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>GoalService
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>920</x><y>142</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>AnalyticsService
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>1220</x><y>142</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>ReviewService
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>1520</x><y>142</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>ProposalService
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>20</x><y>264</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>ReportService
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>320</x><y>264</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>AlertMonitor
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>620</x><y>264</y><w>230</w><h>68</h></coordinates>
+    <panel_attributes>&lt;&lt;interface&gt;&gt;
+AlertListener
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>920</x><y>264</y><w>230</w><h>68</h></coordinates>
+    <panel_attributes>&lt;&lt;interface&gt;&gt;
+TransactionRepository
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>1220</x><y>264</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>PersistentTransactionRepository
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>1520</x><y>264</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>InMemoryTransactionRepository
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>20</x><y>402</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>TsvFile
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>435</x><y>46</y><w>300</w><h>10</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>300;0;0;0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>435</x><y>46</y><w>600</w><h>10</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;0;600;0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>135</x><y>168</y><w>300</w><h>122</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;0;300;122</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>435</x><y>168</y><w>300</w><h>122</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>300;0;0;122</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>435</x><y>290</y><w>300</w><h>8</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>0;0;300;8</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>135</x><y>46</y><w>600</w><h>252</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>600;252;0;0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>435</x><y>46</y><w>300</w><h>252</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>300;252;0;0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>1035</x><y>46</y><w>600</w><h>252</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>600;0;0;252</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>1035</x><y>290</y><w>300</w><h>8</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>0;8;300;0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>1035</x><y>290</y><w>600</w><h>8</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>0;8;600;0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>1335</x><y>290</y><w>300</w><h>10</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;-
+m1=wraps</panel_attributes>
+    <additional_attributes>0;0;300;0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>135</x><y>290</y><w>1200</w><h>138</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>1200;0;0;138</additional_attributes>
+  </element>
+</diagram>

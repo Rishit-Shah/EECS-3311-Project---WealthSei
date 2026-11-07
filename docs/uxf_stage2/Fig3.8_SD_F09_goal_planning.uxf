@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="15.1">
+  <zoom_level>10</zoom_level>
+  <element>
+    <id>UMLSequenceAllInOne</id>
+    <coordinates><x>20</x><y>20</y><w>1360</w><h>660</h></coordinates>
+    <panel_attributes>title=Plan and replan a savings goal
+obj=User~User actor
+obj=GoalsView / CliApp~UI
+obj=WealthSeiFacade~F
+obj=GoalService~GS
+obj=GoalPlanner~GP
+obj=AnalyticsService~AN
+obj=AlertMonitor~AM
+obj=ProposalService~PS
+User-&gt;UI : add goal (name, target, deadline, saved)
+UI-&gt;F : addGoal(request, today)
+F-&gt;GS : createGoal(request, today)
+GS-&gt;GS : save goal (GoalRepository)
+GS-&gt;AN : monthly surplus (MonthlySurplusProvider)
+GS-&gt;GP : requiredMonthly / isFeasible / projectedCompletion
+GS-&gt;AM : evaluateGoal(goal, required)
+AM-&gt;&gt;UI : Alert if status got worse
+F-&gt;&gt;UI : SavingsGoal with status
+User-&gt;UI : replan
+UI-&gt;F : getGoalFeasibility(id, today)
+F-&gt;GS : feasibility(id, today)
+GS-&gt;GP : buildOptions(goal, surplus, today)
+F-&gt;&gt;UI : FeasibilityReport (options)
+User-&gt;UI : suggest a fix
+UI-&gt;F : proposeGoalFix(id, today)
+F-&gt;PS : createFromDrafts(draft: set monthly amount)
+PS-&gt;&gt;UI : pending Proposal (approve in F13)</panel_attributes>
+    <additional_attributes/>
+  </element>
+</diagram>

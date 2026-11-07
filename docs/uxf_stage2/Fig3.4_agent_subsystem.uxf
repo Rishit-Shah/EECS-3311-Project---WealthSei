@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="15.1">
+  <zoom_level>10</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>20</x><y>20</y><w>230</w><h>68</h></coordinates>
+    <panel_attributes>AgentController
+--
++handle()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>320</x><y>20</y><w>230</w><h>84</h></coordinates>
+    <panel_attributes>Planner
+--
++nextStep()
++revise()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>620</x><y>20</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>PromptBuilder
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>920</x><y>20</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>ResponseParser
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>1220</x><y>20</y><w>230</w><h>84</h></coordinates>
+    <panel_attributes>ToolManager
+--
++register()
++execute()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>1520</x><y>20</y><w>230</w><h>68</h></coordinates>
+    <panel_attributes>&lt;&lt;interface&gt;&gt;
+Tool
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>20</x><y>174</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>ForecastTool
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>320</x><y>174</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>BudgetStatusTool
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>620</x><y>174</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>GoalTool
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>920</x><y>174</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>TransactionQueryTool
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>1220</x><y>174</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>ScenarioTool
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>1520</x><y>174</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>InsightTool
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>20</x><y>296</y><w>230</w><h>68</h></coordinates>
+    <panel_attributes>GroundingChecker
+--
++verify()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>320</x><y>296</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>MemoryManager
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>620</x><y>296</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>ConversationMemory
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>920</x><y>296</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>UserProfileMemory
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>1220</x><y>296</y><w>230</w><h>68</h></coordinates>
+    <panel_attributes>&lt;&lt;interface&gt;&gt;
+TraceRepository
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>1520</x><y>296</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>AgentTrace
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>20</x><y>434</y><w>230</w><h>68</h></coordinates>
+    <panel_attributes>&lt;&lt;interface&gt;&gt;
+LLMProvider
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>320</x><y>434</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>ScenarioSimulator
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates><x>620</x><y>434</y><w>230</w><h>52</h></coordinates>
+    <panel_attributes>PurchaseAssessor
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>135</x><y>54</y><w>300</w><h>8</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;0;300;8</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>135</x><y>54</y><w>1200</w><h>8</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;0;1200;8</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>135</x><y>54</y><w>10</w><h>276</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;0;0;276</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>135</x><y>54</y><w>300</w><h>268</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;0;300;268</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>135</x><y>54</y><w>1200</w><h>276</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;0;1200;276</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>1335</x><y>322</y><w>300</w><h>8</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;8;300;0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>435</x><y>46</y><w>300</w><h>16</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;16;300;0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>435</x><y>46</y><w>600</w><h>16</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;16;600;0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>135</x><y>62</y><w>300</w><h>406</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>300;0;0;406</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>135</x><y>54</y><w>1500</w><h>146</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>1500;0;0;146</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>435</x><y>54</y><w>1200</w><h>146</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>1200;0;0;146</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>735</x><y>54</y><w>900</w><h>146</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>900;0;0;146</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>1035</x><y>54</y><w>600</w><h>146</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>600;0;0;146</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>1335</x><y>54</y><w>300</w><h>146</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>300;0;0;146</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>1635</x><y>54</y><w>10</w><h>146</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>0;0;0;146</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>435</x><y>200</y><w>900</w><h>260</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>900;0;0;260</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>435</x><y>322</y><w>300</w><h>10</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;0;300;0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>435</x><y>322</y><w>600</w><h>10</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;0;600;0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates><x>135</x><y>54</y><w>600</w><h>406</h></coordinates>
+    <panel_attributes>lt=&lt;.
+m1=rules floor</panel_attributes>
+    <additional_attributes>0;0;600;406</additional_attributes>
+  </element>
+</diagram>
