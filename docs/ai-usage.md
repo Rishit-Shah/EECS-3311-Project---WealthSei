@@ -12,25 +12,25 @@ bash scripts/ai-usage.sh
 
 | Model | Used for | Calls | Tokens | Money cost (Console) |
 |---|---|---|---|---|
-| `claude-haiku-5-5` | F02 category for an unknown merchant; F04 recurring-payments review | (from the script) | (from the script) | (from the Console) |
-| `claude-sonnet-5-5` | Tool-using agent: F08 can I afford it, F10 what-if, F11 monthly review, F12 chat, F13 proposals; explanations in F05, F06, F07 | (from the script) | (from the script) | (from the Console) |
-| **Total** | | | | |
+| `claude-haiku-5-5` | F02 category for an unknown merchant; F04 recurring-payments review | 28 (kept logs) | 5,889 (kept logs); Console 56,275 | part of $0.92 total |
+| `claude-sonnet-5-5` | Tool-using agent: F08 can I afford it, F10 what-if, F11 monthly review, F12 chat, F13 proposals; explanations in F05, F06, F07 | 20 (kept logs) | 44,589 (kept logs); Console 362,079 | part of $0.92 total |
+| **Total** | | 48 (kept logs) | 50,478 (kept logs); Console 418,354 | $0.92 |
 
 Notes:
 - The log has one token total per call, not input and output separately, so the money cost comes from the Console, which does split them.
 - Folders that were deleted between recordings lost their logs, so the script's totals cover only the logs that still exist. The Console totals cover everything the key did, including testing.
 - Typical size of one call: a categorization is about 175 tokens (Haiku); a recurring review about 400 (Haiku); an agent answer is usually two or three calls and about 5,000 tokens in total (Sonnet), for example 1,859 + 3,126 for one habits question.
 
-Console figures (fill in at submission):
+Console figures (usage export, Nov 5-7 2026 UTC, no cache tokens, no web searches):
 
 | Item | Value |
 |---|---|
-| Date range read | |
-| `claude-haiku-5-5` input / output tokens | |
-| `claude-haiku-5-5` cost | |
-| `claude-sonnet-5-5` input / output tokens | |
-| `claude-sonnet-5-5` cost | |
-| Total runtime cost | |
+| Date range read | Nov 1 - Nov 7 2026 (UTC); usage on Nov 5, 6 and 7 |
+| `claude-haiku-5-5` input / output tokens | 46,674 / 9,601 |
+| `claude-haiku-5-5` cost | not split by model on the dashboard |
+| `claude-sonnet-5-5` input / output tokens | 338,620 / 23,459 |
+| `claude-sonnet-5-5` cost | not split by model on the dashboard |
+| Total runtime cost | $0.92 (Console dashboard, "Spend this month", as of Nov 7 6:38 PM UTC) |
 
 ## 2. Building the project with Claude (development)
 
