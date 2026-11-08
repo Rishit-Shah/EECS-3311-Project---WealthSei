@@ -25,7 +25,21 @@ Stage 1 names 144 classes, interfaces and enums (diagrams plus the value-object 
 
 
 
-## Method-level comparison (Stage 1 class diagrams against the code)
+## Method-level comparison against the submitted UXF files (final check, Nov 7)
+
+The earlier method comparison below was made from an older Stage 1 copy and missed manual entry. This one reads the `.uxf` files in `docs/uxf_files_for_diagrams_relevant` directly: 432 attributes and methods in the class diagrams (Figures 3-1 to 3-7) and 178 calls in the sequence diagrams (SD01 to SD11), each looked up by name in the code. Parameters and return types were not compared.
+
+- **Sequence diagrams:** 173 of 178 calls exist in the code. The 5 that do not are `getRecurringPayments`, `getHabitInsights`, `checkAffordability`, `planGoal` (renamed facade methods, report C5) and `explain` (`ExplanationService`, report C4).
+- **Class diagrams, all present by name** except:
+  - the 5 renamed facade methods above and `MainWindow.show()` (now `launch`);
+  - `ExplanationService`, `ChatModel`, `AnthropicChatModel` and their fields (not built, C2 and C4);
+  - 18 screen handlers (`onApprove`, `onAddClicked`, `onPlanSaved`, …): button actions inside the Swing views (C1);
+  - private fields and helpers that the changed design no longer needs, such as `chatMemory`, `undoStack`/`redoStack`, `backoffSeconds`, `logger`, `scriptedReplies`, `adapterTypes`, and repository or helper fields that are passed in as arguments (C18);
+  - reshaped records: `ForecastInputs` (`plan`, `startDate`, `startBalance` became `today`, `openingBalance` and the plan's three lists), `ReportData.status`, and `RecurringPayment.income` (C18).
+- `BudgetStatus.totalSpent` and `BudgetLineStatus.level` exist as computed methods, and every enum constant is present.
+- Manual entry (`NewTransaction`, `TransactionService.addTransaction`/`validate`, `WealthSeiFacade.addTransaction`) is now built (report C17).
+
+## Earlier method-level comparison (older Stage 1 copy; superseded by the section above)
 
 418 members (methods and fields) in the Stage 1 class diagrams were checked by name in the classes that exist in the code. 370 are present with the same name. The 48 that are not are listed below. (Parameters and return types were not compared, only names; some methods gained extra parameters such as a date, and some gained overloads.)
 

@@ -469,7 +469,7 @@ Stage 1 has one use-case diagram, fourteen use-case descriptions (UC01–UC14) a
 | UC01–UC03, UC05–UC07, UC09–UC14 | Yes (wording of the user steps is unchanged) | Only names differ (see Section 4). |
 | UC04 View recurring payments | Mostly | The AI review is a separate action (button/command) instead of part of the page load. |
 | UC08 Plan and replan savings goal | **No** | The agent no longer plans or replans; the goal service does (C13). Replaced below (Figure 3.8). |
-| SD01 Import | Naming only | `CsvParser`, own reader instead of Commons CSV `CSVParser`. |
+| SD01 Import or add transactions | Yes (naming only) | `CsvParser`, own reader instead of Commons CSV `CSVParser`. Part B (add by hand: `addTransaction`, `validate`) is implemented as drawn (C17). |
 | SD02 Categorize and correct | Yes | `RecategorizeCommand` as in Stage 1. |
 | SD03 Budget and alerts | Mostly | The GUI listener is `ShellPanel` (toasts) (C6). |
 | SD04 Analytics with explanation (F04–F07) | **No** | It calls `ExplanationService`, which was not built (C4). Replaced by Figure 3.7 (F05–F07: templates, AI only on request) and Figure 3.9 (F04 AI review). |
@@ -499,7 +499,7 @@ So **three** Stage 1 items were inaccurate (UC08, SD04, SD06) and are replaced b
 
 ## 4. Changes and rationale
 
-Each entry follows **Original design → Implemented change → Reason → Impact**. IDs C1–C17 are used in other sections.
+Each entry follows **Original design → Implemented change → Reason → Impact**. IDs C1–C18 are used in other sections.
 
 ### 4.1 Architecture and class changes
 
@@ -538,6 +538,8 @@ Each entry follows **Original design → Implemented change → Reason → Impac
 **C16 — Supporting items N01–N03.** *Original:* the plan is part of F03; persistence is SQLite behind repository interfaces; logging is the `LoggingLLMProvider` decorator. *Implemented:* these are given their own IDs and videos: N01 plan setup (as designed, command names differ), N02 text-file storage (C3), N03 `llm.log` and the `aicalls` command (an addition to the decorator). *Reason:* they have their own classes and are shown in their own videos; AI use must be reported. *Impact:* Section 2.
 
 **C17 — F01 manual entry.** *Original:* F01 input is a CSV path or a `NewTransaction` (Stage 1 facade `addTransaction`, `TransactionService.addTransaction` and `validate`). *Implemented:* first Stage 2 builds covered CSV only; manual entry was found missing while comparing the submitted UXF files with the code and was added: `NewTransaction` record, `TransactionService.addTransaction`/`validate`, `WealthSeiFacade.addTransaction`, CLI `add`, GUI "Add transaction" dialog, 9 new tests. *Reason:* it was part of the Stage 1 design. *Impact:* none on other features; matches the Stage 1 diagrams.
+
+**C18 — Reshaped records and private members.** *Original (Stage 1 UXF class diagrams):* `ForecastInputs` held `plan`, `startDate` and `startBalance`; `ReportData` held `status`; `RecurringPayment` had an `income` flag; each screen had a named handler (`onApprove`, `onAddClicked`, …); services kept their repositories and helpers as private fields (`txRepo`, `forecastEngine`, `chatMemory`, `undoStack`, …). *Implemented:* `ForecastInputs` holds `today`, `openingBalance`, the plan's three lists (`incomeSources`, `fixedBills`, `plannedExpenses`) and `typicalMonthlySpending`; `ReportData` holds the figures the report prints (`income`, `spending`, `transactionCount`, `categories`, `goals`, `review`); `RecurringPayment` has no `income` flag because the detector reads expenses only (income comes from the plan, N01); screen handlers are button actions inside the Swing views; private fields follow the changed design (our own memory window and storage, two deques `done`/`undone` in `CommandHistory`, dependencies passed as arguments). *Reason:* the forecast needs the plan items separately; the report needs its totals; the libraries behind the other fields were replaced (C2, C3). *Impact:* no change to what the features do, except that a regular paycheque is not listed as a recurring payment in F04. A check of all 432 members in the submitted Stage 1 class diagrams and all 178 calls in the sequence diagrams found no other missing names; the result is in `docs/stage1-conformance.md`.
 
 **Command-line differences from Stage 1 (not behaviour changes).** Stage 1 sketched the CLI as `wealthsei <command>` (picocli). The implemented CLI is started through `Main` with Maven (`exec:java`): with no arguments it opens a prompt, and with arguments it runs that one command and exits. The commands keep the Stage 1 meaning; only the spelling of some differs:
 
