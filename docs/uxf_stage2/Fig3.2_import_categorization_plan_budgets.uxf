@@ -1,0 +1,222 @@
+<diagram program="umletino" version="15.1"><zoom_level>10</zoom_level><element><id>UMLClass</id><coordinates><x>670</x><y>0</y><w>301</w><h>234</h></coordinates><panel_attributes>TransactionService
+--
+-repo: TransactionRepository
+-importer: CsvImporter
+-categorizer: Categorizer
+--
++importFile(path: Path) ImportResult
++query(filter: TxFilter) List&lt;Transaction&gt;
++updateCategory(txId: String,
+   category: Category) Transaction
++addTransaction(entry: NewTransaction)
+   Transaction
+-removeDuplicates(txs: List&lt;Transaction&gt;)
+   List&lt;Transaction&gt;
+-validate(entry: NewTransaction)
++findById(txId: String) Optional&lt;Transaction&gt;
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>310</x><y>320</y><w>261</w><h>122</h></coordinates><panel_attributes>CsvImporter
+--
+
+--
++parse(path: Path) ParseResult
++detectAdapter(header: List&lt;String&gt;,
+   parser: CsvParser) BankCsvAdapter
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>170</x><y>530</y><w>301</w><h>136</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/BankCsvAdapter/
+--
+
+--
++canHandle(header: List&lt;String&gt;) boolean
++readTransactions() ParseResult
++layoutDescription() String
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>0</x><y>780</y><w>260</w><h>64</h></coordinates><panel_attributes>SignedAmountCsvAdapter
+--
++canHandle(header: List&lt;String&gt;) boolean
++layoutDescription() String
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>284</x><y>884</y><w>260</w><h>64</h></coordinates><panel_attributes>DebitCreditCsvAdapter
+--
++canHandle(header: List&lt;String&gt;) boolean
++layoutDescription() String
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>670</x><y>330</y><w>294</w><h>94</h></coordinates><panel_attributes>Categorizer
+--
+-strategies: List&lt;CategorizationStrategy&gt;
+--
++categorize(tx: Transaction) Category</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>890</x><y>550</y><w>222</w><h>94</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/CategorizationStrategy/
+--
+/+categorize(tx: Transaction)/
+/   Optional&lt;Category&gt;/</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>690</x><y>730</y><w>314</w><h>136</h></coordinates><panel_attributes>LearnedRuleStrategy
+--
+-rules: RuleRepository
+--
++categorize(tx: Transaction)
+   Optional&lt;Category&gt;
++learn(merchant: String, category: Category)
++forget(merchant: String)
++ruleFor(merchant: String) Optional&lt;Category&gt;
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1050</x><y>750</y><w>235</w><h>108</h></coordinates><panel_attributes>KeywordRuleStrategy
+--
+-keywords: Map&lt;String, Category&gt;
+--
++categorize(tx: Transaction)
+   Optional&lt;Category&gt;
++withDefaults() KeywordRuleStrategy
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1320</x><y>895</y><w>208</w><h>122</h></coordinates><panel_attributes>LLMCategorizationStrategy
+--
+
+--
++categorize(tx: Transaction)
+   Optional&lt;Category&gt;
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1010</x><y>310</y><w>301</w><h>136</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/TransactionRepository/
+--
++saveAll(txs: List&lt;Transaction&gt;)
++query(filter: TxFilter) List&lt;Transaction&gt;
++updateCategory(txId: String,
+   category: Category)
++findById(txId: String) Transaction</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>690</x><y>940</y><w>307</w><h>116</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/RuleRepository/
+--
++save(merchant: String, category: Category)
++delete(merchant: String)
++findAll() List&lt;LearnedRule&gt;
++find(merchant: String) Optional&lt;Category&gt;
++keyOf(merchant: String) String
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1820</x><y>50</y><w>369</w><h>168</h></coordinates><panel_attributes>PlanService
+--
+-repo: PlanRepository
+--
++getPlan() FinancialPlan
++savePlan(plan: FinancialPlan) FinancialPlan
+-validate(plan: FinancialPlan)
++setBalance(balance: Money, asOf: LocalDate) FinancialPlan
++setSafetyBuffer(buffer: Money) FinancialPlan
++addIncome(income: IncomeSource) FinancialPlan
++addFixedBill(bill: FixedBill) FinancialPlan
++addPlannedExpense(expense: PlannedExpense) FinancialPlan
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1900</x><y>330</y><w>195</w><h>94</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/PlanRepository/
+--
++save(plan: FinancialPlan)
++find() FinancialPlan</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1280</x><y>10</y><w>347</w><h>206</h></coordinates><panel_attributes>BudgetService
+--
+-repo: BudgetRepository
+-txRepo: TransactionRepository
+-monitor: AlertMonitor
+--
++setBudget(month: YearMonth,
+   limits: BudgetLimits) BudgetStatus
++setLimit(month: YearMonth,
+   category: Category, limit: Money) BudgetStatus
++getStatus(month: YearMonth) BudgetStatus
++refreshAlerts(months: Set&lt;YearMonth&gt;)
+-validate(limits: BudgetLimits)
++limitOf(month: YearMonth,
+   category: Category) Optional&lt;Money&gt;
++hasBudget(month: YearMonth) boolean
++primeAlerts()
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1350</x><y>330</y><w>222</w><h>94</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/BudgetRepository/
+--
++save(budget: Budget)
++find(month: YearMonth) Budget
++findAll() List&lt;Budget&gt;
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1610</x><y>300</y><w>266</w><h>207</h></coordinates><panel_attributes>&lt;&lt;subject&gt;&gt;
+AlertMonitor
+--
+-listeners: List&lt;AlertListener&gt;
+--
++attach(listener: AlertListener)
++detach(listener: AlertListener)
++evaluate(status: BudgetStatus)
++publish(alert: Alert)
+-notifyListeners(alert: Alert)
++prime(status: BudgetStatus)
++evaluateLowBalance(lowest: DailyBalance,
+   buffer: Money)
++evaluateGoal(goal: SavingsGoal,
+   requiredMonthly: Money)
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1640</x><y>560</y><w>182</w><h>80</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/AlertListener/
+--
+/+onAlert(alert: Alert)/</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>420</x><y>770</y><w>235</w><h>90</h></coordinates><panel_attributes>&lt;&lt;adaptee: own CSV reader (Stage 1: Apache Commons CSV)&gt;&gt;
+CsvParser
+--
++parse(reader: Reader) CsvParser
++header() List&lt;String&gt;
++records() List&lt;CsvRecord&gt;
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>440</x><y>230</y><w>325</w><h>88</h></coordinates><panel_attributes>lt=-&gt;
+m1=1
+m2=1</panel_attributes><additional_attributes>325;0;0;88</additional_attributes></element><element><id>Relation</id><coordinates><x>820</x><y>230</y><w>10</w><h>102</h></coordinates><panel_attributes>lt=-&gt;
+m1=1
+m2=1</panel_attributes><additional_attributes>0;0;1;102</additional_attributes></element><element><id>Relation</id><coordinates><x>870</x><y>230</y><w>250</w><h>81</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;250;81</additional_attributes></element><element><id>Relation</id><coordinates><x>320</x><y>440</y><w>120</w><h>89</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+chooses one
+m1=1
+m2=1..*</panel_attributes><additional_attributes>120;0;0;89</additional_attributes></element><element><id>Relation</id><coordinates><x>80</x><y>660</y><w>186</w><h>117</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>186;0;0;117</additional_attributes></element><element><id>Relation</id><coordinates><x>320</x><y>660</y><w>54</w><h>221</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;54;221</additional_attributes></element><element><id>Relation</id><coordinates><x>370</x><y>660</y><w>160</w><h>214</h></coordinates><panel_attributes>lt=-&gt;
+wraps
+m1=1
+m2=1</panel_attributes><additional_attributes>0;0;160;214</additional_attributes></element><element><id>Relation</id><coordinates><x>820</x><y>430</y><w>187</w><h>124</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+ordered chain
+m1=1
+m2=1..*</panel_attributes><additional_attributes>0;0;187;124</additional_attributes></element><element><id>Relation</id><coordinates><x>850</x><y>640</y><w>119</w><h>89</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>119;0;0;89</additional_attributes></element><element><id>Relation</id><coordinates><x>1010</x><y>640</y><w>157</w><h>103</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;157;103</additional_attributes></element><element><id>Relation</id><coordinates><x>1040</x><y>640</y><w>381</w><h>251</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;381;251</additional_attributes></element><element><id>Relation</id><coordinates><x>850</x><y>870</y><w>10</w><h>68</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;0;68</additional_attributes></element><element><id>Relation</id><coordinates><x>1980</x><y>170</y><w>20</w><h>158</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;20;158</additional_attributes></element><element><id>Relation</id><coordinates><x>1460</x><y>220</y><w>10</w><h>116</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;0;116</additional_attributes></element><element><id>Relation</id><coordinates><x>1190</x><y>220</y><w>206</w><h>95</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>206;0;0;95</additional_attributes></element><element><id>Relation</id><coordinates><x>1520</x><y>220</y><w>208</w><h>81</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;208;81</additional_attributes></element><element><id>Relation</id><coordinates><x>1730</x><y>460</y><w>10</w><h>96</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+notifies
+m1=1
+m2=0..*</panel_attributes><additional_attributes>0;0;1;96</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>1452</y><w>900</w><h>70</h></coordinates><panel_attributes>Import, categorization, plan, budgets and alerts. LLMCategorizationStrategy uses LLMProvider (Fig 3.5).
+bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1320</x><y>664</y><w>467</w><h>207</h></coordinates><panel_attributes>BudgetService
+--
+-repo: BudgetRepository
+-txRepo: TransactionRepository
+-monitor: AlertMonitor
+--
++setBudget(month: YearMonth, limits: BudgetLimits) BudgetStatus
++setLimit(month: YearMonth, category: Category, limit: Money) BudgetStatus
++getStatus(month: YearMonth) BudgetStatus
++refreshAlerts(months: Set&lt;YearMonth&gt;)
+-validate(limits: BudgetLimits)
++limitOf(month: YearMonth,
+   category: Category) Optional&lt;Money&gt;
++hasBudget(month: YearMonth) boolean
++primeAlerts()
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>1480</x><y>466</y><w>150</w><h>198</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;198;150;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1410</x><y>426</y><w>50</w><h>238</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;238;50;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1230</x><y>456</y><w>130</w><h>208</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>130;208;0;0</additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>1136</y><w>240</w><h>51</h></coordinates><panel_attributes>/AbstractCsvAdapter/
+--
+
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>300</x><y>1136</y><w>240</w><h>51</h></coordinates><panel_attributes>CardStatementCsvAdapter
+--
+
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>600</x><y>1136</y><w>240</w><h>94</h></coordinates><panel_attributes>CsvRecord
+--
++lineNumber() int
++size() int
++get(index: int) String
+bg=#B8E6B0
+--
+used by CsvParser</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>900</x><y>1136</y><w>340</w><h>129</h></coordinates><panel_attributes>CategoryCorrector
+--
++correct(txId: String, category: Category) Transaction
++newCommand(txId: String,
+   category: Category) Command
++undo() Optional&lt;Transaction&gt;
++redo() Optional&lt;Transaction&gt;
++canUndo() boolean
++canRedo() boolean
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1300</x><y>1136</y><w>340</w><h>81</h></coordinates><panel_attributes>BudgetCalculator
+--
++compute(budget: Budget,
+   transactions: List&lt;Transaction&gt;) BudgetStatus
+bg=#B8E6B0
+--
+used by BudgetService</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1700</x><y>1136</y><w>240</w><h>51</h></coordinates><panel_attributes>InMemoryTransactionRepository
+--
+
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>0</x><y>1325</y><w>241</w><h>51</h></coordinates><panel_attributes>PersistentTransactionRepository
+--
+
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>301</x><y>1325</y><w>332</w><h>94</h></coordinates><panel_attributes>TsvFile
+--
++Row(line: int, fields: List&lt;String&gt;) record
++read(file: Path) List&lt;Row&gt;
++write(file: Path, rows: List&lt;List&lt;String&gt;&gt;)
+bg=#B8E6B0
+--
+used by PersistentTransactionRepository</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>129</x><y>666</y><w>167</w><h>470</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>167;0;0;470</additional_attributes></element><element><id>Relation</id><coordinates><x>240</x><y>1161</y><w>60</w><h>10</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>0;0;60;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1217</x><y>446</y><w>580</w><h>690</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;581;690</additional_attributes></element><element><id>Relation</id><coordinates><x>147</x><y>446</y><w>940</w><h>879</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>940;0;0;879</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>1534</y><w>1100</w><h>44</h></coordinates><panel_attributes>STAGE 2 LEGEND: orange = changed from Stage 1 (renamed, new signature or fields, handlers/private fields dropped); green = new in Stage 2. Unmarked = unchanged.
+bg=#FFF2A8</panel_attributes><additional_attributes /></element></diagram>

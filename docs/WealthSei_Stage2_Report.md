@@ -429,35 +429,49 @@ Ten patterns are implemented and used (Stage 1 required nine; Prototype was adde
 
 ### 3.1 Updated UML class diagrams
 
-The diagrams are provided as UMLet `.uxf` source files in `docs/uxf_stage2/` (one per figure, like Stage 1) and as images below. They show the implemented classes (the full list of classes is in `docs/stage1-conformance.md`). Domain value classes (`Money`, `Transaction`, `Budget`, `SavingsGoal`, and so on) are omitted for readability.
+The class diagrams were rebuilt from the submitted Stage 1 UXF files (Figures 3-1 to 3-7), so figure numbers, groupings and layout match Stage 1. All 136 Stage 1 class boxes are kept except three that were never built (`ExplanationService`, `ChatModel`, `AnthropicChatModel`); three keep their role under a new name (`CSVParser`→`CsvParser`, `ProposalView`→`ProposalsView`, `ReportView`→`ReportsView`). Colours: **orange** = changed in Stage 2 (renamed, new signature or fields, Stage 1 handler names or private fields not in the code), **green** = new class, **white** = unchanged. Every changed method is compared with the Java source; the full per-class list is in `docs/class-diagram-changes.md`. Stage 1's own Figure 3-2 contains `BudgetService` twice; that is kept as submitted.
 
-**Figure 3.1 — Interfaces, facade, services and repositories.** The GUI and CLI both use `WealthSeiFacade`; `AlertMonitor` notifies `CliApp` and `ShellPanel`; persistent repositories wrap in-memory ones.
+| Stage 2 figure | Content | Stage 1 classes | Changed | New | Removed (not built) |
+|---|---|---|---|---|---|
+| 3.1 (S1 Fig 3-1) | Presentation and facade | 10 | 9 | 4 | — |
+| 3.2 (S1 Fig 3-2) | Import, categorization, plan, budgets, alerts | 20 | 14 | 8 | — |
+| 3.3 (S1 Fig 3-3) | Analytics, goals, scenarios, recurring | 18 | 12 | 7 | ExplanationService |
+| 3.4 (S1 Fig 3-4) | Agent subsystem | 32 | 18 | 5 | — |
+| 3.5 (S1 Fig 3-5) | LLM provider layer | 10 | 4 | 5 | ChatModel, AnthropicChatModel |
+| 3.6 (S1 Fig 3-6) | Proposals, commands, reviews, reports | 25 | 17 | 1 | — |
+| 3.7 (S1 Fig 3-7) | Domain model | 24 | 16 | 2 | — |
 
-![Figure 3.1](img/d1.png)
+**Figure 3.1 — Presentation and facade.** `MainWindow` and `CliApp` use `WealthSeiFacade`; `AlertMonitor` notifies the listeners. New: `ShellPanel`, `WealthSeiFactory`, `ArgTokenizer`, `Main`.
 
-**Figure 3.2 — Import, categorization and reports.** Adapter, Template Method and Strategy.
+![Figure 3.1](img/Fig3.1.png)
 
-![Figure 3.2](img/d2a.png)
+**Figure 3.2 — Import, categorization, plan, budgets, alerts.** Adapter (CSV adapters), Strategy (categorizers), Observer (`AlertMonitor`). New: `AbstractCsvAdapter`, `CardStatementCsvAdapter`, `CsvRecord`, `CategoryCorrector`, `BudgetCalculator`, the in-memory and persistent transaction repositories, `TsvFile`.
 
-**Figure 3.3 — Commands, proposals and states.** Command, State and Factory.
+![Figure 3.2](img/Fig3.2.png)
 
-![Figure 3.3](img/d2b.png)
+**Figure 3.3 — Analytics, goals, scenarios, recurring.** Template Method summaries and the deterministic goal planner. `ExplanationService` was not built and is removed (C4).
 
-**Figure 3.4 — Agent subsystem.** `AgentController` runs the loop: `Planner` asks the model for the next step, `ToolManager` runs the six tools, `GroundingChecker` verifies the answer, `MemoryManager` supplies the recent turns and preferences, and the trace is stored. `PurchaseAssessor` supplies the rules floor for affordability.
+![Figure 3.3](img/Fig3.3.png)
 
-![Figure 3.4](img/d3a.png)
+**Figure 3.4 — Agent subsystem.** `AgentController` loop with `Planner`, `ToolManager`, `GroundingChecker`, `MemoryManager`, trace. New: `PurchaseAssessor`, `Verdict`, `AffordabilityFallback`, `ScenarioDrafts`, `PlainText`.
 
-**Figure 3.5 — LLM layer.** Adapter (`ClaudeProvider` over `HttpTransport`) and Decorator (`RetryingLLMProvider`, `LoggingLLMProvider`). The agent's `Planner`, `RecurringReviewer` and `LLMCategorizationStrategy` all use the same `LLMProvider` interface; `MockLLMProvider` is used by the tests and `UnavailableLLMProvider` when no key is set.
+![Figure 3.4](img/Fig3.4.png)
 
-![Figure 3.5](img/d3b.png)
+**Figure 3.5 — LLM provider layer.** Adapter and Decorator. `ChatModel`/`AnthropicChatModel` were not built; `ClaudeProvider` calls `HttpTransport` (C2).
 
-**Figure 3.6 — Domain model.** Value classes and records. The class marked NEW does not exist in Stage 1 (`PurchaseImpact` carries the result the affordability rules use). The plan classes (`FinancialPlan`, `IncomeSource`, `FixedBill`, `PlannedExpense`) are in Stage 1 and keep their names. Stage 1's `Account` is kept but the balance used by the forecast is held in `FinancialPlan`.
+![Figure 3.5](img/Fig3.5.png)
 
-![Figure 3.6](img/d4.png)
+**Figure 3.6 — Proposals, commands, reviews, reports.** Command, State, Factory, Template Method. New: `UndoneState`.
 
-**How the class diagrams differ from Stage 1.** Stage 1 had seven figures (3.1–3.7). They are redrawn here as six figures (3.1–3.6) with the same groups of classes, so a figure-by-figure comparison is possible: Stage 1 Fig 3.1 (presentation and facade) → 3.1; Fig 3.2 (import, categorization, budgets, alerts) → 3.1 and 3.2; Fig 3.3 (analytics, goals, scenarios) → covered by the service/analytics classes in 3.1 and 3.4 and by Section 2; Fig 3.4 (agent) → 3.4; Fig 3.5 (LLM layer) → 3.5; Fig 3.6 (proposals, commands, reviews, reports) → 3.2 and 3.3; Fig 3.7 (domain) → 3.6. The classes removed, renamed and added are listed in Section 4 (C1–C9) and in full in `docs/stage1-conformance.md`.
+![Figure 3.6](img/Fig3.6.png)
 
-**Note on class members.** The Stage 2 figures above show the classes, their relationships and the patterns, with a few key operations. The full attribute and method lists are in the Stage 1 class diagrams (Figures 3-1 to 3-7) and are unchanged for every class except those listed in Section 4, where each renamed or replaced method is recorded. Section 2 also gives the key methods of every feature. The hand-entry operations of F01 (`NewTransaction`, `WealthSeiFacade.addTransaction`, `TransactionService.addTransaction` and `validate`) are the same as in Stage 1 Figures 3-1 and 3-2; they were implemented late (C17). `addTransaction` is shown on the facade in Figure 3.1; the other members are not redrawn.
+**Figure 3.7 — Domain model.** Value classes and records. New: `PurchaseImpact`, `RecurringReview`.
+
+![Figure 3.7](img/Fig3.7.png)
+
+**Note on scope.** The figures show the Stage 1 design plus the changes made in Stage 2. Classes that Stage 1 never drew (value records and enums such as `ImportResult` or `TxFilter`, exception classes, and `Account`) are in the code but are not added here.
+
+**Note on class members.** Classes that exist only as Swing helper widgets, and the `Persistent*`/`InMemory*` repository pairs for plan, budgets, goals, proposals, rules and traces, are not drawn individually (they follow the pattern shown for transactions). The hand-entry operations of F01 are in Figure 3.1 (`addTransaction` on the facade) and Figure 3.2 (`NewTransaction` use in `TransactionService`) as in Stage 1; they were implemented late (C17). The Swing views no longer list Stage 1's button-handler names because the code uses anonymous listeners.
 
 ### 3.2 Use-case and sequence diagram updates
 
@@ -468,32 +482,32 @@ Stage 1 has one use-case diagram, fourteen use-case descriptions (UC01–UC14) a
 | Use-case diagram, actors (User, LLM Service, File System) | Yes | Same actors and system boundary. |
 | UC01–UC03, UC05–UC07, UC09–UC14 | Yes (wording of the user steps is unchanged) | Only names differ (see Section 4). |
 | UC04 View recurring payments | Mostly | The AI review is a separate action (button/command) instead of part of the page load. |
-| UC08 Plan and replan savings goal | **No** | The agent no longer plans or replans; the goal service does (C13). Replaced below (Figure 3.8). |
+| UC08 Plan and replan savings goal | **No** | The agent no longer plans or replans; the goal service does (C13). Replaced below (Figure 3.9). |
 | SD01 Import or add transactions | Yes (naming only) | `CsvParser`, own reader instead of Commons CSV `CSVParser`. Part B (add by hand: `addTransaction`, `validate`) is implemented as drawn (C17). |
 | SD02 Categorize and correct | Yes | `RecategorizeCommand` as in Stage 1. |
 | SD03 Budget and alerts | Mostly | The GUI listener is `ShellPanel` (toasts) (C6). |
-| SD04 Analytics with explanation (F04–F07) | **No** | It calls `ExplanationService`, which was not built (C4). Replaced by Figure 3.7 (F05–F07: templates, AI only on request) and Figure 3.9 (F04 AI review). |
+| SD04 Analytics with explanation (F04–F07) | **No** | It calls `ExplanationService`, which was not built (C4). Replaced by Figure 3.8 (F05–F07: templates, AI only on request) and Figure 3.10 (F04 AI review). |
 | SD05 Affordability agent loop | Yes | Facade method is `canIAfford`; the deterministic purchase-impact step runs first. |
-| SD06 Goal planning and replanning (F09) | **No** | Replaced by Figure 3.8. |
+| SD06 Goal planning and replanning (F09) | **No** | Replaced by Figure 3.9. |
 | SD07 What-if | Yes | Tool takes four plain-text fields (C14); a typed form skips the model. |
 | SD08 Monthly review | Yes | Fix drafts are chosen by code rules (C15). |
 | SD09 Chat with memory | Yes | Own `ConversationMemory`. |
 | SD10 Proposal approval | Yes | Extra `UndoneState`. |
 | SD11 Export | Yes | None. |
 
-So **three** Stage 1 items were inaccurate (UC08, SD04, SD06) and are replaced by three new diagrams (Figures 3.7–3.9); UC04 gets a one-line note; the class diagrams were redrawn (Figures 3.1–3.6); the others still describe the code, with the naming differences listed above.
+So **three** Stage 1 items were inaccurate (UC08, SD04, SD06) and are replaced by three new diagrams (Figures 3.8–3.10); UC04 gets a one-line note; the class diagrams were redrawn (Figures 3.1–3.7, same numbering as Stage 1); the others still describe the code, with the naming differences listed above.
 
-**Figure 3.7 — F05–F07 as implemented (replaces SD04 for F05–F07).** The dashboard shows numbers and a fixed-template sentence; the AI is only involved when the user asks in the Assistant.
+**Figure 3.8 — F05–F07 as implemented (replaces SD04 for F05–F07).** The dashboard shows numbers and a fixed-template sentence; the AI is only involved when the user asks in the Assistant.
 
-![Figure 3.7](img/sd3.png)
+![Figure 3.8](img/sd3.png)
 
-**Figure 3.8 — Plan and replan a savings goal (replaces UC08 / SD06).** The user need is unchanged (see how a goal is doing, find out if it is reachable, get a fix); the fix becomes a proposal the user approves (F13).
+**Figure 3.9 — Plan and replan a savings goal (replaces UC08 / SD06).** The user need is unchanged (see how a goal is doing, find out if it is reachable, get a fix); the fix becomes a proposal the user approves (F13).
 
-![Figure 3.8](img/sd1.png)
+![Figure 3.9](img/sd1.png)
 
-**Figure 3.9 — Recurring payments with the AI review (replaces SD04 for F04).** The review is a separate action, not part of each refresh.
+**Figure 3.10 — Recurring payments with the AI review (replaces SD04 for F04).** The review is a separate action, not part of each refresh.
 
-![Figure 3.9](img/sd2.png)
+![Figure 3.10](img/sd2.png)
 
 ---
 
@@ -529,7 +543,7 @@ Each entry follows **Original design → Implemented change → Reason → Impac
 
 **C12 — F05, F06, F07.** *Original:* hybrid, with an LLM explanation on each screen. *Implemented:* deterministic results with template text; AI explanation when asked in the Assistant; `ScoreComponent.detail` and `HealthScore.excluded` added. **Not implemented:** F07's "change from last month" (no stored history of past scores). *Reason:* C4. *Impact:* the numbers are identical; the explanation is generic until asked.
 
-**C13 — F09.** *Original:* agent-driven `planGoal`/`replanGoal`. *Implemented:* `GoalService`/`GoalPlanner` plain code, goals re-checked after every import, correction and contribution change; `GoalTool` lets the agent read them; the fix is a proposal (F13). *Reason:* planning is arithmetic that must be exact and repeatable, so code is more reliable than a model. *Impact:* UC08/SD06 replaced (Section 3.2, Figure 3.8); the user need (see feasibility, get alternatives, approve a fix) is met.
+**C13 — F09.** *Original:* agent-driven `planGoal`/`replanGoal`. *Implemented:* `GoalService`/`GoalPlanner` plain code, goals re-checked after every import, correction and contribution change; `GoalTool` lets the agent read them; the fix is a proposal (F13). *Reason:* planning is arithmetic that must be exact and repeatable, so code is more reliable than a model. *Impact:* UC08/SD06 replaced (Section 3.2, Figure 3.9); the user need (see feasibility, get alternatives, approve a fix) is met.
 
 **C14 — F10.** *Original:* the agent builds a nested list of changes. *Implemented:* the tool takes four plain-text fields; a typed `whatif key=value` form skips the model; caps are modelled as the average spend minus the cap. *Reason:* simpler for the model to fill correctly; code validates every value. *Impact:* fewer malformed requests; works without a key.
 

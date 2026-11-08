@@ -1,0 +1,224 @@
+<diagram program="umletino" version="15.1"><zoom_level>10</zoom_level><help_text>Space for diagram notes_object: Class_
+--
+id: Long="36548"
+[waiting for message]</help_text><element><id>UMLClass</id><coordinates><x>558</x><y>225</y><w>351</w><h>285</h></coordinates><panel_attributes>ProposalService
+--
+-repo: ProposalRepository
+-factory: CommandFactory
+-history: CommandHistory
+--
++createFromDrafts(drafts:
+   List&lt;ProposalDraft&gt;, traceId: String) List&lt;Proposal&gt;
++listPending() List&lt;Proposal&gt;
++decide(idOrPrefix: String,
+   approve: boolean) Proposal
++expireOld(current: YearMonth) int
+-passesGuardrails(draft: ProposalDraft)
+   boolean
++lastDiscarded() List&lt;String&gt;
++listAll() List&lt;Proposal&gt;
++find(idOrPrefix: String) Proposal
++undoLast() Optional&lt;Proposal&gt;
++setProtectedCategory(category: Category,
+   isProtected: boolean)
++protectedCategories() Set&lt;Category&gt;
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>153</x><y>585</y><w>153</w><h>90</h></coordinates><panel_attributes>ProposalDraft
+--
+-type: ProposalType
+-title: String
+-rationale: String
+-params: ParamSet</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>360</x><y>534</y><w>217</w><h>220</h></coordinates><panel_attributes>Proposal
+--
+-id: String
+-type: ProposalType
+-title: String
+-rationale: String
+-command: Command
+-state: ProposalState
+-traceId: String
+-createdAt: Instant
+--
++approve(history: CommandHistory)
++reject()
++expire()
++setState(next: ProposalState)
++statusName() String
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>351</x><y>783</y><w>473</w><h>155</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/ProposalState/
+--
+/+approve(proposal: Proposal,/
+/   history: CommandHistory)/
+/+reject(proposal: Proposal)/
+/+expire(proposal: Proposal)/
+/+name() String/
++undo(proposal: Proposal,
+   history: CommandHistory&lt;Command&gt;)
++refuse(move: String, state: ProposalState) IllegalStateTransitionException
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>0</x><y>999</y><w>235</w><h>103</h></coordinates><panel_attributes>PendingState
+--
++approve(proposal: Proposal,
+   history: CommandHistory&lt;Command&gt;)
++reject(proposal: Proposal)
++expire(proposal: Proposal)
++name() String
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>259</x><y>999</y><w>235</w><h>129</h></coordinates><panel_attributes>AppliedState
+--
++approve(proposal: Proposal,
+   history: CommandHistory&lt;Command&gt;)
++reject(proposal: Proposal)
++expire(proposal: Proposal)
++undo(proposal: Proposal,
+   history: CommandHistory&lt;Command&gt;)
++name() String
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>518</x><y>1138</y><w>235</w><h>103</h></coordinates><panel_attributes>RejectedState
+--
++approve(proposal: Proposal,
+   history: CommandHistory&lt;Command&gt;)
++reject(proposal: Proposal)
++expire(proposal: Proposal)
++name() String
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>567</x><y>1265</y><w>235</w><h>103</h></coordinates><panel_attributes>ExpiredState
+--
++approve(proposal: Proposal,
+   history: CommandHistory&lt;Command&gt;)
++reject(proposal: Proposal)
++expire(proposal: Proposal)
++name() String
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>603</x><y>567</y><w>247</w><h>103</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/ProposalRepository/
+--
++save(proposal: Proposal)
++findById(proposalId: String) Proposal
++findPending() List&lt;Proposal&gt;
++findAll() List&lt;Proposal&gt;
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>891</x><y>561</y><w>241</w><h>117</h></coordinates><panel_attributes>&lt;&lt;factory&gt;&gt;
+CommandFactory
+--
+-budgets: BudgetService
+-goals: GoalService
+-analytics: AnalyticsService
+--
++create(draft: ProposalDraft) Command</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>945</x><y>801</y><w>153</w><h>90</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/Command/
+--
+/+execute()/
+/+undo()/
+/+describe() String/</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1161</x><y>622</y><w>174</w><h>135</h></coordinates><panel_attributes>CommandHistory
+--
+
+--
++execute(command: Command)
++undo()
++redo()
++canUndo() boolean
++canRedo() boolean
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>747</x><y>972</y><w>174</w><h>142</h></coordinates><panel_attributes>RecategorizeCommand
+--
+-txId: String
+-oldCategory: Category
+-newCategory: Category
+--
++execute()
++undo()
++describe() String
++transaction() Transaction
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>945</x><y>972</y><w>153</w><h>142</h></coordinates><panel_attributes>SetBudgetLimitCommand
+--
+-month: YearMonth
+-category: Category
+-oldLimit: Money
+-newLimit: Money
+--
++execute()
++undo()
++describe() String
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1134</x><y>972</y><w>192</w><h>129</h></coordinates><panel_attributes>UpdateGoalContributionCommand
+--
+-goalId: String
+-oldAmount: Money
+-newAmount: Money
+--
++execute()
++undo()
++describe() String
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1359</x><y>990</y><w>156</w><h>103</h></coordinates><panel_attributes>FlagSubscriptionCommand
+--
+-merchant: String
+--
++execute()
++undo()
++describe() String
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>756</x><y>0</y><w>302</w><h>153</h></coordinates><panel_attributes>ReviewService
+--
+-analytics: AnalyticsService
+-budgets: BudgetService
+-goals: GoalService
+-agent: AgentController
+-proposals: ProposalService
+--
++generate(month: YearMonth) MonthlyReview
++find(month: YearMonth) Optional&lt;MonthlyReview&gt;
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>972</x><y>456</y><w>284</w><h>81</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/ReviewRepository/
+--
++save(review: MonthlyReview)
++findByMonth(month: YearMonth) MonthlyReview</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1224</x><y>0</y><w>314</w><h>171</h></coordinates><panel_attributes>&lt;&lt;factory&gt;&gt;
+ReportService
+--
+-reviews: ReviewRepository
+-budgets: BudgetService
+--
++buildReportData(month: YearMonth)
+   ReportData
++export(month: YearMonth,
+   format: ExportFormat, out: Path,
+   overwrite: boolean) Path
+-exporterFor(format: ExportFormat) ReportExporter
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1280</x><y>456</y><w>211</w><h>142</h></coordinates><panel_attributes>ReportData
+--
+-month: YearMonth
+-generatedOn: LocalDate
+-income: Money
+-spending: Money
+-transactionCount: int
+-categories: List&lt;CategoryRow&gt;
+-goals: List&lt;SavingsGoal&gt;
+-review: Optional&lt;MonthlyReview&gt;
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1517</x><y>270</y><w>296</w><h>135</h></coordinates><panel_attributes>&lt;&lt;abstract&gt;&gt;
+/ReportExporter/
+--
++export(data: ReportData, out: Path) Path
+/#writeHeader(data: ReportData) String/
+/#writeSummary(data: ReportData) String/
+/#writeCategoryTable(data: ReportData) String/
+/#writeReviewSection(data: ReportData) String/
+/#writeFooter(data: ReportData) String/</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1386</x><y>622</y><w>153</w><h>27</h></coordinates><panel_attributes>MarkdownExporter</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1575</x><y>594</y><w>153</w><h>27</h></coordinates><panel_attributes>CsvExporter</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1764</x><y>594</y><w>153</w><h>27</h></coordinates><panel_attributes>TextExporter</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>730</x><y>442</y><w>10</w><h>139</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;1;139</additional_attributes></element><element><id>Relation</id><coordinates><x>766</x><y>442</y><w>267</w><h>137</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;267;137</additional_attributes></element><element><id>Relation</id><coordinates><x>811</x><y>442</y><w>493</w><h>191</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;493;191</additional_attributes></element><element><id>Relation</id><coordinates><x>262</x><y>433</y><w>393</w><h>169</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>393;0;0;20;0;169</additional_attributes></element><element><id>Relation</id><coordinates><x>469</x><y>442</y><w>243</w><h>98</h></coordinates><panel_attributes>lt=..&gt;
+creates</panel_attributes><additional_attributes>243;0;0;98</additional_attributes></element><element><id>Relation</id><coordinates><x>487</x><y>742</y><w>562</w><h>73</h></coordinates><panel_attributes>lt=-&gt;
+m1=1
+m2=1</panel_attributes><additional_attributes>0;0;562;73</additional_attributes></element><element><id>Relation</id><coordinates><x>450</x><y>742</y><w>10</w><h>59</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+m1=1
+m2=1</panel_attributes><additional_attributes>2;0;0;59</additional_attributes></element><element><id>Relation</id><coordinates><x>73</x><y>910</y><w>373</w><h>103</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>373;0;0;103</additional_attributes></element><element><id>Relation</id><coordinates><x>341</x><y>910</y><w>116</w><h>103</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>116;0;0;103</additional_attributes></element><element><id>Relation</id><coordinates><x>466</x><y>910</y><w>125</w><h>369</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;125;369</additional_attributes></element><element><id>Relation</id><coordinates><x>496</x><y>910</y><w>164</w><h>369</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;164;369</additional_attributes></element><element><id>Relation</id><coordinates><x>1009</x><y>688</y><w>10</w><h>126</h></coordinates><panel_attributes>lt=..&gt;
+creates</panel_attributes><additional_attributes>0;0;10;126</additional_attributes></element><element><id>Relation</id><coordinates><x>1045</x><y>758</y><w>232</w><h>58</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+m1=1
+m2=0..*</panel_attributes><additional_attributes>232;0;0;58</additional_attributes></element><element><id>Relation</id><coordinates><x>829</x><y>901</y><w>175</w><h>89</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>175;0;0;89</additional_attributes></element><element><id>Relation</id><coordinates><x>1009</x><y>901</y><w>12</w><h>82</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;12;82</additional_attributes></element><element><id>Relation</id><coordinates><x>1027</x><y>901</y><w>221</w><h>89</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;221;89</additional_attributes></element><element><id>Relation</id><coordinates><x>1054</x><y>901</y><w>432</w><h>103</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;432;103</additional_attributes></element><element><id>Relation</id><coordinates><x>730</x><y>163</y><w>146</w><h>74</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>146;0;0;74</additional_attributes></element><element><id>Relation</id><coordinates><x>919</x><y>163</y><w>179</w><h>322</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;179;322</additional_attributes></element><element><id>Relation</id><coordinates><x>1171</x><y>172</y><w>164</w><h>305</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>164;0;0;305</additional_attributes></element><element><id>Relation</id><coordinates><x>1360</x><y>172</y><w>21</w><h>320</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>0;0;21;320</additional_attributes></element><element><id>Relation</id><coordinates><x>1414</x><y>172</y><w>281</w><h>109</h></coordinates><panel_attributes>lt=..&gt;
+creates</panel_attributes><additional_attributes>0;0;281;109</additional_attributes></element><element><id>Relation</id><coordinates><x>1468</x><y>406</y><w>166</w><h>244</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>166;0;0;244</additional_attributes></element><element><id>Relation</id><coordinates><x>1657</x><y>406</y><w>14</w><h>216</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>14;0;0;216</additional_attributes></element><element><id>Relation</id><coordinates><x>1716</x><y>406</y><w>139</w><h>216</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>0;0;139;216</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>1549</y><w>1107</w><h>63</h></coordinates><panel_attributes>Proposals, commands, reviews and reports. Commands act on TransactionService, LearnedRuleStrategy (Fig 3.2), GoalService, AnalyticsService (Fig 3.3); ReviewService uses AgentController (Fig 3.4).
+bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1026</x><y>225</y><w>467</w><h>207</h></coordinates><panel_attributes>BudgetService
+--
+-repo: BudgetRepository
+-txRepo: TransactionRepository
+-monitor: AlertMonitor
+--
++setBudget(month: YearMonth, limits: BudgetLimits) BudgetStatus
++setLimit(month: YearMonth, category: Category, limit: Money) BudgetStatus
++getStatus(month: YearMonth) BudgetStatus
++refreshAlerts(months: Set&lt;YearMonth&gt;)
+-validate(limits: BudgetLimits)
++limitOf(month: YearMonth,
+   category: Category) Optional&lt;Money&gt;
++hasBudget(month: YearMonth) boolean
++primeAlerts()
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>991</x><y>154</y><w>91</w><h>79</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;91;79</additional_attributes></element><element><id>Relation</id><coordinates><x>1172</x><y>172</y><w>79</w><h>59</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>79;0;0;59</additional_attributes></element><element><id>Relation</id><coordinates><x>946</x><y>280</y><w>91</w><h>313</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>20;313;0;11;91;0</additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>1448</y><w>240</w><h>51</h></coordinates><panel_attributes>UndoneState
+--
+
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>139</x><y>938</y><w>388</w><h>510</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>389;0;0;510</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>1624</y><w>1100</w><h>44</h></coordinates><panel_attributes>STAGE 2 LEGEND: orange = changed from Stage 1 (renamed, new signature or fields, handlers/private fields dropped); green = new in Stage 2. Unmarked = unchanged.
+bg=#FFF2A8</panel_attributes><additional_attributes /></element></diagram>

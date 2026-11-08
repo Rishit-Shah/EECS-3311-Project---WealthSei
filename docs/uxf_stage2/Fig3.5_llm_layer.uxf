@@ -1,171 +1,78 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<diagram program="umlet" version="15.1">
-  <zoom_level>10</zoom_level>
-  <element>
-    <id>UMLClass</id>
-    <coordinates><x>20</x><y>20</y><w>230</w><h>84</h></coordinates>
-    <panel_attributes>Planner
+<diagram program="umletino" version="15.1"><zoom_level>10</zoom_level><element><id>UMLClass</id><coordinates><x>705</x><y>0</y><w>314</w><h>80</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+/LLMProvider/
 --
-+nextStep()
-+revise()</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates><x>320</x><y>20</y><w>230</w><h>68</h></coordinates>
-    <panel_attributes>&lt;&lt;interface&gt;&gt;
-LLMProvider
+/+complete(request: LLMRequest) LLMResponse/</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>30</x><y>147</y><w>301</w><h>164</h></coordinates><panel_attributes>ClaudeProvider
 --
-</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates><x>620</x><y>20</y><w>230</w><h>68</h></coordinates>
-    <panel_attributes>&lt;&lt;abstract&gt;&gt;
-LLMProviderDecorator
+
 --
-</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates><x>920</x><y>20</y><w>230</w><h>52</h></coordinates>
-    <panel_attributes>RetryingLLMProvider
++complete(request: LLMRequest) LLMResponse
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>371</x><y>182</y><w>308</w><h>116</h></coordinates><panel_attributes>MockLLMProvider
 --
-</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates><x>1220</x><y>20</y><w>230</w><h>52</h></coordinates>
-    <panel_attributes>LoggingLLMProvider
+
 --
-</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates><x>20</x><y>174</y><w>230</w><h>52</h></coordinates>
-    <panel_attributes>ClaudeProvider
++complete(request: LLMRequest) LLMResponse
++thenReply(reply: LLMResponse) MockLLMProvider
++thenFail(failure: LLMException) MockLLMProvider
++requests() List&lt;LLMRequest&gt;
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>711</x><y>175</y><w>301</w><h>108</h></coordinates><panel_attributes>&lt;&lt;abstract&gt;&gt;
+/LLMProviderDecorator/
 --
-</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates><x>320</x><y>174</y><w>230</w><h>68</h></coordinates>
-    <panel_attributes>&lt;&lt;interface&gt;&gt;
+#inner: LLMProvider
+--
++complete(request: LLMRequest) LLMResponse</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>541</x><y>379</y><w>301</w><h>108</h></coordinates><panel_attributes>RetryingLLMProvider
+--
+-maxRetries: int
+--
++complete(request: LLMRequest) LLMResponse
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>882</x><y>386</y><w>301</w><h>116</h></coordinates><panel_attributes>LoggingLLMProvider
+--
+
+--
++complete(request: LLMRequest) LLMResponse
++calls() long
++failures() long
++totalTokens() long
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1052</x><y>175</y><w>195</w><h>108</h></coordinates><panel_attributes>LLMRequest
+--
+-systemPrompt: String
+-messages: List&lt;Message&gt;
+-toolSpecs: List&lt;ToolSpec&gt;
+-model: String</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1287</x><y>182</y><w>195</w><h>94</h></coordinates><panel_attributes>LLMResponse
+--
+-text: String
+-toolCalls: List&lt;ToolCall&gt;
+-tokensUsed: int</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>180</x><y>80</y><w>603</w><h>67</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>603;0;0;67</additional_attributes></element><element><id>Relation</id><coordinates><x>521</x><y>80</y><w>293</w><h>102</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>293;0;0;102</additional_attributes></element><element><id>Relation</id><coordinates><x>826</x><y>80</y><w>20</w><h>95</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>20;0;0;95</additional_attributes></element><element><id>Relation</id><coordinates><x>691</x><y>283</y><w>135</w><h>96</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>135;0;0;96</additional_attributes></element><element><id>Relation</id><coordinates><x>896</x><y>283</y><w>136</w><h>103</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>0;0;136;103</additional_attributes></element><element><id>Relation</id><coordinates><x>877</x><y>80</y><w>19</w><h>95</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+wraps
+m1=1
+m2=1</panel_attributes><additional_attributes>19;95;0;0</additional_attributes></element><element><id>Relation</id><coordinates><x>909</x><y>80</y><w>240</w><h>95</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>0;0;240;95</additional_attributes></element><element><id>Relation</id><coordinates><x>940</x><y>80</y><w>444</w><h>102</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>0;0;444;102</additional_attributes></element><element><id>UMLNote</id><coordinates><x>30</x><y>885</y><w>1320</w><h>30</h></coordinates><panel_attributes>LLM provider layer (Adapter + Decorator). Planner, LLMCategorizationStrategy and RecurringReviewer depend on LLMProvider. Runtime: new LoggingLLMProvider(new RetryingLLMProvider(new ClaudeProvider(httpTransport, model))).
+bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>30</x><y>582</y><w>240</w><h>81</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
 HttpTransport
 --
-</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates><x>620</x><y>174</y><w>230</w><h>52</h></coordinates>
-    <panel_attributes>JdkHttpTransport
++post(jsonBody: String) String
+bg=#B8E6B0
 --
-</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates><x>920</x><y>174</y><w>230</w><h>52</h></coordinates>
-    <panel_attributes>UnavailableLLMProvider
+used by ClaudeProvider</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>330</x><y>582</y><w>240</w><h>51</h></coordinates><panel_attributes>JdkHttpTransport
 --
-</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates><x>1220</x><y>174</y><w>230</w><h>52</h></coordinates>
-    <panel_attributes>MockLLMProvider
+
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>630</x><y>582</y><w>240</w><h>51</h></coordinates><panel_attributes>UnavailableLLMProvider
 --
-</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates><x>20</x><y>312</y><w>230</w><h>52</h></coordinates>
-    <panel_attributes>RecurringReviewer
+
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>930</x><y>582</y><w>340</w><h>94</h></coordinates><panel_attributes>Json
 --
-</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates><x>320</x><y>312</y><w>230</w><h>52</h></coordinates>
-    <panel_attributes>LLMCategorizationStrategy
++parse(text: String) Object
++parseObject(text: String) Map&lt;String, Object&gt;
++write(value: Object) String
+bg=#B8E6B0
 --
-</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates><x>135</x><y>54</y><w>300</w><h>8</h></coordinates>
-    <panel_attributes>lt=-&gt;</panel_attributes>
-    <additional_attributes>0;8;300;0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates><x>435</x><y>54</y><w>300</w><h>10</h></coordinates>
-    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
-    <additional_attributes>0;0;300;0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates><x>735</x><y>46</y><w>300</w><h>8</h></coordinates>
-    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
-    <additional_attributes>0;8;300;0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates><x>735</x><y>46</y><w>600</w><h>8</h></coordinates>
-    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
-    <additional_attributes>0;8;600;0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates><x>135</x><y>54</y><w>300</w><h>146</h></coordinates>
-    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
-    <additional_attributes>300;0;0;146</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates><x>135</x><y>200</y><w>300</w><h>8</h></coordinates>
-    <panel_attributes>lt=-&gt;
-m1=adaptee</panel_attributes>
-    <additional_attributes>0;0;300;8</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates><x>435</x><y>200</y><w>300</w><h>8</h></coordinates>
-    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
-    <additional_attributes>0;8;300;0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates><x>435</x><y>54</y><w>600</w><h>146</h></coordinates>
-    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
-    <additional_attributes>0;0;600;146</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates><x>435</x><y>54</y><w>900</w><h>146</h></coordinates>
-    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
-    <additional_attributes>0;0;900;146</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates><x>135</x><y>54</y><w>300</w><h>284</h></coordinates>
-    <panel_attributes>lt=-&gt;</panel_attributes>
-    <additional_attributes>0;284;300;0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates><x>435</x><y>54</y><w>10</w><h>284</h></coordinates>
-    <panel_attributes>lt=-&gt;</panel_attributes>
-    <additional_attributes>0;284;0;0</additional_attributes>
-  </element>
-</diagram>
+used by ClaudeProvider</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>30</x><y>719</y><w>290</w><h>133</h></coordinates><panel_attributes>LlmConfig
+--
++none() LlmConfig
++load(envFile: Path,
+   env: Map&lt;String, String&gt;) LlmConfig
++hasKey() boolean
++sonnetModel() String
++haikuModel() String
+bg=#B8E6B0
+--
+used by JdkHttpTransport</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>270</x><y>613</y><w>60</w><h>10</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;3;60;0</additional_attributes></element><element><id>Relation</id><coordinates><x>755</x><y>80</y><w>99</w><h>502</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>99;0;0;502</additional_attributes></element><element><id>UMLNote</id><coordinates><x>30</x><y>927</y><w>1100</w><h>44</h></coordinates><panel_attributes>STAGE 2 LEGEND: orange = changed from Stage 1 (renamed, new signature or fields, handlers/private fields dropped); green = new in Stage 2; not built and removed: ChatModel, AnthropicChatModel. Unmarked = unchanged.
+bg=#FFF2A8</panel_attributes><additional_attributes /></element></diagram>

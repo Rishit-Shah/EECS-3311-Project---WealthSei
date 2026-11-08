@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="15.1">
+  <zoom_level>10</zoom_level>
+  <element>
+    <id>UMLSequenceAllInOne</id>
+    <coordinates><x>20</x><y>20</y><w>1190</w><h>540</h></coordinates>
+    <panel_attributes>title=Recurring payments with AI review
+obj=User~User actor
+obj=DashboardView / CliApp~UI
+obj=WealthSeiFacade~F
+obj=AnalyticsService~AN
+obj=RecurringDetector~RD
+obj=RecurringReviewer~RR
+obj=LLMProvider (Claude Haiku)~LLM
+User-&gt;UI : AI review (button or "recurring review")
+UI-&gt;F : reviewRecurring(asOf)
+F-&gt;AN : reviewRecurring(asOf)
+AN-&gt;RD : detect(transactions, asOf)
+RD-&gt;&gt;AN : recurring payments (code)
+AN-&gt;RR : review(payments, total, fallback template)
+RR-&gt;&gt;AN : cached review
+RR-&gt;LLM : facts only (computed list)
+LLM-&gt;&gt;RR : 2-3 sentences
+RR-&gt;RR : every number must be in the facts
+RR-&gt;&gt;AN : AI review
+RR-&gt;&gt;AN : template summary + reason
+AN-&gt;&gt;F : RecurringReview
+F-&gt;&gt;UI : text shown</panel_attributes>
+    <additional_attributes/>
+  </element>
+</diagram>
