@@ -183,10 +183,10 @@ derived from</panel_attributes><additional_attributes>19;0;0;67</additional_attr
 simulated into</panel_attributes><additional_attributes>0;0;0;106</additional_attributes></element><element><id>Relation</id><coordinates><x>2110</x><y>130</y><w>10</w><h>426</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
 m1=1
 m2=1</panel_attributes><additional_attributes>0;0;0;426</additional_attributes></element><element><id>Relation</id><coordinates><x>990</x><y>130</y><w>210</w><h>81</h></coordinates><panel_attributes>lt=..&gt;
-evidence</panel_attributes><additional_attributes>210;0;0;81</additional_attributes></element><element><id>UMLNote</id><coordinates><x>30</x><y>1040</y><w>900</w><h>70</h></coordinates><panel_attributes>Domain model (conceptual). Value records and enums not drawn here are not shown, as in Stage 1.
-bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>0</x><y>1122</y><w>370</w><h>20</h></coordinates><panel_attributes>Created by AlertMonitor and received by AlertListener (Fig 3.2).
-bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>480</x><y>1154</y><w>390</w><h>20</h></coordinates><panel_attributes>Returned by SafeToSpendCalculator and AnalyticsService (Fig 3.3).
-bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>30</x><y>848</y><w>240</w><h>142</h></coordinates><panel_attributes>PurchaseImpact
+evidence</panel_attributes><additional_attributes>210;0;0;81</additional_attributes></element><element><id>UMLNote</id><coordinates><x>30</x><y>818</y><w>900</w><h>70</h></coordinates><panel_attributes>Domain model (conceptual). Value records and enums not drawn here are not shown, as in Stage 1.
+bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>0</x><y>900</y><w>370</w><h>20</h></coordinates><panel_attributes>Created by AlertMonitor and received by AlertListener (Fig 3.2).
+bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>480</x><y>932</y><w>390</w><h>20</h></coordinates><panel_attributes>Returned by SafeToSpendCalculator and AnalyticsService (Fig 3.3).
+bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1650</x><y>390</y><w>340</w><h>181</h></coordinates><panel_attributes>PurchaseImpact
 --
 -description: String
 -price: Money
@@ -196,10 +196,21 @@ bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLC
 -allowanceBefore: Money
 -allowanceAfter: Money
 -safetyBuffer: Money
-bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>330</x><y>848</y><w>240</w><h>77</h></coordinates><panel_attributes>RecurringReview
+--
+uses DailyBalance
+used by AnalyticsService (Fig 3.3), ForecastTool (Fig 3.4)
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>810</x><y>-150</y><w>340</w><h>116</h></coordinates><panel_attributes>RecurringReview
 --
 -text: String
 -byAi: boolean
 -note: String
-bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>30</x><y>1186</y><w>1100</w><h>44</h></coordinates><panel_attributes>STAGE 2 LEGEND: orange = changed from Stage 1 (renamed, new signature or fields, handlers/private fields dropped); green = new in Stage 2. Unmarked = unchanged.
+--
+reviews RecurringPayment
+used by AnalyticsService (Fig 3.3), RecurringReviewer
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>1845</x><y>330</y><w>16</w><h>60</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>0;60;17;0</additional_attributes></element><element><id>Relation</id><coordinates><x>973</x><y>-34</y><w>10</w><h>34</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>3;0;0;34</additional_attributes></element><element><id>UMLNote</id><coordinates><x>30</x><y>964</y><w>1000</w><h>76</h></coordinates><panel_attributes>NEW IN STAGE 2 (green): PurchaseImpact uses DailyBalance; used by AnalyticsService (Fig 3.3), ForecastTool (Fig 3.4); RecurringReview reviews
+RecurringPayment; used by AnalyticsService (Fig 3.3), RecurringReviewer.
+Old classes show only the members that were in Stage 1 and still exist; members that are unchanged are not repeated. Every changed or new class
+(orange / green) lists its current members in its box.
+bg=#E6F2FF</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>30</x><y>1052</y><w>1000</w><h>48</h></coordinates><panel_attributes>STAGE 2 LEGEND: orange = changed from Stage 1 (renamed, new signature or fields, handlers/private fields dropped); green = new in Stage 2, placed next
+to the class that uses it (dashed arrow = uses; hollow-triangle line = inheritance/implements; "used by" lists every user). Unmarked = unchanged.
 bg=#FFF2A8</panel_attributes><additional_attributes /></element></diagram>

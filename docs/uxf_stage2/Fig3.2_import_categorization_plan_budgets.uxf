@@ -139,7 +139,7 @@ AlertMonitor
 bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1640</x><y>560</y><w>182</w><h>80</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
 /AlertListener/
 --
-/+onAlert(alert: Alert)/</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>420</x><y>770</y><w>235</w><h>90</h></coordinates><panel_attributes>&lt;&lt;adaptee: own CSV reader (Stage 1: Apache Commons CSV)&gt;&gt;
+/+onAlert(alert: Alert)/</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>420</x><y>770</y><w>235</w><h>90</h></coordinates><panel_attributes>&lt;&lt;adaptee: own CSV reader&gt;&gt;
 CsvParser
 --
 +parse(reader: Reader) CsvParser
@@ -161,7 +161,7 @@ m1=1
 m2=1..*</panel_attributes><additional_attributes>0;0;187;124</additional_attributes></element><element><id>Relation</id><coordinates><x>850</x><y>640</y><w>119</w><h>89</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>119;0;0;89</additional_attributes></element><element><id>Relation</id><coordinates><x>1010</x><y>640</y><w>157</w><h>103</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;157;103</additional_attributes></element><element><id>Relation</id><coordinates><x>1040</x><y>640</y><w>381</w><h>251</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;381;251</additional_attributes></element><element><id>Relation</id><coordinates><x>850</x><y>870</y><w>10</w><h>68</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;0;68</additional_attributes></element><element><id>Relation</id><coordinates><x>1980</x><y>170</y><w>20</w><h>158</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;20;158</additional_attributes></element><element><id>Relation</id><coordinates><x>1460</x><y>220</y><w>10</w><h>116</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;0;116</additional_attributes></element><element><id>Relation</id><coordinates><x>1190</x><y>220</y><w>206</w><h>95</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>206;0;0;95</additional_attributes></element><element><id>Relation</id><coordinates><x>1520</x><y>220</y><w>208</w><h>81</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;208;81</additional_attributes></element><element><id>Relation</id><coordinates><x>1730</x><y>460</y><w>10</w><h>96</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
 notifies
 m1=1
-m2=0..*</panel_attributes><additional_attributes>0;0;1;96</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>1452</y><w>900</w><h>70</h></coordinates><panel_attributes>Import, categorization, plan, budgets and alerts. LLMCategorizationStrategy uses LLMProvider (Fig 3.5).
+m2=0..*</panel_attributes><additional_attributes>0;0;1;96</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>1106</y><w>900</w><h>70</h></coordinates><panel_attributes>Import, categorization, plan, budgets and alerts. LLMCategorizationStrategy uses LLMProvider (Fig 3.5).
 bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1320</x><y>664</y><w>467</w><h>207</h></coordinates><panel_attributes>BudgetService
 --
 -repo: BudgetRepository
@@ -177,20 +177,20 @@ bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLC
    category: Category) Optional&lt;Money&gt;
 +hasBudget(month: YearMonth) boolean
 +primeAlerts()
-bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>1480</x><y>466</y><w>150</w><h>198</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;198;150;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1410</x><y>426</y><w>50</w><h>238</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;238;50;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1230</x><y>456</y><w>130</w><h>208</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>130;208;0;0</additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>1136</y><w>240</w><h>51</h></coordinates><panel_attributes>/AbstractCsvAdapter/
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>1480</x><y>466</y><w>150</w><h>198</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;198;150;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1410</x><y>426</y><w>50</w><h>238</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;238;50;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1230</x><y>456</y><w>130</w><h>208</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>130;208;0;0</additional_attributes></element><element><id>UMLClass</id><coordinates><x>510</x><y>570</y><w>220</w><h>51</h></coordinates><panel_attributes>/AbstractCsvAdapter/
 --
 
-bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>300</x><y>1136</y><w>240</w><h>51</h></coordinates><panel_attributes>CardStatementCsvAdapter
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>510</x><y>480</y><w>220</w><h>51</h></coordinates><panel_attributes>CardStatementCsvAdapter
 --
 
-bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>600</x><y>1136</y><w>240</w><h>94</h></coordinates><panel_attributes>CsvRecord
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>-90</x><y>870</y><w>340</w><h>103</h></coordinates><panel_attributes>CsvRecord
 --
 +lineNumber() int
 +size() int
 +get(index: int) String
-bg=#B8E6B0
 --
-used by CsvParser</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>900</x><y>1136</y><w>340</w><h>129</h></coordinates><panel_attributes>CategoryCorrector
+used by CsvParser, AbstractCsvAdapter, CardStatementCsvAdapter
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>300</x><y>30</y><w>340</w><h>168</h></coordinates><panel_attributes>CategoryCorrector
 --
 +correct(txId: String, category: Category) Transaction
 +newCommand(txId: String,
@@ -199,24 +199,34 @@ used by CsvParser</panel_attributes><additional_attributes /></element><element>
 +redo() Optional&lt;Transaction&gt;
 +canUndo() boolean
 +canRedo() boolean
-bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1300</x><y>1136</y><w>340</w><h>81</h></coordinates><panel_attributes>BudgetCalculator
+--
+uses TransactionService
+used by WealthSeiFacade (Fig 3.1), CommandFactory (Fig 3.6)
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1560</x><y>900</y><w>331</w><h>90</h></coordinates><panel_attributes>BudgetCalculator
 --
 +compute(budget: Budget,
    transactions: List&lt;Transaction&gt;) BudgetStatus
-bg=#B8E6B0
 --
-used by BudgetService</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1700</x><y>1136</y><w>240</w><h>51</h></coordinates><panel_attributes>InMemoryTransactionRepository
---
-
-bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>0</x><y>1325</y><w>241</w><h>51</h></coordinates><panel_attributes>PersistentTransactionRepository
+used by BudgetService
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1140</x><y>480</y><w>220</w><h>51</h></coordinates><panel_attributes>InMemoryTransactionRepository
 --
 
-bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>301</x><y>1325</y><w>332</w><h>94</h></coordinates><panel_attributes>TsvFile
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1020</x><y>210</y><w>222</w><h>51</h></coordinates><panel_attributes>PersistentTransactionRepository
+--
+
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1020</x><y>-120</y><w>305</w><h>103</h></coordinates><panel_attributes>TsvFile
 --
 +Row(line: int, fields: List&lt;String&gt;) record
 +read(file: Path) List&lt;Row&gt;
 +write(file: Path, rows: List&lt;List&lt;String&gt;&gt;)
-bg=#B8E6B0
 --
-used by PersistentTransactionRepository</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>129</x><y>666</y><w>167</w><h>470</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>167;0;0;470</additional_attributes></element><element><id>Relation</id><coordinates><x>240</x><y>1161</y><w>60</w><h>10</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>0;0;60;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1217</x><y>446</y><w>580</w><h>690</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;581;690</additional_attributes></element><element><id>Relation</id><coordinates><x>147</x><y>446</y><w>940</w><h>879</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>940;0;0;879</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>1534</y><w>1100</w><h>44</h></coordinates><panel_attributes>STAGE 2 LEGEND: orange = changed from Stage 1 (renamed, new signature or fields, handlers/private fields dropped); green = new in Stage 2. Unmarked = unchanged.
+used by PersistentTransactionRepository
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>471</x><y>596</y><w>39</w><h>10</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;39;0</additional_attributes></element><element><id>Relation</id><coordinates><x>620</x><y>531</y><w>10</w><h>39</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>0;39;0;0</additional_attributes></element><element><id>Relation</id><coordinates><x>250</x><y>918</y><w>34</w><h>10</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>34;0;0;1</additional_attributes></element><element><id>Relation</id><coordinates><x>640</x><y>115</y><w>30</w><h>10</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>0;0;30;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1653</x><y>871</y><w>28</w><h>29</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>0;0;28;29</additional_attributes></element><element><id>Relation</id><coordinates><x>1208</x><y>446</y><w>23</w><h>34</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;24;34</additional_attributes></element><element><id>Relation</id><coordinates><x>1136</x><y>261</y><w>10</w><h>49</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>10;49;0;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1134</x><y>-16</y><w>30</w><h>227</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>0;227;31;0</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>1188</y><w>1000</w><h>104</h></coordinates><panel_attributes>NEW IN STAGE 2 (green): AbstractCsvAdapter implements BankCsvAdapter; CardStatementCsvAdapter extends AbstractCsvAdapter; CsvRecord is used by
+DebitCreditCsvAdapter, CsvParser, AbstractCsvAdapter; CategoryCorrector uses TransactionService; used by WealthSeiFacade (Fig 3.1), CommandFactory
+(Fig 3.6); BudgetCalculator is used by BudgetService; InMemoryTransactionRepository implements TransactionRepository; PersistentTransactionRepository
+implements TransactionRepository; TsvFile is used by PersistentTransactionRepository.
+Old classes show only the members that were in Stage 1 and still exist; members that are unchanged are not repeated. Every changed or new class
+(orange / green) lists its current members in its box.
+bg=#E6F2FF</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>0</x><y>1304</y><w>1000</w><h>48</h></coordinates><panel_attributes>STAGE 2 LEGEND: orange = changed from Stage 1 (renamed, new signature or fields, handlers/private fields dropped); green = new in Stage 2, placed next
+to the class that uses it (dashed arrow = uses; hollow-triangle line = inheritance/implements; "used by" lists every user). Unmarked = unchanged.
 bg=#FFF2A8</panel_attributes><additional_attributes /></element></diagram>

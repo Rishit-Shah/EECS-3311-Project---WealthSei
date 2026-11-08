@@ -200,17 +200,8 @@ m2=1..*</panel_attributes><additional_attributes>102;0;0;117</additional_attribu
 m1=1
 m2=1</panel_attributes><additional_attributes>0;0;54;85</additional_attributes></element><element><id>Relation</id><coordinates><x>1620</x><y>400</y><w>280</w><h>92</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
 m1=1
-m2=1</panel_attributes><additional_attributes>0;0;280;92</additional_attributes></element><element><id>Relation</id><coordinates><x>1680</x><y>410</y><w>566</w><h>89</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;566;89</additional_attributes></element><element><id>Relation</id><coordinates><x>1990</x><y>360</y><w>564</w><h>145</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>0;0;564;145</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>1332</y><w>950</w><h>70</h></coordinates><panel_attributes>Agent subsystem. Tools call TransactionService, BudgetService (Fig 3.2), AnalyticsService, GoalService, ScenarioSimulator (Fig 3.3); Planner uses LLMProvider (Fig 3.5).
-bg=yellow</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>370</x><y>910</y><w>680</w><h>70</h></coordinates><panel_attributes>lt=&lt;..</panel_attributes><additional_attributes>680;70;0;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1140</x><y>380</y><w>50</w><h>600</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>0;600;50;0</additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>1140</y><w>318</w><h>129</h></coordinates><panel_attributes>PurchaseAssessor
---
-+Assessment(verdict: Verdict,
-   reason: String) record
-+assess(lowestAfter: Money, buffer: Money,
-   allowanceBefore: Money,
-   allowanceAfter: Money,
-   overCommittedAfter: boolean,
-   goalsNeedingHelp: int) Assessment
-bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>378</x><y>1140</y><w>240</w><h>159</h></coordinates><panel_attributes>&lt;&lt;enum&gt;&gt;
+m2=1</panel_attributes><additional_attributes>0;0;280;92</additional_attributes></element><element><id>Relation</id><coordinates><x>1680</x><y>410</y><w>566</w><h>89</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;566;89</additional_attributes></element><element><id>Relation</id><coordinates><x>1990</x><y>360</y><w>564</w><h>145</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>0;0;564;145</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>1110</y><w>950</w><h>70</h></coordinates><panel_attributes>Agent subsystem. Tools call TransactionService, BudgetService (Fig 3.2), AnalyticsService, GoalService, ScenarioSimulator (Fig 3.3); Planner uses LLMProvider (Fig 3.5).
+bg=yellow</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>370</x><y>910</y><w>680</w><h>70</h></coordinates><panel_attributes>lt=&lt;..</panel_attributes><additional_attributes>680;70;0;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1140</x><y>380</y><w>50</w><h>600</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>0;600;50;0</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1500</x><y>0</y><w>340</w><h>168</h></coordinates><panel_attributes>&lt;&lt;enum&gt;&gt;
 Verdict
 --
 YES
@@ -220,22 +211,40 @@ NO
 --
 +label() String
 +parse(text: String) Verdict
-bg=#B8E6B0
 --
-used by AgentController</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>678</x><y>1140</y><w>240</w><h>68</h></coordinates><panel_attributes>AffordabilityFallback
+used by AgentController, PurchaseAssessor, AffordabilityFallback
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>900</x><y>60</y><w>220</w><h>77</h></coordinates><panel_attributes>AffordabilityFallback
 --
 
-bg=#B8E6B0
 --
-used by AgentController</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>978</x><y>1140</y><w>340</w><h>68</h></coordinates><panel_attributes>ScenarioDrafts
+used by AgentController
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1140</x><y>-120</y><w>340</w><h>77</h></coordinates><panel_attributes>ScenarioDrafts
 --
 +from(args: ToolArgs, today: LocalDate) List&lt;ProposalDraft&gt;
-bg=#B8E6B0
 --
-used by AgentController</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1378</x><y>1140</y><w>240</w><h>68</h></coordinates><panel_attributes>PlainText
+used by AgentController
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>870</x><y>-60</y><w>220</w><h>77</h></coordinates><panel_attributes>PlainText
 --
 
-bg=#B8E6B0
 --
-used by AgentController</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>0</x><y>1414</y><w>1100</w><h>44</h></coordinates><panel_attributes>STAGE 2 LEGEND: orange = changed from Stage 1 (renamed, new signature or fields, handlers/private fields dropped); green = new in Stage 2. Unmarked = unchanged.
+used by AgentController
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1530</x><y>-210</y><w>292</w><h>168</h></coordinates><panel_attributes>PurchaseAssessor
+--
++Assessment(verdict: Verdict,
+   reason: String) record
++assess(lowestAfter: Money, buffer: Money,
+   allowanceBefore: Money,
+   allowanceAfter: Money,
+   overCommittedAfter: boolean,
+   goalsNeedingHelp: int) Assessment
+--
+uses Verdict
+used by AnalyticsService (Fig 3.3)
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>1462</x><y>84</y><w>38</w><h>10</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>0;0;38;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1120</x><y>91</y><w>40</w><h>10</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>40;0;0;2</additional_attributes></element><element><id>Relation</id><coordinates><x>1310</x><y>-43</y><w>10</w><h>43</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>0;43;0;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1090</x><y>13</y><w>70</w><h>22</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>70;22;0;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1672</x><y>-42</y><w>10</w><h>42</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>1;0;0;42</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>1192</y><w>1000</w><h>90</h></coordinates><panel_attributes>NEW IN STAGE 2 (green): PurchaseAssessor uses Verdict; used by AnalyticsService (Fig 3.3); Verdict is used by AgentController, PurchaseAssessor,
+AffordabilityFallback; AffordabilityFallback is used by AgentController; ScenarioDrafts is used by AgentController; PlainText is used by
+AgentController.
+Old classes show only the members that were in Stage 1 and still exist; members that are unchanged are not repeated. Every changed or new class
+(orange / green) lists its current members in its box.
+bg=#E6F2FF</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>0</x><y>1294</y><w>1000</w><h>48</h></coordinates><panel_attributes>STAGE 2 LEGEND: orange = changed from Stage 1 (renamed, new signature or fields, handlers/private fields dropped); green = new in Stage 2, placed next
+to the class that uses it (dashed arrow = uses; hollow-triangle line = inheritance/implements; "used by" lists every user). Unmarked = unchanged.
 bg=#FFF2A8</panel_attributes><additional_attributes /></element></diagram>

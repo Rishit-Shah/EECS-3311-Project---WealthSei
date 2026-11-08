@@ -139,43 +139,53 @@ bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UML
 +isFlagged(merchant: String) boolean
 +keyOf(merchant: String) String
 bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>1839</x><y>265</y><w>588</w><h>214</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>0;0;588;214</additional_attributes></element><element><id>Relation</id><coordinates><x>519</x><y>265</y><w>1188</w><h>82</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>1188;0;0;82</additional_attributes></element><element><id>Relation</id><coordinates><x>1865</x><y>265</y><w>929</w><h>82</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>0;0;929;82</additional_attributes></element><element><id>Relation</id><coordinates><x>1418</x><y>265</y><w>342</w><h>96</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>342;0;0;96</additional_attributes></element><element><id>Relation</id><coordinates><x>1786</x><y>265</y><w>10</w><h>96</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>0;0;1;96</additional_attributes></element><element><id>Relation</id><coordinates><x>1157</x><y>265</y><w>576</w><h>82</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>576;0;0;82</additional_attributes></element><element><id>Relation</id><coordinates><x>1812</x><y>265</y><w>342</w><h>82</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;342;82</additional_attributes></element><element><id>Relation</id><coordinates><x>801</x><y>265</y><w>10</w><h>214</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>0;0;0;214</additional_attributes></element><element><id>Relation</id><coordinates><x>470</x><y>265</y><w>282</w><h>82</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>282;0;0;82</additional_attributes></element><element><id>Relation</id><coordinates><x>850</x><y>265</y><w>244</w><h>82</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;244;82</additional_attributes></element><element><id>Relation</id><coordinates><x>187</x><y>455</y><w>283</w><h>81</h></coordinates><panel_attributes>lt=..&gt;</panel_attributes><additional_attributes>283;0;0;81</additional_attributes></element><element><id>Relation</id><coordinates><x>403</x><y>194</y><w>18</w><h>153</h></coordinates><panel_attributes>lt=-&gt;</panel_attributes><additional_attributes>0;0;18;153</additional_attributes></element><element><id>Relation</id><coordinates><x>130</x><y>194</y><w>200</w><h>342</h></coordinates><panel_attributes>lt=..&gt;
-clones baseline</panel_attributes><additional_attributes>200;0;0;342</additional_attributes></element><element><id>Relation</id><coordinates><x>3131</x><y>187</y><w>262</w><h>301</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>262;0;0;301</additional_attributes></element><element><id>Relation</id><coordinates><x>3342</x><y>187</y><w>86</w><h>294</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>86;0;0;294</additional_attributes></element><element><id>Relation</id><coordinates><x>3463</x><y>187</y><w>205</w><h>301</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;205;301</additional_attributes></element><element><id>Relation</id><coordinates><x>3498</x><y>187</y><w>379</w><h>294</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;379;294</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>911</y><w>900</w><h>70</h></coordinates><panel_attributes>Analytics, goals and scenario simulation. Uses PlanRepository, BudgetService (Fig 3.2), LLMProvider (Fig 3.5) and Scenario (Fig 3.7).
-bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>35</x><y>784</y><w>340</w><h>81</h></coordinates><panel_attributes>RecurringReviewer
+clones baseline</panel_attributes><additional_attributes>200;0;0;342</additional_attributes></element><element><id>Relation</id><coordinates><x>3131</x><y>187</y><w>262</w><h>301</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>262;0;0;301</additional_attributes></element><element><id>Relation</id><coordinates><x>3342</x><y>187</y><w>86</w><h>294</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>86;0;0;294</additional_attributes></element><element><id>Relation</id><coordinates><x>3463</x><y>187</y><w>205</w><h>301</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;205;301</additional_attributes></element><element><id>Relation</id><coordinates><x>3498</x><y>187</y><w>379</w><h>294</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;0;379;294</additional_attributes></element><element><id>UMLNote</id><coordinates><x>0</x><y>754</y><w>900</w><h>70</h></coordinates><panel_attributes>Analytics, goals and scenario simulation. Uses PlanRepository, BudgetService (Fig 3.2), LLMProvider (Fig 3.5) and Scenario (Fig 3.7).
+bg=yellow</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1655</x><y>-117</y><w>340</w><h>90</h></coordinates><panel_attributes>RecurringReviewer
 --
 +review(payments: List&lt;RecurringPayment&gt;,
    total: Money, fallback: String) RecurringReview
-bg=#B8E6B0
 --
-used by AnalyticsService</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>435</x><y>784</y><w>255</w><h>94</h></coordinates><panel_attributes>RecurringReport
+used by AnalyticsService
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1355</x><y>123</y><w>235</w><h>103</h></coordinates><panel_attributes>RecurringReport
 --
 -payments: List&lt;RecurringPayment&gt;
 -monthlyTotal: Money
 -summary: String
-bg=#B8E6B0
 --
-used by AnalyticsService</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>750</x><y>784</y><w>240</w><h>68</h></coordinates><panel_attributes>RecurringSummaryTemplate
---
-
-bg=#B8E6B0
---
-used by AnalyticsService</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1050</x><y>784</y><w>240</w><h>68</h></coordinates><panel_attributes>SafeToSpendSummaryTemplate
+used by AnalyticsService
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1385</x><y>3</y><w>220</w><h>77</h></coordinates><panel_attributes>RecurringSummaryTemplate
 --
 
-bg=#B8E6B0
 --
-used by AnalyticsService</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1350</x><y>784</y><w>255</w><h>68</h></coordinates><panel_attributes>HealthScoreSummaryTemplate
+used by AnalyticsService
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>2045</x><y>123</y><w>220</w><h>77</h></coordinates><panel_attributes>SafeToSpendSummaryTemplate
+--
+
+--
+used by AnalyticsService
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>2045</x><y>243</y><w>235</w><h>77</h></coordinates><panel_attributes>HealthScoreSummaryTemplate
 --
 +write(score: HealthScore) String
-bg=#B8E6B0
 --
-used by AnalyticsService</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1665</x><y>784</y><w>325</w><h>51</h></coordinates><panel_attributes>ScenarioParser
+used by AnalyticsService
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>3275</x><y>213</y><w>340</w><h>90</h></coordinates><panel_attributes>ScenarioParser
 --
 +parse(args: ToolArgs) List&lt;ScenarioChange&gt;
-bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>2050</x><y>784</y><w>297</w><h>81</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+--
+uses ScenarioChange
+used by ScenarioTool (Fig 3.4), WealthSeiFacade (Fig 3.1)
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>665</x><y>303</y><w>273</w><h>90</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
 MonthlySurplusProvider
 --
 +monthlySurplus(today: LocalDate) Money
-bg=#B8E6B0
 --
-used by GoalService</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>35</x><y>993</y><w>1100</w><h>44</h></coordinates><panel_attributes>STAGE 2 LEGEND: orange = changed from Stage 1 (renamed, new signature or fields, handlers/private fields dropped); green = new in Stage 2; not built and removed: ExplanationService. Unmarked = unchanged.
+used by GoalService, AnalyticsService
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>1821</x><y>-27</y><w>10</w><h>30</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>0;30;1;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1590</x><y>169</y><w>46</w><h>10</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>46;0;0;1</additional_attributes></element><element><id>Relation</id><coordinates><x>1594</x><y>80</y><w>41</w><h>16</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>41;16;0;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1993</x><y>162</y><w>52</w><h>10</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>0;1;52;0</additional_attributes></element><element><id>Relation</id><coordinates><x>1993</x><y>224</y><w>54</w><h>18</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>0;0;54;18</additional_attributes></element><element><id>Relation</id><coordinates><x>3445</x><y>187</y><w>10</w><h>26</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>0;26;0;0</additional_attributes></element><element><id>Relation</id><coordinates><x>809</x><y>275</y><w>10</w><h>28</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>5;0;0;28</additional_attributes></element><element><id>UMLNote</id><coordinates><x>35</x><y>836</y><w>1000</w><h>90</h></coordinates><panel_attributes>NEW IN STAGE 2 (green): RecurringReviewer is used by AnalyticsService; RecurringReport is used by AnalyticsService; RecurringSummaryTemplate is used
+by AnalyticsService; SafeToSpendSummaryTemplate is used by AnalyticsService; HealthScoreSummaryTemplate is used by AnalyticsService; ScenarioParser
+uses ScenarioChange; used by ScenarioTool (Fig 3.4), WealthSeiFacade (Fig 3.1); MonthlySurplusProvider is used by GoalService, AnalyticsService.
+Old classes show only the members that were in Stage 1 and still exist; members that are unchanged are not repeated. Every changed or new class
+(orange / green) lists its current members in its box.
+bg=#E6F2FF</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>35</x><y>938</y><w>1000</w><h>62</h></coordinates><panel_attributes>STAGE 2 LEGEND: orange = changed from Stage 1 (renamed, new signature or fields, handlers/private fields dropped); green = new in Stage 2, placed next
+to the class that uses it (dashed arrow = uses; hollow-triangle line = inheritance/implements; "used by" lists every user); not built and removed:
+ExplanationService. Unmarked = unchanged.
 bg=#FFF2A8</panel_attributes><additional_attributes /></element></diagram>

@@ -85,7 +85,7 @@ WealthSeiFacade
 +setProtectedCategory(category: Category,
    isProtected: boolean)
 +addAlertListener(listener: AlertListener)
-bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>511</x><y>1507</y><w>602</w><h>63</h></coordinates><panel_attributes>WealthSeiFacade also delegates to the subsystem classes shown in
+bg=#FFD27F</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>511</x><y>1467</y><w>602</w><h>63</h></coordinates><panel_attributes>WealthSeiFacade also delegates to the subsystem classes shown in
 Fig 3.2-3.6: TransactionService, PlanService, BudgetService,
 AnalyticsService, GoalService, ProposalService,
 ReviewService, ReportService, AgentController, CommandHistory, TraceRepository (not drawn).
@@ -108,28 +108,33 @@ uses</panel_attributes><additional_attributes>0;0;46;150</additional_attributes>
 uses</panel_attributes><additional_attributes>196;4;0;0</additional_attributes></element><element><id>Relation</id><coordinates><x>500</x><y>129</y><w>215</w><h>554</h></coordinates><panel_attributes>lt=&lt;..
 uses</panel_attributes><additional_attributes>0;0;215;554</additional_attributes></element><element><id>Relation</id><coordinates><x>567</x><y>56</y><w>472</w><h>45</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;46;472;0</additional_attributes></element><element><id>Relation</id><coordinates><x>857</x><y>80</y><w>270</w><h>139</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>0;139;270;0</additional_attributes></element><element><id>Relation</id><coordinates><x>441</x><y>49</y><w>308</w><h>248</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
 m1=1
-m2=1</panel_attributes><additional_attributes>308;0;0;248</additional_attributes></element><element><id>UMLClass</id><coordinates><x>329</x><y>1243</y><w>240</w><h>120</h></coordinates><panel_attributes>ShellPanel
+m2=1</panel_attributes><additional_attributes>308;0;0;248</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1019</x><y>-113</y><w>220</w><h>129</h></coordinates><panel_attributes>ShellPanel
 --
 +dock() ChatDock
 +view(index: int) View
 +select(index: int)
 +refreshIfDateChanged()
 +refreshAll()
-bg=#B8E6B0
 --
-used by MainWindow</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>629</x><y>1243</y><w>318</w><h>81</h></coordinates><panel_attributes>WealthSeiFactory
+used by MainWindow
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>389</x><y>157</y><w>220</w><h>77</h></coordinates><panel_attributes>ArgTokenizer
+--
+
+--
+used by CliApp
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>329</x><y>1243</y><w>220</w><h>51</h></coordinates><panel_attributes>Main
+--
++main(args: String[])
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>299</x><y>1327</y><w>292</w><h>90</h></coordinates><panel_attributes>WealthSeiFactory
 --
 +inMemory() WealthSeiFacade
 +persistent(dataDir: Path) WealthSeiFacade
-bg=#B8E6B0
 --
-used by Main</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>1007</x><y>1243</y><w>240</w><h>68</h></coordinates><panel_attributes>ArgTokenizer
---
-
-bg=#B8E6B0
---
-used by CliApp</panel_attributes><additional_attributes /></element><element><id>UMLClass</id><coordinates><x>329</x><y>1406</y><w>240</w><h>51</h></coordinates><panel_attributes>Main
---
-+main(args: String[])
-bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>329</x><y>1582</y><w>1100</w><h>44</h></coordinates><panel_attributes>STAGE 2 LEGEND: orange = changed from Stage 1 (renamed, new signature or fields, handlers/private fields dropped); green = new in Stage 2. Unmarked = unchanged.
+used by Main
+bg=#B8E6B0</panel_attributes><additional_attributes /></element><element><id>Relation</id><coordinates><x>975</x><y>-8</y><w>43</w><h>15</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>0;16;43;0</additional_attributes></element><element><id>Relation</id><coordinates><x>499</x><y>126</y><w>10</w><h>31</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>1;0;0;31</additional_attributes></element><element><id>Relation</id><coordinates><x>440</x><y>1294</y><w>10</w><h>33</h></coordinates><panel_attributes>lt=.&gt;</panel_attributes><additional_attributes>0;0;2;33</additional_attributes></element><element><id>UMLNote</id><coordinates><x>329</x><y>1542</y><w>1000</w><h>76</h></coordinates><panel_attributes>NEW IN STAGE 2 (green): ShellPanel is used by MainWindow; WealthSeiFactory is used by Main; ArgTokenizer is used by CliApp; Main is the program entry
+point and uses WealthSeiFactory.
+Old classes show only the members that were in Stage 1 and still exist; members that are unchanged are not repeated. Every changed or new class
+(orange / green) lists its current members in its box.
+bg=#E6F2FF</panel_attributes><additional_attributes /></element><element><id>UMLNote</id><coordinates><x>329</x><y>1630</y><w>1000</w><h>48</h></coordinates><panel_attributes>STAGE 2 LEGEND: orange = changed from Stage 1 (renamed, new signature or fields, handlers/private fields dropped); green = new in Stage 2, placed next
+to the class that uses it (dashed arrow = uses; hollow-triangle line = inheritance/implements; "used by" lists every user). Unmarked = unchanged.
 bg=#FFF2A8</panel_attributes><additional_attributes /></element></diagram>
