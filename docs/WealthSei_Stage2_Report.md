@@ -495,7 +495,7 @@ Stage 1 has one use-case diagram, fourteen use-case descriptions (UC01–UC14) a
 | SD10 Proposal approval | Yes | Extra `UndoneState`. |
 | SD11 Export | Yes | None. |
 
-So **three** Stage 1 items were inaccurate (UC08, SD04, SD06) and are replaced by three new diagrams (Figures 3.8–3.10); UC04 gets a one-line note; the class diagrams were redrawn (Figures 3.1–3.7, same numbering as Stage 1); the others still describe the code, with the naming differences listed above.
+So **three** Stage 1 items (UC08, SD04, SD06) are replaced by three new diagrams (Figures 3.8–3.10); UC04 gets a one-line note; the class diagrams were redrawn (Figures 3.1–3.7, same numbering as Stage 1); the others still describe the code, with the naming differences listed above.
 
 **Figure 3.8 — F05–F07 as implemented (replaces SD04 for F05–F07).** The dashboard shows numbers and a fixed-template sentence; the AI is only involved when the user asks in the Assistant.
 
