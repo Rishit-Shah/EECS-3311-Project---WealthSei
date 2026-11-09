@@ -19,8 +19,8 @@ This project is developed as a human-AI collaboration. I direct the work, make t
 
 | Tool / platform | Model | Used for | Token / money cost |
 |---|---|---|---|
-| Claude (chat with code tools) | Claude Sonnet 5.5 (`claude-sonnet-5-5`) | AI-assisted development in Stage 2: project setup, domain classes, unit tests, build and editor debugging, report drafting. Earlier (Stage 1): design report, UML diagrams, use cases. | Whole of Stage 2 (Oct 20 to Nov 7, one session): **248,485,938 tokens** (43,138 plain input, 1,398,501 output, 240,720,798 cache-read, 6,323,501 cache-write), about **$62.73 API-equivalent**. (Checkpoint on Oct 20 ~22:50 was about $5.27.) |
-| Claude API inside WealthSei (runtime) | `claude-haiku-5-5`, `claude-sonnet-5-5` | The app's own LLM calls. Haiku: F02 category for an unknown merchant, F04 recurring review. Sonnet, through the tool-using agent: F08 to F13 (and the explanations in F05, F06, F07). | Token counts per call are in `llm.log` (`aicalls` in the CLI). Money cost: fill in from the Anthropic Console usage and cost pages, per model. |
+| Claude (chat with code tools) | Claude Sonnet 5.5 (`claude-sonnet-5-5`) | AI-assisted development in Stage 2: project setup, domain classes, unit tests, build and editor debugging, report drafting. Earlier (Stage 1): design report, UML diagrams, use cases. | Whole of Stage 2 (Oct 20 to Nov 9, one session): **321,126,431 tokens** (49,951 plain input, 1,665,363 output, 311,583,766 cache-read, 7,827,351 cache-write), about **$78.51 API-equivalent**. (Checkpoint on Oct 20 ~22:50 was about $5.27.) |
+| Claude API inside WealthSei (runtime) | `claude-haiku-5-5`, `claude-sonnet-5-5` | The app's own LLM calls. Haiku: F02 category for an unknown merchant, F04 recurring review. Sonnet, through the tool-using agent: F08 to F13 (and the explanations in F05, F06, F07). | Token counts per call are in `llm.log` (`aicalls` in the CLI). Anthropic Console (Nov 9, 6:51 PM UTC): Sonnet 338,620 input + 23,459 output tokens, Haiku 47,702 input + 9,702 output tokens, 419,483 tokens in total, **$1.00** spend this month (the dashboard does not split cost by model). The CLI log also records 15 further calls made during the final checks later that day. |
 | VS Code + Java extension | n/a | Editing, running tests | Free |
 
 Notes on cost: the figure is a computed API price, not necessarily what was billed (it depends on the plan used). Stage 1 usage happened before the last conversation summary and is not included.
@@ -62,7 +62,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - An amount like `12,50` is rejected rather than guessed, to avoid silently misreading a European-style number.
   - Known limitation: some credit-card exports show purchases as positive numbers; those would be read as income.
 - **Defect found while building:** the strict compiler flagged missing `serialVersionUID` fields on the new exception classes; fixed before handing over.
-- **My verification:** (fill in after running `mvn test` with real JUnit 5; expected 111 tests.)
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 111 tests.
 
 ### 2026-10-27 - F03 Budget limits, tracking and alerts
 - **My direction:** continue straight into the next feature so the app has something runnable; real `mvn test` after F01 passed with 111 tests, which I reported back before this started.
@@ -72,7 +72,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - `AlertMonitor` only raises a budget alert when the level for a category gets worse (nothing to WARNING, WARNING to OVER), so the same alert is not repeated on every refresh; dropping back under 80% resets it.
   - A listener that throws is skipped so it cannot stop the other listeners.
   - `BudgetCalculator` counts only expenses dated in the month; income (including refunds marked as income) is ignored, and spending in categories with no limit is not shown.
-- **My verification:** (fill in after running `mvn test` with real JUnit 5; expected 138 tests.)
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 138 tests.
 
 ### 2026-11-02 - Plan service and facade (rest of F03)
 - **My direction:** keep moving forward one piece at a time; the user-facing CLI comes next.
@@ -80,7 +80,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
 - **Design decisions to list in "changes from Stage 1":**
   - `ImportResult` carries the months touched by an import so the facade refreshes only those budgets.
   - `PlanService` starts from a zero balance dated today when no plan is saved yet; a balance date in the future is rejected.
-- **My verification:** (fill in after running `mvn test` with real JUnit 5; expected 152 tests.)
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 152 tests.
 
 ### 2026-11-02 - F02 learned rules and undo (Command pattern)
 - **My direction:** finish F02 properly: a correction should teach the app and be reversible. I questioned why F03 was pushed before F02 was finished, and the AI explained which classes are shared and which are not.
@@ -90,7 +90,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - Undo restores the old category and the old learned rule (or removes the new one). Income and "Uncategorized" corrections are not learned.
   - Past transactions from the same merchant are not changed automatically, only future imports.
   - The LLM fallback for unknown merchants is still to do (needs the API key and LangChain4j).
-- **My verification:** (fill in after running `mvn test` with real JUnit 5; expected 172 tests.)
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 172 tests. On Nov 9 `correct <id> groceries` changed a category and `undo` put it back (Goodlife Fitness returned to Uncategorized).
 
 ### 2026-11-02 - First runnable version: command-line interface
 - **My direction:** I wanted something I can actually run and talk to, not only classes. I left the CLI library choice to the AI; it recommended a small hand-written command reader because it can be fully tested in the AI's sandbox (picocli could not be downloaded there).
@@ -99,7 +99,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
 - **Design decisions to list in "changes from Stage 1":**
   - Hand-written command reader instead of picocli.
   - Data is in memory for now; it is lost when the program exits (persistence comes next).
-- **My verification:** (fill in after running `mvn test` with real JUnit 5, expected 199 tests, and trying the CLI by hand.)
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 199 tests. I also ran the CLI by hand on Nov 9 (`recurring`, `safe`, `forecast`, `habits`, `score`, `goal`, `afford`, `whatif`, `ask`, `review`, `transactions`, `proposals`, `export`, `correct`, `undo`) and every command ran.
 
 ### 2026-11-02 - Saving data between sessions (file-based storage)
 - **My direction:** I told the AI to go with its own suggestion for storage. It recommended plain text files over SQLite because it could test them fully (the SQLite library could not be downloaded in its sandbox).
@@ -108,7 +108,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - Text files instead of SQLite (no extra library; data can be opened in a text editor). The repository interfaces are unchanged, so SQLite could still be added later.
   - A bad data file stops start-up with a message naming the file and line.
   - The undo history and the alert monitor's memory are not saved; after a restart a budget already at WARNING may alert once more.
-- **My verification:** (fill in after running `mvn test` with real JUnit 5, expected 225 tests, and quitting and restarting the CLI to check the data is still there.)
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 225 tests. I quit and restarted the CLI on Nov 9 and the earlier data was still there: the October transactions, the plan, the Test trip goal and the earlier AI call log.
 
 ### 2026-11-04 - F04 Recurring payment and subscription detector
 - **My direction:** continue with the next feature in the design (F04, then F05).
@@ -120,13 +120,13 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - `flagRecurring` also takes today's date so it can refuse a merchant that is not a detected recurring payment.
   - The summary is a fixed template for now. The LLM will be able to phrase it later; the template stays as the fallback the design asks for.
   - `RecurringPayment` gained `priceIncrease` and `occurrences`.
-- **My verification:** (fill in after running `mvn test` with real JUnit 5, expected 253 tests, and trying `recurring` in the CLI with `sample-subscriptions.csv`.)
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 253 tests. On Nov 9 `recurring` on my own data found 3 recurring payments, about 74.98 per month, with Netflix flagged for a 2.50 price rise. I did not use `sample-subscriptions.csv` for this check.
 
 ### 2026-11-04 - Checking the code against the Stage 1 design
 - **My direction:** I asked the AI to make sure classes and methods follow Stage 1; more classes are fine, fewer are not.
 - **AI contribution:** compared every class named in the Stage 1 report with the code (40 built with the Stage 1 name, 103 still to build, each belonging to a feature not built yet), then aligned the places where the code had drifted: `LearnedRuleRepository` became `RuleRepository` (`save`, `delete`, `findAll` returning the new `LearnedRule` record), `CorrectCategoryCommand` became `RecategorizeCommand` and now calls `learn()` and `forget()` on `LearnedRuleStrategy` as the Stage 1 sequence diagram shows, `Command.description()` became `describe()`, `CommandHistory.run()` became `execute()`. Generated `docs/stage1-conformance.md`, and added 4 tests.
 - **Finding:** the plan classes (`FinancialPlan`, `IncomeSource`, `FixedBill`, `PlannedExpense`) are not in Stage 1 at all. They are extras that carry the balance, income and bills; Stage 1 only had `Account` with an opening balance. To be listed in the report's changes section.
-- **My verification:** (fill in after running `mvn test` with real JUnit 5, expected 257 tests.)
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 257 tests.
 
 ### 2026-11-04 - F05 Safe-to-Spend Coach and 30-day forecast
 - **My direction:** continue with F05 and keep the class and method names as in Stage 1.
@@ -139,8 +139,8 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - A new plan starts with a safety buffer of $200 (the Stage 1 default). With no plan, `safe` asks the user to set a balance first.
   - The LOW_BALANCE alert is raised once, again if the balance would drop below zero, and again only after the balance has recovered.
   - The explanation is a fixed template for now; the LLM can phrase it later.
-  - Goals can be stored but not yet created from the CLI (that is F09).
-- **My verification:** (fill in after running `mvn test` with real JUnit 5, expected 298 tests, and trying `safe` and `forecast` in the CLI.)
+  - Goals can be stored here; creating them from the CLI comes with F09 (see that entry).
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 298 tests. On Nov 9 `safe` gave 263.14 per day (5,789.01 left over 22 days: balance 3000.00 + income 3000.00 - bills 10.99 - goals 0.00 - buffer 200.00) and `forecast` showed the lowest balance, 2,989.01, on 2026-11-12. The GUI dashboard showed the same figures.
 
 ### 2026-11-04: F06 habit detective and F07 health score
 
@@ -152,7 +152,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - Savings rate and emergency buffer are measured over the 30-day forecast, so they need a plan.
   - `ScoreComponent` has an extra `detail` field and `HealthScore` has an `excluded` list.
   - "Change from last month" is not computed yet (there is no stored history of past scores); the field exists and the explanation uses it once known.
-- **My verification:** (fill in after running `mvn test`, expected 329 tests, and trying `habits 2026-10` and `score` in the CLI.)
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 329 tests. On Nov 9 `habits 2026-10` reported no notable patterns (the October data is small) and `score` gave 100 / 100 for November, with budget adherence and goal progress left out and the rest re-scaled.
 
 ### 2026-11-04: F09 savings goals
 
@@ -165,7 +165,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - The surplus available to a goal is the plan surplus minus what the other open goals already take each month.
   - Status rules: achieved when saved reaches the target; on track when the monthly contribution covers the requirement; at risk when it does not but the surplus could; behind otherwise. Behind or at risk raises a GOAL_RISK alert only when it gets worse.
   - `GoalOptionKind` enum added; `MonthlySurplusProvider` interface lets the goal service ask the analytics layer for the surplus; goals now persist in `goals.tsv`.
-- **My verification:** (fill in after running `mvn test`, expected 361 tests, and trying `goal add`, `goal list` and `goal replan` in the CLI.)
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 361 tests. On Nov 9 `goal add "Test trip" 1000 2027-03-01` raised the at-risk alert (it needs 250.00 per month); `goal list` and `goal replan 2d10cf89` said it can be reached on time at 250.00 per month, leaving 2,614.85 per month free.
 
 ### 2026-11-04: LLM layer and F08 affordability agent
 
@@ -181,8 +181,8 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - For an affordability question the controller runs the purchase-impact tool first. The rules then act as a floor: the model may be more cautious but never more optimistic, and if it cannot be reached the answer is written from the rules.
   - The grounding check compares figures with tool results (dollar amounts, percents, decimals and numbers of 100 or more; whole numbers may be rounded); one correction is allowed, then the answer is flagged.
   - Traces are kept for the session only.
-- **Not yet verified live:** the AI's environment cannot reach the API, so the first real call is mine to run.
-- **My verification:** (fill in after `mvn test` expecting 452 tests, and a live `afford` with my key; note the model's answer, the trace, and `llm.log`.)
+- **Live check:** the AI's environment cannot reach the API, so I ran the first real call myself on my machine (see the next entry) and repeated it on Nov 9.
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 452 tests. Live run on Nov 9 with my key: `afford "laptop" 900` answered Yes-but (lowest balance 2,079.11 on 2026-11-14 against 2,979.11 without the laptop; safe-to-spend 261.25 to 220.34 per day) and pointed to the at-risk Test trip goal. `trace` showed two tool calls (forecast, goals), "All figures match tool results", and the call was recorded in `llm.log` (`aicalls`).
 
 ### 2026-11-04: first live AI run, a plan bug it exposed, and F10 what-if simulator
 
@@ -195,7 +195,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - The forecast only contains committed money (income, bills, recurring payments, planned expenses). A category cap is therefore modelled as the average monthly spend (last up to 3 full months) minus the cap, counted as extra money each month from the first of next month. A raise is extra money from the first of next month.
   - `simulate(scenario, today)` takes the date, like earlier methods; `Scenario` and `ScenarioResult` are in the `analytics` package.
   - More than 5 changes, an unknown name or category, a non-positive value and a date outside the six months are all refused with a message.
-- **My verification:** (fill in after `mvn test` expecting 487 tests, and a live `whatif "cancel Spotify and cap dining at 150"` followed by `trace`.)
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 487 tests. Live run on Nov 9: `whatif "cancel Spotify and cap dining at 150"` gave a six-month balance change of 65.94, lowest balance 2,979.11 to 2,990.10 and monthly savings up by 10.99, and said the effect is small because only 60.17 a month of everyday spending is counted. `trace` showed one scenario tool call and "All figures match tool results". It offered 2 changes as proposals (`proposals from-whatif`).
 
 ### 2026-11-04: card statements, AI categorizer, F13 proposals, F14 export, everyday spending
 
@@ -203,7 +203,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
 - **AI contribution:** `CardStatementCsvAdapter` and `CardMerchantCleaner` (skip card payments, clean merchant names); `LLMCategorizationStrategy` (Haiku, last resort after learned and keyword rules, only when a key is set); `Proposal` with `ProposalState` and five states, the proposal commands and `CommandFactory`, `ProposalService`, `proposals` CLI; `ReportService` with Markdown, CSV and text exporters (Template Method); alert levels primed at startup so alerts do not repeat after a restart; `typicalMonthlySpending` in the analytics so the forecast and what-if figures include normal spending.
 - **Defects found:** a new keyword ("cafe") broke an existing categorizer test; an unset budget was reported as a tool failure instead of "no budget set"; forecasts ignored everyday spending ("3887 left per month" on my real data); the same budget alert printed again after every restart.
 - **Design decisions to list in "changes from Stage 1":** `UndoneState` added to the proposal states; the categorizer is only used when a key exists; pending proposals are kept for the session only; card payments are skipped rather than imported as income.
-- **My verification:** (fill in: real-data import gave 72 imported / 8 card payments skipped; `proposals`, `export` and `correct` checked by hand on my own data.)
+- **My verification:** Real-data import gave 72 imported / 8 card payments skipped. On Nov 9 I also checked `transactions month=2026-10`, `proposals` (two waiting), `export 2026-10 md <file>` (the file was written, then deleted because it holds real data) and `correct` followed by `undo`; all worked.
 
 ### 2026-11-05: F12 chat with memory
 
@@ -211,21 +211,21 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
 - **AI contribution:** `ConversationMemory` (our own bounded window, not langchain4j's), `UserProfileMemory`, `MemoryManager`, `MemoryRepository` with in-memory and file versions, `InsightTool` (the sixth tool), a chat section in the prompt, `ask` and `forget` commands, 9 tests.
 - **Defects found:** none in the live run; an existing test counted five tools and had to become six.
 - **Design decisions to list in "changes from Stage 1":** `ConversationMemory` is a plain bounded list; figures from earlier answers in the window are allowed in the grounding check; a model failure is not remembered.
-- **My verification:** (fill in: `ask` on my real data answered a dining total, understood "and on shopping?" as the same month, and redirected a question about France; protected categories survive a restart.)
+- **My verification:** Live run on Nov 9 with my key: `ask` about October dining spending answered that there are no dining transactions in October (true for my current data, and consistent with the review); "and on shopping?" was understood as the same month; "what is the capital of France?" was politely declined as outside finances. Each answer has a trace and the call is in `aicalls`.
 
 ### 2026-11-05: F11 monthly review
 
 - **My direction:** F11 as in Stage 1: a review with what happened, what went well and what to fix, up to three fixes as proposals, saved, with a numbers-only fallback.
 - **AI contribution:** `ReviewService`, `ReviewResult`, the review prompt, `review` command, fix selection by code (goals behind schedule, subscriptions whose price rose, skipping fixes already waiting), 10 tests.
-- **Defects found:** (none yet; fill in after the live run.)
+- **Defects found:** none. One thing to know when reading the October review: its "received 0.00" counts only actual October transactions (my test data has none), while the health score measures the savings rate over the forecast window using the plan's projected income, so the two figures come from different sources and look different on this data.
 - **Design decisions to list in "changes from Stage 1":** the fixes come from code rules, not from the model, so every suggestion is backed by numbers; reviews are kept for the session only; the previous review is passed to the model as a short summary from memory.
-- **My verification:** (fill in after `review 2026-10` on my real data, with and without the key.)
+- **My verification:** On Nov 9 `review 2026-10` with the key gave the three-part AI review, a health score of 86 / 100 and two proposals (put 250.00 a month toward the Test trip goal; review the Netflix.com payment). With the key removed it ran the numbers-only version ("[Numbers only] The AI model was not available"), with the same score and the same two proposals.
 
 ### 2026-11-06: F04 AI review (added after the first version)
 - **My direction:** F04 was designed as a hybrid feature (the model words the review message) but the first version only had the fixed template, so the AI part was missing. I asked for it to be added, with the template kept as the fallback.
 - **AI contribution:** drafted `RecurringReviewer` (asks Claude Haiku for 2 or 3 sentences from the computed facts only), `RecurringReview`, `AnalyticsService.reviewRecurring`, the facade method, the CLI command `recurring review`, the dashboard "AI review" button (runs in the background so the window does not freeze), and 8 tests.
 - **Design decisions:** the detection and the flag stay plain code. The model sees only the computed list, never raw transactions. Every number in the reply must also appear in the facts sent, otherwise the template summary is shown with the reason. Answers are remembered for identical facts, so the model is not called again until the data changes. It is a button and a command, not part of every screen refresh, to keep cost and waiting time down.
-- **Not tested live in the sandbox** (no API key there); the tests use a scripted model. **My verification:** (fill in: ran `recurring review` with the key on and compared every figure with `recurring`).
+- **Not tested live in the sandbox** (no API key there); the tests use a scripted model. **My verification:** On Nov 9 I ran `recurring review` with the key on: the AI wording said the three payments add up to 74.98 per month, put the Netflix 2.50 price rise first, and gave the same amounts and dates as `recurring` (45.00, 18.99, 10.99). One thing I noticed: the next-due dates it quotes (2026-11-03 and 2026-11-05) are before today because the last imported month is October; they come from the data, not from the model.
 
 ### 2026-11-05 to 2026-11-06: Swing GUI
 
@@ -233,14 +233,14 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
 - **AI contribution:** drafted the GUI classes in `presentation/gui`: `MainWindow`, `ShellPanel` (the `AppContext` the screens share), `DashboardView` and `DashboardData`, `TransactionsView`, `GoalsView`, `ProposalsView`, `AssistantView` (Ask, Can I afford it?, What if...), `ReportsView`, `PlanDialogs`, `TraceDialog`, `ChatDock` and `ChatPanel`, and small widgets (`Theme`, `Card`, `TopBar`, `Toast`, `Menus`, `Dropdown`, `Segmented`, `Text`). Also `GuiLogicTest` (6 tests for money and date parsing, text wrapping and the dashboard data).
 - **Defects found (from my screenshots and runs):** the hero text crowded the cards; a button stretched to the full card width; an input field was misaligned; wrapped HTML labels were clipped (replaced by our own `Text` component that wraps by the available width); the first import into an already-loaded folder said "0 transactions imported" because every row was a duplicate.
 - **Design decisions to list in "changes from Stage 1":** Swing instead of JavaFX (no extra dependency, runs on the plain JDK); a top-navigation layout instead of side menus; the GUI and CLI share one `WealthSeiFacade`, so no business logic lives in the screens; long calls (AI answers, reviews) run in a background worker so the window does not freeze.
-- **My verification:** (fill in: ran every screen with the demo data, checked each button against the CLI result, and checked the numbers on the dashboard against `safe`, `budget status` and `score`.)
+- **My verification:** Ran every screen while recording the GUI videos for all 14 features. On Nov 9 I opened the dashboard on my data and compared it with the CLI: safe to spend 263.14 per day for 22 more days, 5,789 free this month, bills coming up 11 and 0 set aside for goals (same as `safe`), and a health score of 86 for October (same as `review 2026-10`).
 
 ### 2026-11-06: Demo data and the demo videos
 
 - **My direction:** show real-looking data in the videos, using the same statement format as my own bank files but with invented transactions, never my real data or key.
 - **AI contribution:** `demo/make_demo_data.py` (a deterministic generator for invented statements in the Neo layout), four monthly CSVs, `demo/load-demo.sh` (loads them and a plan, budgets and goals into `~/.wealthsei-demo` only, and refuses any other folder), small statements for the categorization demo, a set of on-screen feature cards, and per-feature recording steps and video texts.
 - **Defects found:** a merchant name with a random suffix broke `recurring flag` (the demo name was simplified); the loader's relative paths depend on the folder it runs from.
-- **My verification:** (fill in: checked that no real merchant or amount appears in the demo files and that no key or `.env` is visible in any frame.)
+- **My verification:** Checked that no real merchant or amount appears in the demo files and that no key or `.env` is visible in any frame of the videos.
 
 ### 2026-11-06: Problems found while recording the feature videos
 
@@ -253,22 +253,24 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - F04 had no AI call although the design says the model words the review; `recurring review` and the "AI review" button were added (see the F04 entry).
 - **AI contribution:** `PlainText`, the `GroundingChecker` and `Planner` changes, the `aicalls` command (the last model calls from `llm.log` with this session's and the whole log's totals), and the tests above.
 - **A mistake of mine to note honestly:** I first said a health score of 55 in an answer was wrong, because my sandbox data gave 58; it was 55 on my machine, and the trace showed the figure came from the tool. The extra check is still correct but it was not fixing a wrong answer.
-- **My verification:** (fill in: reran each fixed case on my machine and confirmed the screens and the CLI show the same figures.)
+- **My verification:** Reran each fixed case on my machine and confirmed that the screens and the CLI show the same figures.
 
 ### 2026-11-07: Stage 1 audit before pushing
 - **My direction:** before pushing, compare every class, pattern, feature and domain item with the Stage 1 report and list anything skipped, missed or changed.
 - **AI contribution:** compared the code with the report (class level, method level, patterns, feature behaviours) and wrote the result to `docs/stage1-conformance.md`; found one real gap and fixed it.
 - **Defect found:** Stage 1 says the undo stack must be bounded, but `CommandHistory` grew without limit. It is now capped at 100 commands, with a test.
 - **Differences to list in the report (Section 4):** Swing instead of JavaFX; own `ClaudeProvider`, `CsvParser` and `ConversationMemory` instead of langchain4j and Apache Commons CSV; `ExplanationService`, `AnalysisFacts`, `ChatModel` not built; TSV files instead of SQLite; custom CLI parser instead of picocli; extra `UndoneState`.
-- **My verification:** (fill in: `mvn test` showed 587 tests passing; commits pushed.)
+- **My verification:** `mvn test` on Nov 9: 596 tests, 0 failures, 0 errors (also run on a fresh clone of the repository earlier). All commits are pushed.
 
-## 4. Weekly commit summary (fill in with links)
+## 4. Weekly commit summary
 
-| Period | Dates (Toronto time) | Required | Commits (links) |
-|---|---|---|---|
-| 1 | Oct 20-26 | 5 | |
-| 2 | Oct 27-Nov 2 | 5 | |
-| 3 | Nov 3-9 | 5 | |
+Dates are Toronto local time. The code commits, with messages and links, are listed in Section 6.1 of the report; the repository history is at https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commits.
+
+| Period | Dates | Required | Commits | Links |
+|---|---|---|---|---|
+| 1 | Oct 20-26 | 5 | 5 | [a10be9f](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/a10be9f), [64a4daa](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/64a4daa), [725906a](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/725906a), [b850c8a](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/b850c8a), [7a9ce76](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/7a9ce76) |
+| 2 | Oct 27-Nov 2 | 5 | 21 | first [cc80d07](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/cc80d07), last [cb4155c](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/cb4155c) |
+| 3 | Nov 3-9 | 5 | 55 so far (Nov 4 to Nov 8) | first [0e6ef2a](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/0e6ef2a), latest [ad60564](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/ad60564) |
 
 ## 5. Representative interactions to keep for the report
 
@@ -283,8 +285,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
 - The AI added `NewTransaction`, `addTransaction`, `validate`, the CLI `add` command and a GUI dialog, with 9 tests. I reviewed and ran them.
 - Lesson: compare the diagrams that were actually submitted, not a summary of them.
 
-## 6. Still to add as work continues
+## 6. Final totals
 
-- Each new feature or class group: date, my direction, AI contribution, defects found, design changes.
-- The LLM layer: model names, what the prompts are for, and the runtime cost from the Console.
-- Final token and money totals.
+- Runtime (the app's own calls, Anthropic Console, data as of Nov 9 6:51 PM UTC): 419,483 tokens (386,322 input + 33,161 output), of which Sonnet 362,079 and Haiku 57,404; **$1.00** spend. The Console showed usage on Nov 5, 6 and 7. The CLI `aicalls` log on my machine lists 20 calls (41,986 tokens) before the final checks and 15 more calls (33,191 tokens) during them on Nov 9.
+- Development (the chat tool, Stage 2, Oct 20 to Nov 9 2:41 PM Toronto): 321,126,431 tokens (49,951 plain input, 1,665,363 output, 311,583,766 cache-read, 7,827,351 cache-write), about $78.51 API-equivalent. See Section 2.

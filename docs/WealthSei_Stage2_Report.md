@@ -586,12 +586,12 @@ In the GUI the plan is edited in dialogs opened from the dashboard (`PlanDialogs
 
 | Tool / platform | Model | Features, classes or tasks | Total token cost and money cost |
 |---|---|---|---|
-| Claude (chat with code tools) | Claude Sonnet 5.5 (`claude-sonnet-5-5`) | AI-assisted development of all Stage 2 code: domain classes, services, analytics, agent and LLM layers, CLI, Swing GUI, unit tests, build/editor debugging, demo data and scripts, report and README drafts. (Stage 1: design report, UML, use cases.) | Whole Stage 2 development, Oct 20 – Nov 7 (one continuous session, about 8.2 hours of model time): **248,485,938 tokens** in total = 43,138 plain input + 1,398,501 output + 240,720,798 cache-read + 6,323,501 cache-write tokens. **About $62.73** API-equivalent cost as computed by the tool (not necessarily what was billed; it depends on the plan). Stage 1 usage is not included. |
-| Claude API inside WealthSei (runtime) | `claude-sonnet-5-5` (agent: F08, F10–F12, explanations) | Tool-using agent: `AgentController`, `Planner`, `PromptBuilder`. | **362,079 tokens** (338,620 input + 23,459 output; Nov 5–7 UTC). Cost: part of the **$0.92** total below (the Console dashboard does not split the cost by model). The kept call logs show 20 Sonnet calls and 44,589 tokens (`scripts/ai-usage.sh`); the Console figure is higher because it also counts testing and the demo folders whose logs were deleted. |
-| Claude API inside WealthSei (runtime) | `claude-haiku-5-5` (categorizer F02, recurring review F04) | `LLMCategorizationStrategy`, `RecurringReviewer`. | **56,275 tokens** (46,674 input + 9,601 output; Nov 5–7 UTC). Cost: part of the **$0.92** total below. The kept call logs show 28 Haiku calls and 5,889 tokens. |
+| Claude (chat with code tools) | Claude Sonnet 5.5 (`claude-sonnet-5-5`) | AI-assisted development of all Stage 2 code: domain classes, services, analytics, agent and LLM layers, CLI, Swing GUI, unit tests, build/editor debugging, demo data and scripts, report and README drafts. (Stage 1: design report, UML, use cases.) | Whole Stage 2 development, Oct 20 – Nov 9 (one continuous session, about 10.5 hours of session time): **321,126,431 tokens** in total = 49,951 plain input + 1,665,363 output + 311,583,766 cache-read + 7,827,351 cache-write tokens. **About $78.51** API-equivalent cost as computed by the tool (not necessarily what was billed; it depends on the plan). Stage 1 usage is not included. |
+| Claude API inside WealthSei (runtime) | `claude-sonnet-5-5` (agent: F08, F10–F12, explanations) | Tool-using agent: `AgentController`, `Planner`, `PromptBuilder`. | **362,079 tokens** (338,620 input + 23,459 output; Nov 5–7 UTC). Cost: part of the **$1.00** total below (the Console dashboard does not split the cost by model). The kept call logs show 20 Sonnet calls and 44,589 tokens (`scripts/ai-usage.sh`); the Console figure is higher because it also counts testing and the demo folders whose logs were deleted. |
+| Claude API inside WealthSei (runtime) | `claude-haiku-5-5` (categorizer F02, recurring review F04) | `LLMCategorizationStrategy`, `RecurringReviewer`. | **57,404 tokens** (47,702 input + 9,702 output; Nov 5–7 UTC). Cost: part of the **$1.00** total below. The kept call logs show 28 Haiku calls and 5,889 tokens. |
 | VS Code + Java extension | n/a | Editing and running tests. | Free. |
 
-How the numbers were obtained: development usage from the chat tool's own running total for the session (tokens by type and a computed cost); runtime usage from the Anthropic Console and from `llm.log` (model, tokens and time per call, summed per model by `scripts/ai-usage.sh`; see `docs/ai-usage.md`). Money is the API price, so it is an estimate of cost, not an invoice. No API key appears in this report, the logs or the repository.
+How the numbers were obtained: development usage from the chat tool's own running total for the session (tokens by type and a computed cost); runtime usage from the Anthropic Console and from `llm.log` (model, tokens and time per call, summed per model by `scripts/ai-usage.sh`; see `docs/ai-usage.md`). Runtime total: **$1.00** and **419,483 tokens** (386,322 input + 33,161 output) from the Console, "Spend this month", as of Nov 9 6:51 PM UTC (15 further calls were made during the final checks later that day). Money is the API price, so it is an estimate of cost, not an invoice. No API key appears in this report, the logs or the repository.
 
 ### 5.2 How the work was divided
 
@@ -657,7 +657,7 @@ Repository: https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei · link
 | [e3d0156](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/e3d0156) | Add undoable category corrections that teach the app |
 | [cb4155c](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/cb4155c) | Wire category undo and redo into the facade |
 
-**Period 3 — November 3–9, 2026 (33 commits)**
+**Period 3 — November 3–9, 2026 (34 commits)**
 
 | Commit | Message |
 |---|---|
@@ -694,6 +694,7 @@ Repository: https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei · link
 | [aa4829f](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/aa4829f) | Bound undo history to 100 commands, as Stage 1 requires |
 | [ea55fe6](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/ea55fe6) | Add Swing GUI: dashboard, transactions, goals, proposals, reports, assistant with trace view |
 | [fcbdf90](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/fcbdf90) | Add demo statements and load-demo script for reproducible demos |
+| [0935090](https://github.com/Rishit-Shah/EECS-3311-Project---WealthSei/commit/0935090) | Add manual transaction entry (NewTransaction) to GUI and CLI |
 
 Commits that changed only documents (the AI log and the conformance table) are not counted above. The Period 3 list is in order of date; all of its commits change implementation or test code.
 
