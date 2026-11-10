@@ -33,7 +33,7 @@ The only dependency is JUnit 5 (tests, downloaded by Maven). The application its
 mvn -q compile
 ```
 
-Run all unit tests (587 tests):
+Run all unit tests (596 tests):
 
 ```
 mvn test
@@ -103,6 +103,7 @@ Other small sample files in the project root: `sample-transactions.csv`, `sample
 ```
 import demo/NeoDemoMastercard__2026-10-01_2026-10-31.csv
 transactions month=2026-10 category=dining
+add 2026-10-20 12.50 "Corner Market" category=groceries
 budget set 2026-10 dining=450 groceries=400
 budget status 2026-10
 plan balance 2860.40
