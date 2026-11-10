@@ -473,6 +473,8 @@ The class diagrams were rebuilt from the submitted Stage 1 UXF files (Figures 3-
 
 **Note on class members.** Classes that exist only as Swing helper widgets, and the `Persistent*`/`InMemory*` repository pairs for plan, budgets, goals, proposals, rules and traces, are not drawn individually (they follow the pattern shown for transactions). The hand-entry operations of F01 are in Figure 3.1 (`addTransaction` on the facade) and Figure 3.2 (`NewTransaction` use in `TransactionService`) as in Stage 1; they were implemented late (C17). The Swing views no longer list Stage 1's button-handler names because the code uses anonymous listeners.
 
+**Note on the diagram images.** The class diagrams are drawn in UMLet. The `.uxf` files in `docs/uxf_stage2/` are the source of each figure, and the PNG images in this report are exports of them. Every relationship from the Stage 1 diagrams is kept between the same two classes with the same line type, label and multiplicity, except the two that involved the removed classes `ChatModel` and `AnthropicChatModel`. Dashed arrows labelled "uses" show use, lines with a diamond show composition or aggregation (the diamond is at the owner), and a line with a hollow triangle shows inheritance or implementation. For a closer look at any figure, open its `.uxf` file in UMLet and zoom in.
+
 ### 3.2 Use-case and sequence diagram updates
 
 Stage 1 has one use-case diagram, fourteen use-case descriptions (UC01–UC14) and eleven sequence diagrams (SD01–SD11). Checking each against the implementation:
@@ -495,7 +497,7 @@ Stage 1 has one use-case diagram, fourteen use-case descriptions (UC01–UC14) a
 | SD10 Proposal approval | Yes | Extra `UndoneState`. |
 | SD11 Export | Yes | None. |
 
-So **three** Stage 1 items (UC08, SD04, SD06) are replaced by three new diagrams (Figures 3.8–3.10); UC04 gets a one-line note; the class diagrams were redrawn (Figures 3.1–3.7, same numbering as Stage 1); the others still describe the code, with the naming differences listed above.
+So **three** Stage 1 items were inaccurate (UC08, SD04, SD06) and are replaced by three new diagrams (Figures 3.8–3.10); UC04 gets a one-line note; the class diagrams were redrawn (Figures 3.1–3.7, same numbering as Stage 1); the others still describe the code, with the naming differences listed above.
 
 **Figure 3.8 — F05–F07 as implemented (replaces SD04 for F05–F07).** The dashboard shows numbers and a fixed-template sentence; the AI is only involved when the user asks in the Assistant.
 
