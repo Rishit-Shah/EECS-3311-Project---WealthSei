@@ -62,7 +62,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - An amount like `12,50` is rejected rather than guessed, to avoid silently misreading a European-style number.
   - Known limitation: some credit-card exports show purchases as positive numbers; those would be read as income.
 - **Defect found while building:** the strict compiler flagged missing `serialVersionUID` fields on the new exception classes; fixed before handing over.
-- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 111 tests.
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9).
 
 ### 2026-10-27 - F03 Budget limits, tracking and alerts
 - **My direction:** continue straight into the next feature so the app has something runnable; real `mvn test` after F01 passed with 111 tests, which I reported back before this started.
@@ -72,7 +72,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - `AlertMonitor` only raises a budget alert when the level for a category gets worse (nothing to WARNING, WARNING to OVER), so the same alert is not repeated on every refresh; dropping back under 80% resets it.
   - A listener that throws is skipped so it cannot stop the other listeners.
   - `BudgetCalculator` counts only expenses dated in the month; income (including refunds marked as income) is ignored, and spending in categories with no limit is not shown.
-- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 138 tests.
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9).
 
 ### 2026-11-02 - Plan service and facade (rest of F03)
 - **My direction:** keep moving forward one piece at a time; the user-facing CLI comes next.
@@ -80,7 +80,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
 - **Design decisions to list in "changes from Stage 1":**
   - `ImportResult` carries the months touched by an import so the facade refreshes only those budgets.
   - `PlanService` starts from a zero balance dated today when no plan is saved yet; a balance date in the future is rejected.
-- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 152 tests.
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9).
 
 ### 2026-11-02 - F02 learned rules and undo (Command pattern)
 - **My direction:** finish F02 properly: a correction should teach the app and be reversible. I questioned why F03 was pushed before F02 was finished, and the AI explained which classes are shared and which are not.
@@ -90,7 +90,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - Undo restores the old category and the old learned rule (or removes the new one). Income and "Uncategorized" corrections are not learned.
   - Past transactions from the same merchant are not changed automatically, only future imports.
   - The LLM fallback for unknown merchants is still to do (needs the API key and LangChain4j).
-- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 172 tests. On Nov 9 `correct <id> groceries` changed a category and `undo` put it back (Goodlife Fitness returned to Uncategorized).
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). On Nov 9 `correct <id> groceries` changed a category and `undo` put it back (Goodlife Fitness returned to Uncategorized).
 
 ### 2026-11-02 - First runnable version: command-line interface
 - **My direction:** I wanted something I can actually run and talk to, not only classes. I left the CLI library choice to the AI; it recommended a small hand-written command reader because it can be fully tested in the AI's sandbox (picocli could not be downloaded there).
@@ -99,7 +99,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
 - **Design decisions to list in "changes from Stage 1":**
   - Hand-written command reader instead of picocli.
   - Data is in memory for now; it is lost when the program exits (persistence comes next).
-- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 199 tests. I also ran the CLI by hand on Nov 9 (`recurring`, `safe`, `forecast`, `habits`, `score`, `goal`, `afford`, `whatif`, `ask`, `review`, `transactions`, `proposals`, `export`, `correct`, `undo`) and every command ran.
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). I also ran the CLI by hand on Nov 9 (`recurring`, `safe`, `forecast`, `habits`, `score`, `goal`, `afford`, `whatif`, `ask`, `review`, `transactions`, `proposals`, `export`, `correct`, `undo`) and every command ran.
 
 ### 2026-11-02 - Saving data between sessions (file-based storage)
 - **My direction:** I told the AI to go with its own suggestion for storage. It recommended plain text files over SQLite because it could test them fully (the SQLite library could not be downloaded in its sandbox).
@@ -108,7 +108,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - Text files instead of SQLite (no extra library; data can be opened in a text editor). The repository interfaces are unchanged, so SQLite could still be added later.
   - A bad data file stops start-up with a message naming the file and line.
   - The undo history and the alert monitor's memory are not saved; after a restart a budget already at WARNING may alert once more.
-- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 225 tests. I quit and restarted the CLI on Nov 9 and the earlier data was still there: the October transactions, the plan, the Test trip goal and the earlier AI call log.
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). I quit and restarted the CLI on Nov 9 and the earlier data was still there: the October transactions, the plan, the Test trip goal and the earlier AI call log.
 
 ### 2026-11-04 - F04 Recurring payment and subscription detector
 - **My direction:** continue with the next feature in the design (F04, then F05).
@@ -120,13 +120,13 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - `flagRecurring` also takes today's date so it can refuse a merchant that is not a detected recurring payment.
   - The summary is a fixed template for now. The LLM will be able to phrase it later; the template stays as the fallback the design asks for.
   - `RecurringPayment` gained `priceIncrease` and `occurrences`.
-- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 253 tests. On Nov 9 `recurring` on my own data found 3 recurring payments, about 74.98 per month, with Netflix flagged for a 2.50 price rise. I did not use `sample-subscriptions.csv` for this check.
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). On Nov 9 `recurring` on my own data found 3 recurring payments, about 74.98 per month, with Netflix flagged for a 2.50 price rise. I did not use `sample-subscriptions.csv` for this check.
 
 ### 2026-11-04 - Checking the code against the Stage 1 design
 - **My direction:** I asked the AI to make sure classes and methods follow Stage 1; more classes are fine, fewer are not.
 - **AI contribution:** compared every class named in the Stage 1 report with the code (40 built with the Stage 1 name, 103 still to build, each belonging to a feature not built yet), then aligned the places where the code had drifted: `LearnedRuleRepository` became `RuleRepository` (`save`, `delete`, `findAll` returning the new `LearnedRule` record), `CorrectCategoryCommand` became `RecategorizeCommand` and now calls `learn()` and `forget()` on `LearnedRuleStrategy` as the Stage 1 sequence diagram shows, `Command.description()` became `describe()`, `CommandHistory.run()` became `execute()`. Generated `docs/stage1-conformance.md`, and added 4 tests.
 - **Finding:** the plan classes (`FinancialPlan`, `IncomeSource`, `FixedBill`, `PlannedExpense`) are not in Stage 1 at all. They are extras that carry the balance, income and bills; Stage 1 only had `Account` with an opening balance. To be listed in the report's changes section.
-- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 257 tests.
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9).
 
 ### 2026-11-04 - F05 Safe-to-Spend Coach and 30-day forecast
 - **My direction:** continue with F05 and keep the class and method names as in Stage 1.
@@ -140,7 +140,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - The LOW_BALANCE alert is raised once, again if the balance would drop below zero, and again only after the balance has recovered.
   - The explanation is a fixed template for now; the LLM can phrase it later.
   - Goals can be stored here; creating them from the CLI comes with F09 (see that entry).
-- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 298 tests. On Nov 9 `safe` gave 263.14 per day (5,789.01 left over 22 days: balance 3000.00 + income 3000.00 - bills 10.99 - goals 0.00 - buffer 200.00) and `forecast` showed the lowest balance, 2,989.01, on 2026-11-12. The GUI dashboard showed the same figures.
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). On Nov 9 `safe` gave 263.14 per day (5,789.01 left over 22 days: balance 3000.00 + income 3000.00 - bills 10.99 - goals 0.00 - buffer 200.00) and `forecast` showed the lowest balance, 2,989.01, on 2026-11-12. The GUI dashboard showed the same figures.
 
 ### 2026-11-04: F06 habit detective and F07 health score
 
@@ -152,7 +152,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - Savings rate and emergency buffer are measured over the 30-day forecast, so they need a plan.
   - `ScoreComponent` has an extra `detail` field and `HealthScore` has an `excluded` list.
   - "Change from last month" is not computed yet (there is no stored history of past scores); the field exists and the explanation uses it once known.
-- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 329 tests. On Nov 9 `habits 2026-10` reported no notable patterns (the October data is small) and `score` gave 100 / 100 for November, with budget adherence and goal progress left out and the rest re-scaled.
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). On Nov 9 `habits 2026-10` reported no notable patterns (the October data is small) and `score` gave 100 / 100 for November, with budget adherence and goal progress left out and the rest re-scaled.
 
 ### 2026-11-04: F09 savings goals
 
@@ -165,7 +165,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - The surplus available to a goal is the plan surplus minus what the other open goals already take each month.
   - Status rules: achieved when saved reaches the target; on track when the monthly contribution covers the requirement; at risk when it does not but the surplus could; behind otherwise. Behind or at risk raises a GOAL_RISK alert only when it gets worse.
   - `GoalOptionKind` enum added; `MonthlySurplusProvider` interface lets the goal service ask the analytics layer for the surplus; goals now persist in `goals.tsv`.
-- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 361 tests. On Nov 9 `goal add "Test trip" 1000 2027-03-01` raised the at-risk alert (it needs 250.00 per month); `goal list` and `goal replan 2d10cf89` said it can be reached on time at 250.00 per month, leaving 2,614.85 per month free.
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). On Nov 9 `goal add "Test trip" 1000 2027-03-01` raised the at-risk alert (it needs 250.00 per month); `goal list` and `goal replan 2d10cf89` said it can be reached on time at 250.00 per month, leaving 2,614.85 per month free.
 
 ### 2026-11-04: LLM layer and F08 affordability agent
 
@@ -182,7 +182,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - The grounding check compares figures with tool results (dollar amounts, percents, decimals and numbers of 100 or more; whole numbers may be rounded); one correction is allowed, then the answer is flagged.
   - Traces are kept for the session only.
 - **Live check:** the AI's environment cannot reach the API, so I ran the first real call myself on my machine (see the next entry) and repeated it on Nov 9.
-- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 452 tests. Live run on Nov 9 with my key: `afford "laptop" 900` answered Yes-but (lowest balance 2,079.11 on 2026-11-14 against 2,979.11 without the laptop; safe-to-spend 261.25 to 220.34 per day) and pointed to the at-risk Test trip goal. `trace` showed two tool calls (forecast, goals), "All figures match tool results", and the call was recorded in `llm.log` (`aicalls`).
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). Live run on Nov 9 with my key: `afford "laptop" 900` answered Yes-but (lowest balance 2,079.11 on 2026-11-14 against 2,979.11 without the laptop; safe-to-spend 261.25 to 220.34 per day) and pointed to the at-risk Test trip goal. `trace` showed two tool calls (forecast, goals), "All figures match tool results", and the call was recorded in `llm.log` (`aicalls`).
 
 ### 2026-11-04: first live AI run, a plan bug it exposed, and F10 what-if simulator
 
@@ -195,7 +195,7 @@ Notes on cost: the figure is a computed API price, not necessarily what was bill
   - The forecast only contains committed money (income, bills, recurring payments, planned expenses). A category cap is therefore modelled as the average monthly spend (last up to 3 full months) minus the cap, counted as extra money each month from the first of next month. A raise is extra money from the first of next month.
   - `simulate(scenario, today)` takes the date, like earlier methods; `Scenario` and `ScenarioResult` are in the `analytics` package.
   - More than 5 changes, an unknown name or category, a non-positive value and a date outside the six months are all refused with a message.
-- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). At the time of this entry the suite was expected to have 487 tests. Live run on Nov 9: `whatif "cancel Spotify and cap dining at 150"` gave a six-month balance change of 65.94, lowest balance 2,979.11 to 2,990.10 and monthly savings up by 10.99, and said the effect is small because only 60.17 a month of everyday spending is counted. `trace` showed one scenario tool call and "All figures match tool results". It offered 2 changes as proposals (`proposals from-whatif`).
+- **My verification:** I ran `mvn test` on my machine; the full suite, including this batch, passes (596 tests, 0 failures, 0 errors on Nov 9). Live run on Nov 9: `whatif "cancel Spotify and cap dining at 150"` gave a six-month balance change of 65.94, lowest balance 2,979.11 to 2,990.10 and monthly savings up by 10.99, and said the effect is small because only 60.17 a month of everyday spending is counted. `trace` showed one scenario tool call and "All figures match tool results". It offered 2 changes as proposals (`proposals from-whatif`).
 
 ### 2026-11-04: card statements, AI categorizer, F13 proposals, F14 export, everyday spending
 

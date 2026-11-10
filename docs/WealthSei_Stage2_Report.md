@@ -613,7 +613,7 @@ I chose the project, features and stack, decided what to build next and how much
 
 **6. Grounding and honesty while recording (Nov 6).** *Problems found while recording:* the grounding check flagged the harmless "100" in "out of 100"; the model added chatter when asked to correct itself; answers contained markdown asterisks; a whole-number health score was not checked. *Fixes:* ignore "out of 100", the revise prompt asks for the corrected answer only, `PlainText` strips markdown, the score before a "score" word is checked. *My verification:* re-ran the questions in the Assistant; and I caught that the AI had quoted a score from its sandbox data (58) that did not match my data (55); the AI withdrew the figure and the demo text was changed to avoid quoting numbers it had not seen on my screen.
 
-**7. Stage 1 audit before pushing (Nov 7).** *My ask:* compare every class, pattern, feature and domain item with Stage 1. *AI work:* class and method comparison (`docs/stage1-conformance.md`); it found the undo stack was not bounded and the F07 "change from last month" was never computed; the first was fixed, the second is listed as a limitation. *My verification:* `mvn test`: 587 tests passing; pushed.
+**7. Stage 1 audit before pushing (Nov 7).** *My ask:* compare every class, pattern, feature and domain item with Stage 1. *AI work:* class and method comparison (`docs/stage1-conformance.md`); it found the undo stack was not bounded and the F07 "change from last month" was never computed; the first was fixed, the second is listed as a limitation. *My verification:* `mvn test` passed; pushed. (The suite passes with 596 tests as of Nov 9.)
 
 ---
 
