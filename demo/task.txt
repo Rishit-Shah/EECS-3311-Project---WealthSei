@@ -1,0 +1,16 @@
+# WealthSei task file: one command per line. Blank lines and lines starting with # are skipped.
+# It only reads and asks questions, so it can be run any number of times.
+#
+# 1. Load the safe demo data once (it goes into ~/.wealthsei-demo, never into your own data):
+#      bash demo/load-demo.sh
+# 2. Run this file on it:
+#      java -jar target/wealthsei.jar -data-dir ~/.wealthsei-demo -input demo/task.txt
+budget status 2026-10
+safe
+habits 2026-10
+score 2026-10
+goal list
+ask "How much did I spend on dining in October?"
+afford "laptop" 600
+trace
+exit

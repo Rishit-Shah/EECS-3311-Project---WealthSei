@@ -31,7 +31,22 @@
   </dependencies>
 
   <build>
+    <!-- The runnable jar is target/wealthsei.jar (java -jar target/wealthsei.jar ...). There are no runtime
+         dependencies, so the jar needs nothing else on the class path. -->
+    <finalName>wealthsei</finalName>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>wealthsei.Main</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>

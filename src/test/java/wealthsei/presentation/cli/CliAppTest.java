@@ -35,6 +35,22 @@ class CliAppTest {
     }
 
     @Test
+    void runScriptRunsEachCommandAndEchoesItAndSkipsCommentsAndStopsAtExit() throws IOException {
+        Path file = csv("2026-11-01,Loblaws,-40.00\n");
+        String script = "# a comment\n\nimport " + file + "\ntransactions\nexit\nsafe\n";
+        buffer.reset();
+        cli.runScript(new BufferedReader(new StringReader(script)));
+        String out = buffer.toString(StandardCharsets.UTF_8);
+        assertTrue(out.contains("> import "), out);
+        assertTrue(out.contains("Imported 1 transactions"), out);
+        assertTrue(out.contains("> transactions"), out);
+        assertTrue(out.contains("Loblaws"), out);
+        assertTrue(out.contains("Goodbye."), out);
+        assertFalse(out.contains("> safe"), out);
+        assertFalse(out.contains("a comment"), out);
+    }
+
+    @Test
     void aiCallsShowsTheLastLinesOfTheCallLog() throws IOException {
         assertTrue(run("aicalls").contains("No AI calls recorded yet."));
         Path log = Files.createTempFile("wealthsei-llm", ".log");

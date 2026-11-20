@@ -78,6 +78,25 @@ public class CliApp {
         out.println();
     }
 
+    /**
+     * Runs a task file: one command per line, in order. Blank lines and lines starting with {@code #} are skipped. Each command is
+     * printed after {@code > } before its output, so the output reads as a transcript. Stops at {@code exit} or the end of the file.
+     */
+    public void runScript(BufferedReader in) throws IOException {
+        String line;
+        while ((line = in.readLine()) != null) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                continue;
+            }
+            out.println("> " + trimmed);
+            if (!execute(trimmed)) {
+                break;
+            }
+        }
+        out.flush();
+    }
+
     /** Runs one command line. Returns false when the user asked to quit. */
     public boolean execute(String line) {
         String trimmed = line.trim();
