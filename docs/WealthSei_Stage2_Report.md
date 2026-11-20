@@ -13,6 +13,7 @@
 5. AI tools and collaboration log
 6. Development and verification summary
 7. Demonstration index
+8. Screenshots of the features running (with the standalone jar)
 
 ---
 
@@ -38,7 +39,7 @@ Safeguards: `GroundingChecker` compares every dollar amount, percentage, decimal
 
 ### 1.3 Current working functionality
 
-All 14 Stage 1 features (F01–F14) are implemented and work in both the GUI and the CLI, plus three supporting items that implement or extend parts of Stage 1 (plan setup from F03, saved data in place of SQLite, an AI call log built on the Stage 1 logging decorator). 596 unit tests pass (`mvn test`). Each feature has a recorded demonstration (Section 7).
+All 14 Stage 1 features (F01–F14) are implemented and work in both the GUI and the CLI, plus three supporting items that implement or extend parts of Stage 1 (plan setup from F03, saved data in place of SQLite, an AI call log built on the Stage 1 logging decorator). 604 unit tests pass (`mvn test`). Each feature has a recorded demonstration (Section 7).
 
 | ID | Feature | Type in Stage 1 | Type as implemented | Status |
 |---|---|---|---|---|
@@ -615,6 +616,8 @@ I chose the project, features and stack, decided what to build next and how much
 
 **7. Stage 1 audit before pushing (Nov 7).** *My ask:* compare every class, pattern, feature and domain item with Stage 1. *AI work:* class and method comparison (`docs/stage1-conformance.md`); it found the undo stack was not bounded and the F07 "change from last month" was never computed; the first was fixed, the second is listed as a limitation. *My verification:* `mvn test` passed; pushed. (The suite passes with 596 tests as of Nov 9.)
 
+**8. Standalone command-line program and screenshots (Nov 20).** *My ask:* after the instructor's follow-up (a CLI that can be run directly from a terminal, e.g. `java -jar Agent.jar -LLMAPI -input task.txt`, with the options documented, and screenshots for each feature), check what was missing. *AI work:* a runnable jar (`target/wealthsei.jar`, built by `mvn package`), a `CliOptions` class (`-input`, `-LLMAPI`, `-no-ai`, `-data-dir`, `-help`), `CliApp.runScript` to run a task file, `demo/task.txt`, 8 new tests, and Section 8 of this report. *My verification:* `mvn test` on my machine: 604 tests, 0 failures, 0 errors; `-help` and `-input demo/task.txt` run with my key on; the screenshots are mine. It also found that my first test command had no `-data-dir` and wrote demo data into my default folder; the task file was changed to be read-only so it can be run repeatedly.
+
 ---
 
 ## 6. Development and verification summary
@@ -702,7 +705,7 @@ Commits that changed only documents (the AI log and the conformance table) are n
 
 ### 6.2 Checks performed to verify the implementation
 
-- **Unit tests:** `mvn test` runs 596 JUnit 5 tests with 0 failures and 0 errors (test classes per package: domain, importing, repository, service, analytics, command, agent, llm, report, facade, CLI and GUI logic). The tests that involve the model use `MockLLMProvider` with scripted replies, so they are repeatable and cost nothing.
+- **Unit tests:** `mvn test` runs 604 JUnit 5 tests with 0 failures and 0 errors (test classes per package: domain, importing, repository, service, analytics, command, agent, llm, report, facade, CLI and GUI logic). The tests that involve the model use `MockLLMProvider` with scripted replies, so they are repeatable and cost nothing.
 - **Strict compile:** the code is compiled for Java 17 with `-Xlint:all -Werror` before each delivery.
 - **Hand arithmetic:** the safe-to-spend figure, goal months and budget percentages were recomputed by hand from the demo data and compared with the application (for example the safe-to-spend example in the F05 video: $208.17 per day on Nov 6).
 - **Real API runs:** every AI feature was run against the real Claude API with my own key, and each model call was checked in `llm.log` / `aicalls` (model, tokens, time).
@@ -761,3 +764,283 @@ Every feature has a GUI recording and a CLI recording using the invented demo da
 | N03 | AI call log | n/a (CLI feature) | in the F05 and F07 CLI videos (`aicalls`) | shows model, tokens and time per call |
 
 Reproduce the demonstrations from a clean clone: `bash demo/load-demo.sh`, then start the GUI or the CLI on `~/.wealthsei-demo` as described in the README.
+
+---
+
+## 8. Screenshots of the features running
+
+This section shows each feature running in the actual application, in the GUI and in the CLI, with the requirement it came from (Stage 1) and a pointer to how it was implemented (Section 2). Under each pair of screenshots, **Try it** gives the steps to reproduce what is shown. The screenshots were taken while recording the demonstration videos (Section 7) and in later runs on the same invented demo data; each one shows the figures of the session in which it was captured. No API key appears in any of them, and the data is the invented demo data.
+
+**Before you try anything.** Load the invented demo data once (it goes into `~/.wealthsei-demo`, never into your own data), put your key in `.env` (see the README), and start the application on the demo folder:
+
+```
+bash demo/load-demo.sh
+WEALTHSEI_HOME=~/.wealthsei-demo mvn -q compile exec:java -Dexec.mainClass=wealthsei.Main -Dexec.args="gui"   # GUI
+WEALTHSEI_HOME=~/.wealthsei-demo mvn -q compile exec:java -Dexec.mainClass=wealthsei.Main                      # CLI
+```
+
+Without a key the features marked hybrid or agent fall back to rules and templates, as described in Section 1.
+
+### 8.1 F01 — Import or add transactions · Deterministic
+
+**Original requirement (Stage 1).** Import a bank or credit-card CSV (layout auto-detected, duplicates skipped, new rows categorized) and add a single transaction by hand.
+
+**Implementation.** `CsvImporter` picks a `BankCsvAdapter` (three layouts, Template Method in `AbstractCsvAdapter`); `TransactionService.importFile` drops duplicates, categorizes and saves; `addTransaction` validates a hand-typed entry. Changed from Stage 1: own `CsvParser` instead of Apache Commons CSV, a third (credit-card) layout, card payments skipped (Section 4, C-items). Full mapping: Section 2, F01.
+
+![F01 in the GUI](img/screenshots/F01-gui.png)
+
+*F01 GUI: Transactions screen after **Import CSV**: the file chooser opens on the project folder; the table behind it already shows the imported October card transactions.*
+
+![F01 in the CLI](img/screenshots/F01-cli.png)
+
+*F01 CLI: `import` of the demo statement (63 imported, 1 card payment rejected); the same file again (0 imported, 63 duplicates skipped); a missing file; manual `add` of an expense and an income; a zero amount rejected; `transactions month=2026-11`.*
+
+**Try it.** GUI: Transactions → **Import CSV** → choose `demo/NeoDemoMastercard__2026-10-01_2026-10-31.csv`. CLI: `import demo/NeoDemoMastercard__2026-10-01_2026-10-31.csv`, then `add 2026-11-07 12.50 "Corner Market"` and `transactions month=2026-11`.
+
+### 8.2 F02 — Smart categorization and correction (with undo) · Hybrid (rules plus AI)
+
+**Original requirement (Stage 1).** A priority chain of learned rules, keyword rules and an LLM fallback categorizes each transaction; a correction becomes a learned rule; corrections can be undone and redone.
+
+**Implementation.** `Categorizer` asks `LearnedRuleStrategy`, then `KeywordRuleStrategy`, and only then `LLMCategorizationStrategy` (Haiku); `RecategorizeCommand` run through `CommandHistory` gives undo and redo (Command pattern). Full mapping: Section 2, F02.
+
+![F02 in the GUI](img/screenshots/F02-gui.png)
+
+*F02 GUI: Transactions screen with the toast "Undone: Qx-7741 Services Ltd is back in Uncategorized" and the **Undo** / **Redo** buttons; the Nov 5 row of the same merchant shows the category learned from the correction (Shopping).*
+
+![F02 in the CLI](img/screenshots/F02-cli.png)
+
+*F02 CLI: `correct aaa7b395 shopping` prints that future imports will use it; `undo` and `redo`; importing `demo/f02-next.csv` gives the new row of the same merchant the learned category (Shopping); `Nothing to undo` and an unknown id are handled.*
+
+**Try it.** GUI: Transactions → open the category menu on an Uncategorized row → pick a category; use **Undo** / **Redo**. CLI: `transactions merchant=qx`, `correct <txId> shopping`, `undo`, `redo`, then `import demo/f02-next.csv`.
+
+### 8.3 F03 — Budget and plan setup, tracking and alerts · Deterministic
+
+**Original requirement (Stage 1).** Monthly limits per category are tracked live (spent, limit, percentage) with alerts at 80% (warning) and 100% (over), delivered to the GUI and the CLI; the plan (income, bills, balance, buffer) is set once.
+
+**Implementation.** `BudgetService` computes `BudgetStatus`; `AlertMonitor` raises alerts to registered listeners (Observer): a GUI toast and CLI console lines; `PlanService` stores the plan (Persistent repositories). Changed from Stage 1: tab-separated files instead of SQLite (C3). Full mapping: Section 2, F03.
+
+![F03 in the GUI](img/screenshots/F03-gui.png)
+
+*F03 GUI: Dashboard: the Budget card with Dining out at $435 of $300 (145%, over), Groceries 86% and Transport 64%, and the "Needs attention" signal "Dining out is over budget, $135 above the limit".*
+
+![F03 in the CLI](img/screenshots/F03-cli.png)
+
+*F03 CLI: Importing the statement, then `budget set` raises `ALERT [OVER] Dining out` and `ALERT [WARNING] Groceries` at 86%; `budget status`; an invalid month is rejected.*
+
+**Try it.** GUI: Dashboard → Budget card → **Set a limit**; the "Needs attention" card lists over-budget categories. CLI: `budget set 2026-10 dining=300 groceries=600 transport=400`, then `budget status 2026-10`.
+
+### 8.4 F04 — Recurring payment and subscription detector · Hybrid (rules plus AI)
+
+**Original requirement (Stage 1).** Find payments that repeat at a regular interval with similar amounts, list their monthly cost, next due date and price changes, and let the user flag one for review; an AI review adds a short written summary.
+
+**Implementation.** `RecurringDetector.detect` (at least 3 payments, at least 75% regular gaps, at least 50% steady amounts); flags through `RecurringRepository`; `RecurringReviewer` (Haiku) writes the review, with the template as fallback. Full mapping: Section 2, F04.
+
+![F04 in the GUI](img/screenshots/F04-gui.png)
+
+*F04 GUI: Dashboard: the Recurring payments card lists Rogers, Anthropic Claude, Netflix.com and Spotify (price up $1.00) with next due dates and about $123 a month; the context menu shows "Remove the review flag" on the flagged Spotify row.*
+
+![F04 in the CLI](img/screenshots/F04-cli.png)
+
+*F04 CLI: `recurring` lists 4 payments (about 122.73 a month, Spotify with a price rise); `recurring flag spotify` shows FLAGGED; `recurring unflag`; `recurring review` prints the AI-worded review.*
+
+**Try it.** GUI: Dashboard → **Recurring payments** card: open a payment's menu to flag or unflag it, and use the **AI review** button. CLI: `recurring`, `recurring flag spotify`, `recurring unflag spotify`, `recurring review`.
+
+### 8.5 F05 — Safe-to-spend coach · Hybrid (rules plus AI)
+
+**Original requirement (Stage 1).** Compute a daily allowance for the rest of the month (balance + income due − bills − planned expenses − goal contributions − buffer, divided by days left) and project the next 30 days.
+
+**Implementation.** `AnalyticsService.safeToSpend` and `forecast` over `ForecastInputs` (deterministic); the Assistant calls the forecast tool and `GroundingChecker` verifies the figures in the wording. Full mapping: Section 2, F05.
+
+![F05 in the GUI](img/screenshots/F05-gui.png)
+
+*F05 GUI: Assistant chat answering "how much can I safely spend per day this month?" with 327.01 a day, upcoming bills and the safety buffer; the line "Checked against your data · trace …" marks a grounded answer.*
+
+![F05 in the CLI](img/screenshots/F05-cli.png)
+
+*F05 CLI: `safe` and `forecast`; changing the balance with `plan balance` changes the allowance (208.17 → 141.75 → 208.17); an invalid date is rejected; `ask` answers through the forecast tool and `trace` lists the tool call and `GROUNDING: All figures match tool results`.*
+
+**Try it.** GUI: Assistant → **Ask** → "how much can I safely spend per day this month?" → **How did you get this?** CLI: `safe`, `forecast`, `plan balance 1200`, `safe`, then `ask "How much can I safely spend per day?"` and `trace`.
+
+### 8.6 F06 — Spending habit detective · Hybrid (rules plus AI)
+
+**Original requirement (Stage 1).** Detect weekend spikes, month-end crunches, small-purchase leaks and unusual one-off expenses, each with its evidence.
+
+**Implementation.** `HabitAnalyzer` returns `Insight` records; `InsightTool` lets the agent read them and explain them in plain words. Full mapping: Section 2, F06.
+
+![F06 in the GUI](img/screenshots/F06-gui.png)
+
+*F06 GUI: Assistant chat: the habits found for October (weekend average 36.55 against 21.54, month-end 41.58 a day, 16 small purchases, unusually large purchases) with the trace marker.*
+
+![F06 in the CLI](img/screenshots/F06-cli.png)
+
+*F06 CLI: `ask` on habits, then `trace`: the `insights` tool call, the grounding check and the answer; `aicalls` lists the model calls.*
+
+**Try it.** GUI: Assistant → **Ask** → "what are my spending habits in October?". CLI: `habits 2026-10`, or `ask "What are my spending habits in October 2026?"`, then `trace`.
+
+### 8.7 F07 — Financial health score · Hybrid (rules plus AI)
+
+**Original requirement (Stage 1).** A 0–100 score from budget adherence (30), savings rate (25), emergency buffer (25) and goal progress (20), with a breakdown and what would improve it most.
+
+**Implementation.** `AnalyticsService.healthScore` builds `HealthScore` from `ScoreComponent` items (components that cannot be measured are left out and the rest re-scaled); the agent explains it on request. Full mapping: Section 2, F07.
+
+![F07 in the GUI](img/screenshots/F07-gui.png)
+
+*F07 GUI: Assistant chat: the health score for November so far (73/100, up from 55 in October) with the four components and the trace marker.*
+
+![F07 in the CLI](img/screenshots/F07-cli.png)
+
+*F07 CLI: `score 2026-10` (55/100 with the four components); `score 2026-08` (a component left out and the rest re-scaled); an invalid month is rejected; `ask` gives the same figures in words.*
+
+**Try it.** GUI: Assistant → **Ask** → "what is my financial health score?". CLI: `score 2026-10`, `score 2026-08`, then `ask "what is my financial health score for October 2026?"`.
+
+### 8.8 F08 — Purchase affordability check · AI agent
+
+**Original requirement (Stage 1).** The user asks "Can I afford a $600 laptop?"; the agent plans, checks budget, safe-to-spend, the 30-day forecast with the purchase and goal impact, and returns a verdict (Yes / Yes-but / Wait / No) with reasoning.
+
+**Implementation.** `AgentController.handle` runs the loop: `Planner` asks the model for the next step, `ToolManager` runs `forecast`, `goals` and `budget_status`, `PurchaseAssessor` rules act as a floor (the model may be more cautious, never more optimistic), `GroundingChecker` verifies every figure and `AgentTrace` records the steps. Changed: own HTTP client instead of LangChain4j (Section 4). Full mapping: Section 2, F08.
+
+![F08 in the GUI](img/screenshots/F08-gui.png)
+
+*F08 GUI: The "How was this worked out?" dialog for "Can I afford laptop for $600.00?": the `forecast` tool call with its result, then the `goals` tool call, behind the verdict text.*
+
+![F08 in the CLI](img/screenshots/F08-cli.png)
+
+*F08 CLI: `afford "laptop" 600` gives Yes-but with reasons; `afford "used-car" 4000` gives No (balance would go below zero); `trace` shows the `forecast` and `goals` tool calls, the grounding check and the answer; a bad amount and missing arguments are handled.*
+
+**Try it.** GUI: Assistant → **Can I afford it?** → laptop, 600 → **Check** → **How did you get this?** CLI: `afford "laptop" 600`, `afford "used-car" 4000`, then `trace`.
+
+### 8.9 F09 — Savings goal planner with replan · AI agent
+
+**Original requirement (Stage 1).** Define a goal (name, target, deadline); check feasibility (required monthly amount against the surplus) and propose options (raise the contribution, extend the deadline, lower the target); re-evaluate after every import and alert when a goal is at risk.
+
+**Implementation.** Implemented as plain code: `GoalService`, `GoalPlanner` and `MonthlySurplusProvider`, re-checked after imports and changes; `GoalTool` lets the agent read goals; the fix becomes a proposal (F13). Changed: the planning is deterministic because it is arithmetic that must be exact (Section 4). Full mapping: Section 2, F09.
+
+![F09 in the GUI](img/screenshots/F09-gui.png)
+
+*F09 GUI: Assistant chat answering "is my laptop goal in track?": behind, 350.00 of 1,400.00 saved, needs 1,050.00 a month and gets 420.00; it also uses the earlier what-if in the conversation.*
+
+![F09 in the CLI](img/screenshots/F09-cli.png)
+
+*F09 CLI: `goal list` (statuses), `goal replan` (needs 525 a month; three options), `goal save`, adding goals, invalid input; `ask` summarizes where every goal stands; `aicalls`.*
+
+**Try it.** GUI: Goals tab: each goal's status and replan options; or Assistant → "is my laptop goal in track?". CLI: `goal list`, `goal replan <goalId>`, `goal save <goalId> 50`, then `ask "Am I on track with my savings goals?"`.
+
+### 8.10 F10 — What-if scenario simulator · AI agent
+
+**Original requirement (Stage 1).** The user types a scenario ("cancel Spotify, cap dining at $150"); the agent turns it into structured changes, a simulator compares six months with and without them, and the result can become proposals.
+
+**Implementation.** The model fills `ScenarioTool`; `ScenarioParser` validates the fields (at most 5 changes, known payments only); `ScenarioSimulator` copies the baseline (`ForecastInputs.deepCopy`) and applies `ScenarioChange` objects (Strategy); `ScenarioDrafts` makes proposal drafts. The typed form uses no AI. Full mapping: Section 2, F10.
+
+![F10 in the GUI](img/screenshots/F10-gui.png)
+
+*F10 GUI: Assistant, What if tab: "cancel netflix and cap dining at 150" gives the six-month comparison (end balance, lowest balance, monthly savings), earlier goal dates, and the button that turns the 2 changes into proposals.*
+
+![F10 in the CLI](img/screenshots/F10-cli.png)
+
+*F10 CLI: `whatif` with typed fields (table of baseline, scenario and change, goal dates); the same scenario in plain words; `trace` shows the `scenario` tool call; invalid payments, caps and missing text are rejected; `aicalls`.*
+
+**Try it.** GUI: Assistant → **What if…** → type the scenario → **Run with AI**; **Turn 2 changes into proposals**. CLI: `whatif cancel=Spotify caps=dining=150`, `whatif cancel spotify and cap dining at 150`, `trace`.
+
+### 8.11 F11 — Monthly AI review and fix plan · AI agent
+
+**Original requirement (Stage 1).** A review of the month (what happened, what went well, what to fix) with the health score and up to three concrete fix proposals.
+
+**Implementation.** `ReviewService.generate` runs the agent with the transactions, budget status, insights and goals tools; the numbers come from code and the narrative from the model, with a numbers-only fallback; fixes are built by plain rules and stored as proposals (F13). Full mapping: Section 2, F11.
+
+![F11 in the GUI](img/screenshots/F11-gui.png)
+
+*F11 GUI: Reports tab: the review for November 2026 (what happened, what went well, what to fix), the health score breakdown, "3 fixes are waiting under Proposals", and the buttons **Generate again**, **See proposals** and **How was this written?**.*
+
+![F11 in the CLI](img/screenshots/F11-cli.png)
+
+*F11 CLI: `review 2026-10` with the three fix proposals; `trace` lists the `transactions`, `budget_status`, `insights` and `goals` tool calls and the grounding check; running it again replaces the earlier review; a future or invalid month is rejected; `aicalls`.*
+
+**Try it.** GUI: Reports → choose the month → **Generate review**; **How was this written?** CLI: `review 2026-10`, `trace`, `review 2026-10` again (replaces the earlier review).
+
+### 8.12 F12 — Natural-language chat with memory and trace · AI agent
+
+**Original requirement (Stage 1).** Free-form questions about the user's money, with conversation memory for follow-ups and stored preferences, and a "How did you get this?" view of the tool calls behind each answer.
+
+**Implementation.** `MemoryManager` joins `ConversationMemory` (last 10 messages) and `UserProfileMemory` (preferences such as protected categories); `PromptBuilder` redirects off-topic questions and states assumptions about vague times; `ToolManager` tools answer; `GroundingChecker` and `AgentTrace` back the trace. Full mapping: Section 2, F12.
+
+![F12 in the GUI](img/screenshots/F12-gui.png)
+
+*F12 GUI: Assistant chat: "How much did I spend on dining in october?" answered with the total, the number of transactions and the largest purchases, grounded and with a trace id; a follow-up is being typed.*
+
+![F12 in the CLI](img/screenshots/F12-cli.png)
+
+*F12 CLI: A question, a follow-up ("And on shopping?") answered from memory, an off-topic question politely redirected, "lately" interpreted as the current month (stated), `trace`, `forget` (new conversation, preferences kept), `protect` and `aicalls`.*
+
+**Try it.** GUI: Assistant → **Ask** → "How much did I spend on dining in October?" → **How did you get this?** CLI: `ask "How much did I spend on dining in October?"`, `ask "And on shopping?"`, `ask "what is the capital of france?"`, `trace`, `forget`, `protect`.
+
+### 8.13 F13 — Proposal approval queue · Hybrid (rules plus AI)
+
+**Original requirement (Stage 1).** Every change the agent suggests is stored as a proposal with a lifecycle (Pending → Applied / Rejected / Expired); approving runs an undoable command; proposals touching a protected category are blocked.
+
+**Implementation.** `Proposal` with `ProposalState` (State pattern); `CommandFactory` builds the `Command`; `ProposalService` creates, approves, rejects, undoes and expires proposals and applies the protected-category check. Full mapping: Section 2, F13.
+
+![F13 in the GUI](img/screenshots/F13-gui.png)
+
+*F13 GUI: Proposals tab with 2 suggestions waiting (Flag Spotify for review, Set the Dining out limit) and the "How was this worked out?" dialog showing the what-if tool call they came from; the queue itself is deterministic, the agent only drafted the suggestions.*
+
+![F13 in the CLI](img/screenshots/F13-cli.png)
+
+*F13 CLI: `proposals from-whatif` creates two proposals; `proposals` lists them as Pending; `proposals why` gives the reason and the trace; `proposals approve` applies one (and `recurring` then shows Spotify as FLAGGED); `proposals reject` discards the other.*
+
+**Try it.** GUI: Assistant → What if → **Turn 2 changes into proposals**; Proposals tab → **Approve** / **Reject** / **How did the AI get here?** CLI: `proposals from-whatif`, `proposals`, `proposals why <id>`, `proposals approve <id>`, `proposals reject <id>`, `proposals undo`.
+
+### 8.14 F14 — Report export · Deterministic
+
+**Original requirement (Stage 1).** Export the monthly report (summary, category against budget, review text, goal status) as Markdown, CSV or plain text.
+
+**Implementation.** `ReportService` and the exporters write the file; the CLI refuses to overwrite an existing file unless `overwrite` is added. Full mapping: Section 2, F14.
+
+![F14 in the GUI](img/screenshots/F14-gui.png)
+
+*F14 GUI: Reports tab: the Export card with the month, the format (CSV, Markdown or text) and the **Save report…** button.*
+
+![F14 in the CLI](img/screenshots/F14-cli.png)
+
+*F14 CLI: `export` to Markdown, CSV and text; an existing file is refused until `overwrite` is added; an unknown format and an invalid month are rejected; the usage line.*
+
+**Try it.** GUI: Reports → choose the month and the format → **Save report…** CLI: `export 2026-10 md ~/Desktop/oct-cli.md`, then `cat ~/Desktop/oct-cli.md`.
+
+### 8.15 Standalone command-line program (jar)
+
+**Requirement.** The instructor's follow-up asks for a version of the agent that can be run directly from a terminal, for example `java -jar Agent.jar -LLMAPI -input task.txt`, with the supported options documented and a working example in the README.
+
+**Implementation.** `mvn package` builds `target/wealthsei.jar` (no runtime dependencies, so nothing else is needed on the class path). `CliOptions` reads the options; `CliApp.runScript` runs a task file one command per line, echoing each command, skipping blank lines and `#` comments and stopping at `exit`. A task file can contain any CLI command, including `afford`, `whatif`, `review` and `ask`, which call the agent. Without an option, the program behaves as before (interactive session, one command, or `gui`).
+
+| Option | Meaning |
+|---|---|
+| `-input <file>` | Run every command in the task file, then exit. |
+| `-LLMAPI` | Use the Claude API; stop with an error if no key is configured. |
+| `-no-ai` | Never call the API, even if a key is configured (rules and templates only). |
+| `-data-dir <dir>` | Folder for saved data (default: `WEALTHSEI_HOME`, else `~/.wealthsei`). |
+| `-help` | Show the options. |
+
+Options may be written with one or two dashes. The key is read from `.env` in the current folder or from `ANTHROPIC_API_KEY`.
+
+![Standalone jar help](img/screenshots/jar-help.png)
+
+*`java -jar target/wealthsei.jar -help` lists the options.*
+
+![Standalone jar running a task file](img/screenshots/jar-run-head.png)
+
+*`java -jar target/wealthsei.jar -data-dir ~/.wealthsei-demo -input demo/task.txt`: each command in the task file is echoed with `> ` before its output (first part of the run).*
+
+![Standalone jar, end of the run](img/screenshots/jar-run.png)
+
+*The same run, including the agent commands: `ask` (October dining 529.24 across 22 transactions), `afford` (verdict Yes-but) and its `trace` with the tool calls and the grounding check.*
+
+**Try it.**
+
+```
+mvn -q package
+bash demo/load-demo.sh
+java -jar target/wealthsei.jar -help
+java -jar target/wealthsei.jar -data-dir ~/.wealthsei-demo -input demo/task.txt
+java -jar target/wealthsei.jar -LLMAPI -data-dir ~/.wealthsei-demo -input demo/task.txt
+```
+
+**Note on timing.** The jar and the `-input` option were added on Nov 20, after the instructor's follow-up instructions. The feature videos were recorded earlier and start the same CLI with `mvn exec:java`, so they do not show the jar. The commands inside the CLI are the same in both cases, and the test suite now has 604 tests (596 before this change).

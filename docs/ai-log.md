@@ -289,3 +289,11 @@ Dates are Toronto local time. The code commits, with messages and links, are lis
 
 - Runtime (the app's own calls, Anthropic Console, data as of Nov 9 6:51 PM UTC): 419,483 tokens (386,322 input + 33,161 output), of which Sonnet 362,079 and Haiku 57,404; **$1.00** spend. The Console showed usage on Nov 5, 6 and 7. The CLI `aicalls` log on my machine lists 20 calls (41,986 tokens) before the final checks and 15 more calls (33,191 tokens) during them on Nov 9.
 - Development (the chat tool, Stage 2, Oct 20 to Nov 9 2:41 PM Toronto): 321,126,431 tokens (49,951 plain input, 1,665,363 output, 311,583,766 cache-read, 7,827,351 cache-write), about $78.51 API-equivalent. See Section 2.
+
+## 7. Standalone CLI and screenshots (Nov 20)
+
+- **My ask:** after the instructor's follow-up instructions (a CLI that can be run directly from a terminal, for example `java -jar Agent.jar -LLMAPI -input task.txt`, with the options documented, and screenshots for each feature), I asked the AI to check what the submission was missing.
+- **AI work:** a runnable jar built by `mvn package`; `CliOptions` (`-input`, `-LLMAPI`, `-no-ai`, `-data-dir`, `-help`); `CliApp.runScript` to run a task file; `demo/task.txt`; 8 new tests; a README section with the options and a working example; Section 8 of the report (screenshots, requirement, implementation pointer and "Try it" steps for each feature).
+- **My verification:** `mvn test` on Nov 20: 604 tests, 0 failures, 0 errors. I ran `-help` and `-input demo/task.txt` with my key on. I took the screenshots from my own runs and recordings.
+- **What I corrected:** my first test command had no `-data-dir` and wrote demo data into my default folder; the task file was changed to only read and ask, so it can be run repeatedly with `-data-dir ~/.wealthsei-demo`.
+

@@ -33,7 +33,7 @@ The only dependency is JUnit 5 (tests, downloaded by Maven). The application its
 mvn -q compile
 ```
 
-Run all unit tests (596 tests):
+Run all unit tests (604 tests):
 
 ```
 mvn test
@@ -79,6 +79,38 @@ CLI, one command and exit:
 ```
 mvn -q compile exec:java -Dexec.mainClass=wealthsei.Main -Dexec.args="safe"
 ```
+
+### Standalone jar (run the CLI directly from a terminal)
+
+Build the jar once, then run it. There are no runtime dependencies, so the jar needs nothing else:
+
+```
+mvn -q package
+java -jar target/wealthsei.jar -help
+```
+
+Options (one or two dashes):
+
+| Option | Meaning |
+|---|---|
+| `-input <file>` | Run every command in the task file (one per line; blank lines and lines starting with `#` are skipped), then exit. |
+| `-LLMAPI` | Use the Claude API; stop with an error if no API key is configured. |
+| `-no-ai` | Never call the API, even if a key is configured (rules and templates only). |
+| `-data-dir <dir>` | Folder for saved data (default: `WEALTHSEI_HOME`, else `~/.wealthsei`). |
+| `-help` | Show the options. |
+
+With no option it behaves as before: no arguments = interactive session, a command = run it and exit, `gui` = open the window.
+
+Working example (uses the safe demo data, see below; the task file only reads and asks questions, so it can be run again and again):
+
+```
+bash demo/load-demo.sh
+java -jar target/wealthsei.jar -data-dir ~/.wealthsei-demo -input demo/task.txt
+java -jar target/wealthsei.jar -LLMAPI -data-dir ~/.wealthsei-demo -input demo/task.txt   # fails clearly if no key is set
+```
+
+`demo/task.txt` is plain text with one CLI command per line, including agent commands such as `afford "laptop" 600` and `ask "..."`. Always pass `-data-dir ~/.wealthsei-demo` when you run it, so your own data is never touched.
+The jar and `-input` were added on Nov 20, after the instructor's follow-up instructions; the earlier demonstration videos start the same CLI with `mvn exec:java`.
 
 ## Safe sample data (try it without any real data)
 
@@ -164,6 +196,29 @@ Package layout under `src/main/java/wealthsei`: `domain`, `importing`, `reposito
 - `trace` (and the Assistant's trace button) shows which tools were called and where each figure came from.
 - `aicalls` shows the recent AI calls (model, tokens, time). Costs and the development-time AI use are in the
   Stage 2 report and in [`docs/ai-log.md`](docs/ai-log.md) and [`docs/ai-usage.md`](docs/ai-usage.md).
+
+## Try each feature (GUI and CLI)
+
+After `bash demo/load-demo.sh`, start the GUI or the CLI on the demo data (see above). The report shows a screenshot of each feature in both interfaces, with these same steps: **Section 8** of [docs/WealthSei_Stage2_Report.pdf](docs/WealthSei_Stage2_Report.pdf).
+
+| Feature | GUI | CLI |
+|---|---|---|
+| F01 | Transactions → **Import CSV** | `import demo/NeoDemoMastercard__2026-10-01_2026-10-31.csv`; `add 2026-11-07 12.50 "Corner Market"` |
+| F02 | Transactions → change a row's category; **Undo** / **Redo** | `correct <txId> shopping`; `undo`; `redo` |
+| F03 | Dashboard → Budget card → **Set a limit** | `budget set 2026-10 dining=300 groceries=600`; `budget status 2026-10` |
+| F04 | Dashboard → Recurring payments; **AI review** | `recurring`; `recurring flag spotify`; `recurring review` |
+| F05 | Assistant → Ask: "how much can I safely spend per day?" | `safe`; `forecast` |
+| F06 | Assistant → Ask: "what are my spending habits in October?" | `habits 2026-10` |
+| F07 | Assistant → Ask: "what is my financial health score?" | `score 2026-10` |
+| F08 | Assistant → **Can I afford it?** → **How did you get this?** | `afford "laptop" 600`; `trace` |
+| F09 | Goals tab; Assistant: "is my laptop goal in track?" | `goal list`; `goal replan <goalId>` |
+| F10 | Assistant → **What if…** → **Run with AI** | `whatif cancel=Spotify caps=dining=150` |
+| F11 | Reports → **Generate review** | `review 2026-10`; `trace` |
+| F12 | Assistant → Ask: "How much did I spend on dining in October?" | `ask "How much did I spend on dining in October?"`; `trace` |
+| F13 | Proposals tab (after a what-if: **Turn 2 changes into proposals**) | `proposals from-whatif`; `proposals`; `proposals approve <id>` |
+| F14 | Reports → format → **Save report…** | `export 2026-10 md ~/october.md` |
+
+The agent features (F08–F12) and the AI wording in F04–F07 need an API key (see *Local configuration*); without one they fall back to rules and templates. Every CLI answer from the agent ends with `trace <id>`, which shows the tool calls behind it.
 
 ## Project documents
 
