@@ -6,6 +6,10 @@ WealthSei is an AI agent that helps with everyday money decisions: safe-to-spend
 guidance, "can I afford this?" checks, savings-goal planning, what-if
 simulations and monthly reviews. It has a GUI and a CLI.
 
+![WealthSei Dashboard (GUI, demo data)](docs/img/screenshots/overview-dashboard.png)
+
+*The GUI Dashboard on the invented demo data. The tabs are Dashboard, Transactions, Goals, Proposals, Assistant and Reports.* More screenshots of every feature, in the GUI and the CLI, are in Section 8 of the [Stage 2 report](docs/WealthSei_Stage2_Report.pdf).
+
 ## Project stages
 
 | Stage | Description | Status |

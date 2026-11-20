@@ -771,6 +771,16 @@ Reproduce the demonstrations from a clean clone: `bash demo/load-demo.sh`, then 
 
 This section shows each feature running in the actual application, in the GUI and in the CLI, with the requirement it came from (Stage 1) and a pointer to how it was implemented (Section 2). Under each pair of screenshots, **Try it** gives the steps to reproduce what is shown. The screenshots were taken while recording the demonstration videos (Section 7) and in later runs on the same invented demo data; each one shows the figures of the session in which it was captured. No API key appears in any of them, and the data is the invented demo data.
 
+**The platform at a glance.** The GUI has six tabs: Dashboard, Transactions, Goals, Proposals, Assistant and Reports. The first screen is the Dashboard; the second is the Goals tab. Both were captured on the invented demo data (Nov 20, 2026).
+
+![WealthSei Dashboard](img/screenshots/overview-dashboard.png)
+
+*Figure 8.0a: the Dashboard, the first screen: balance today, financial health score, the 30-day balance forecast and safe-to-spend per day. The tab bar at the top lists all six tabs; **Ask WealthSei** (bottom left) opens the Assistant from any screen.*
+
+![WealthSei Goals tab](img/screenshots/overview-goals.png)
+
+*Figure 8.0b: the Goals tab: each goal with its progress, due date, on-track or behind status and the monthly amount being set aside, plus **Plan**, **Add money** and **Set monthly**.*
+
 **Before you try anything.** Load the invented demo data once (it goes into `~/.wealthsei-demo`, never into your own data), put your key in `.env` (see the README), and start the application on the demo folder:
 
 ```
